@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+
+   <description url="https://github.com/capellaagent/update-site">
+      Capella Agent p2 Update Site
+   </description>
+
+   <category-def
+         name="capella-agent"
+         label="Capella Agent">
+      <description>
+         AI-powered multi-agent ecosystem for Capella MBSE. Includes LLM-driven
+         model interaction, Teamcenter PLM integration, and simulation engine
+         orchestration.
+      </description>
+   </category-def>
+
+   <feature
+         url="features/com.capellaagent.feature_1.0.0.qualifier.jar"
+         id="com.capellaagent.feature"
+         version="1.0.0.qualifier">
+      <category name="capella-agent"/>
+   </feature>
+
+</site>

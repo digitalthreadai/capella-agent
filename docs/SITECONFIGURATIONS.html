@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capella Agent - Setup &amp; Configuration Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0A0A0F;
+  --surface: #12121A;
+  --surface-hover: #1E1E2E;
+  --terminal-bg: #1A1A2E;
+  --terminal-border: #2A2A3E;
+  --text: #E8E8ED;
+  --muted: #8888A0;
+  --muted-fg: #6E6E88;
+  --primary: #00BCD4;
+  --primary-light: #E0F7FA;
+  --primary-rgb: 0,188,212;
+  --secondary: #FF6D00;
+  --green: #4ADE80;
+  --blue: #60A5FA;
+  --purple: #A78BFA;
+  --red: #F87171;
+  --sidebar-width: 260px;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+html { scroll-behavior: smooth; scrollbar-color: var(--terminal-border) var(--bg); }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--terminal-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  overflow-y: auto;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.sidebar-header {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--terminal-border);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  text-decoration: none;
+}
+
+.logo-monogram {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.time-estimate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--terminal-bg);
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.time-estimate svg { flex-shrink: 0; }
+
+/* Progress bar */
+.progress-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--terminal-border);
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 4px;
+  background: var(--terminal-bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  border-radius: 4px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  width: 0%;
+}
+
+/* Sidebar nav */
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 0;
+  overflow-y: auto;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.nav-link.active {
+  color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.06);
+  border-left-color: var(--primary);
+}
+
+.nav-number {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  background: var(--terminal-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.nav-link.active .nav-number {
+  background: var(--primary);
+  color: var(--bg);
+}
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--terminal-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-footer a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-fg);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+
+.sidebar-footer a:hover { color: var(--primary); }
+
+.sidebar-footer a svg { flex-shrink: 0; opacity: 0.6; }
+
+/* Mobile hamburger */
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--terminal-border);
+  z-index: 101;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+}
+
+.hamburger {
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 99;
+}
+
+/* ── Main content ── */
+.main {
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+}
+
+.main-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px 40px 80px;
+}
+
+/* Hero */
+.hero {
+  text-align: center;
+  padding: 60px 0 48px;
+}
+
+.hero h1 {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.2;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero p {
+  font-size: 16px;
+  color: var(--muted);
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* Section / Step */
+.step-section {
+  margin-bottom: 56px;
+  scroll-margin-top: 32px;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--terminal-border);
+}
+
+.step-badge {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--primary), rgba(var(--primary-rgb),0.6));
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.step-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  flex: 1;
+}
+
+.step-time {
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--terminal-bg);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.step-content p {
+  color: var(--muted);
+  margin-bottom: 16px;
+  font-size: 14.5px;
+}
+
+.step-content a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.step-content a:hover { text-decoration: underline; }
+
+/* Terminal block */
+.terminal {
+  background: var(--terminal-bg);
+  border: 1px solid var(--terminal-border);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.2);
+  border-bottom: 1px solid var(--terminal-border);
+}
+
+.terminal-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.terminal-dots span {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+}
+.terminal-dots span:nth-child(1) { background: #FF5F56; }
+.terminal-dots span:nth-child(2) { background: #FFBD2E; }
+.terminal-dots span:nth-child(3) { background: #27C93F; }
+
+.terminal-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted-fg);
+  font-weight: 500;
+}
+
+.copy-btn {
+  background: none;
+  border: 1px solid var(--terminal-border);
+  color: var(--muted);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.copy-btn.copied {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.terminal-body {
+  padding: 16px 20px;
+  overflow-x: auto;
+}
+
+.terminal-body pre {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre;
+  margin: 0;
+}
+
+.terminal-body .comment { color: var(--muted-fg); }
+.terminal-body .cmd { color: var(--green); }
+.terminal-body .flag { color: var(--purple); }
+.terminal-body .url { color: var(--blue); }
+.terminal-body .label { color: var(--secondary); }
+.terminal-body .value { color: var(--primary); }
+
+/* Numbered sub-steps */
+.substeps {
+  counter-reset: substep;
+  list-style: none;
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.substeps li {
+  counter-increment: substep;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--terminal-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text);
+  transition: background 0.15s;
+}
+
+.substeps li:hover { background: var(--surface-hover); }
+
+.substeps li::before {
+  content: counter(substep);
+  min-width: 26px; height: 26px;
+  background: var(--terminal-bg);
+  border: 1px solid var(--terminal-border);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.substeps li code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  background: var(--terminal-bg);
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: var(--primary);
+}
+
+/* Provider tabs */
+.provider-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--terminal-bg);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 20px;
+}
+
+.provider-tab {
+  flex: 1;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: var(--muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.provider-tab:hover { color: var(--text); }
+
+.provider-tab.active {
+  background: var(--surface-hover);
+  color: var(--primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.provider-panel { display: none; }
+.provider-panel.active { display: block; }
+
+/* Info cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--terminal-border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+
+.card:hover { border-color: rgba(var(--primary-rgb), 0.3); }
+
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title .icon {
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.card p, .card li {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.card code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  background: var(--terminal-bg);
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: var(--primary);
+}
+
+/* Note / callout */
+.callout {
+  display: flex;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  font-size: 13.5px;
+  border: 1px solid;
+}
+
+.callout-info {
+  background: rgba(var(--primary-rgb), 0.06);
+  border-color: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+}
+
+.callout-warn {
+  background: rgba(255,109,0,0.06);
+  border-color: rgba(255,109,0,0.15);
+  color: var(--secondary);
+}
+
+.callout-icon { font-size: 16px; flex-shrink: 0; line-height: 1.5; }
+
+/* Table */
+.table-wrap {
+  overflow-x: auto;
+  margin-bottom: 20px;
+  border: 1px solid var(--terminal-border);
+  border-radius: var(--radius);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead th {
+  background: var(--terminal-bg);
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--terminal-border);
+}
+
+tbody td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--terminal-border);
+  color: var(--text);
+  vertical-align: top;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface-hover); }
+
+td code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  background: var(--terminal-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--primary);
+}
+
+td:first-child {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+td:nth-child(2) { color: var(--muted); }
+td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--purple); }
+
+/* Plugin grid */
+.plugin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.plugin-card {
+  background: var(--surface);
+  border: 1px solid var(--terminal-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  transition: border-color 0.2s;
+}
+
+.plugin-card:hover { border-color: rgba(var(--primary-rgb), 0.3); }
+
+.plugin-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.plugin-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.plugin-files {
+  font-size: 11px;
+  color: var(--muted-fg);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Checklist */
+.checklist-group {
+  margin-bottom: 20px;
+}
+
+.checklist-group-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--terminal-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13.5px;
+  user-select: none;
+}
+
+.checklist-item:hover { background: var(--surface-hover); }
+
+.checklist-item.checked {
+  border-color: rgba(74,222,128,0.2);
+}
+
+.checklist-item.checked .check-label {
+  color: var(--muted-fg);
+  text-decoration: line-through;
+}
+
+.check-box {
+  width: 20px; height: 20px;
+  border: 2px solid var(--terminal-border);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.checklist-item.checked .check-box {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.check-box svg { opacity: 0; transition: opacity 0.15s; }
+.checklist-item.checked .check-box svg { opacity: 1; }
+
+.check-label { color: var(--text); transition: all 0.2s; }
+
+/* Troubleshooting collapsible */
+.trouble-item {
+  background: var(--surface);
+  border: 1px solid var(--terminal-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.trouble-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.trouble-header:hover { background: var(--surface-hover); }
+
+.trouble-arrow {
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.trouble-item.open .trouble-arrow { transform: rotate(90deg); }
+
+.trouble-symptom {
+  color: var(--red);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.trouble-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.trouble-body-inner {
+  padding: 0 18px 16px;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.trouble-body-inner code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  background: var(--terminal-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--primary);
+}
+
+/* Collapsible section */
+.collapsible-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapse-arrow {
+  transition: transform 0.2s;
+  color: var(--muted);
+}
+
+.collapsible-trigger.open .collapse-arrow { transform: rotate(90deg); }
+
+.collapsible-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+
+.collapsible-body.open { max-height: 4000px; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay.open { display: block; }
+  .mobile-header { display: flex; }
+  .main { margin-left: 0; }
+  .main-inner { padding: 72px 20px 60px; }
+  .hero { padding-top: 24px; }
+  .hero h1 { font-size: 28px; }
+  .plugin-grid { grid-template-columns: 1fr; }
+  .provider-tabs { flex-wrap: wrap; }
+}
+
+@media (max-width: 600px) {
+  .hero h1 { font-size: 24px; }
+  .step-header { flex-wrap: wrap; }
+  .terminal-body { padding: 12px 14px; }
+  .terminal-body pre { font-size: 11.5px; }
+  table { font-size: 12px; }
+  thead th, tbody td { padding: 8px 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Mobile Header -->
+<div class="mobile-header">
+  <button class="hamburger" id="hamburger" aria-label="Open sidebar">
+    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <div class="logo-monogram" style="width:32px;height:32px;font-size:13px;border-radius:8px;">CA</div>
+  <span style="font-weight:700;font-size:14px;">Setup Guide</span>
+</div>
+
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <a class="logo" href="#">
+      <div class="logo-monogram">CA</div>
+      <div class="logo-text">Capella Agent</div>
+    </a>
+    <div class="time-estimate">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="6"/><path d="M7 4v3l2 2"/></svg>
+      ~45 min setup
+    </div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-label">
+      <span>Progress</span>
+      <span id="progressText">0 / 15</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav" id="sidebarNav">
+    <a class="nav-link" href="#step-1" data-step="1"><span class="nav-number">1</span> Prerequisites</a>
+    <a class="nav-link" href="#step-2" data-step="2"><span class="nav-number">2</span> Build</a>
+    <a class="nav-link" href="#step-3" data-step="3"><span class="nav-number">3</span> Install in Capella</a>
+    <a class="nav-link" href="#step-4" data-step="4"><span class="nav-number">4</span> Configure LLM</a>
+    <a class="nav-link" href="#step-5" data-step="5"><span class="nav-number">5</span> Teamcenter</a>
+    <a class="nav-link" href="#step-6" data-step="6"><span class="nav-number">6</span> Simulation</a>
+    <a class="nav-link" href="#step-7" data-step="7"><span class="nav-number">7</span> Security</a>
+    <a class="nav-link" href="#step-8" data-step="8"><span class="nav-number">8</span> Claude Code MCP</a>
+    <a class="nav-link" href="#step-9" data-step="9"><span class="nav-number">9</span> Verification</a>
+    <a class="nav-link" href="#env-vars"><span class="nav-number" style="font-size:10px;">...</span> Env Variables</a>
+    <a class="nav-link" href="#plugins"><span class="nav-number" style="font-size:10px;">...</span> Architecture</a>
+    <a class="nav-link" href="#checklist"><span class="nav-number" style="background:var(--green);color:var(--bg);">&#10003;</span> Checklist</a>
+    <a class="nav-link" href="#troubleshooting"><span class="nav-number" style="background:var(--red);color:#fff;">!</span> Troubleshooting</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="index.html">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h10M7 3l4 4-4 4"/></svg>
+      Documentation Home
+    </a>
+    <a href="https://github.com" target="_blank" rel="noopener">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" transform="scale(0.58) translate(-1,-1)"/></svg>
+      GitHub Repository
+    </a>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main">
+<div class="main-inner">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>Setup &amp; Configuration Guide</h1>
+    <p>Step-by-step guide to build, install, and configure Capella Agent for AI-powered MBSE workflows.</p>
+  </div>
+
+  <!-- Step 1: Prerequisites -->
+  <section class="step-section" id="step-1">
+    <div class="step-header">
+      <div class="step-badge">1</div>
+      <h2 class="step-title">Prerequisites</h2>
+      <span class="step-time">~5 min</span>
+    </div>
+    <div class="step-content">
+      <p>Ensure the following tools are installed and available on your system PATH before proceeding.</p>
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dots"><span></span><span></span><span></span></div>
+          <span class="terminal-title">requirements</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="9" height="9" rx="1.5"/><path d="M4 9H2.5A1.5 1.5 0 0 1 1 7.5v-5A1.5 1.5 0 0 1 2.5 1h5A1.5 1.5 0 0 1 9 2.5V4"/></svg>
+            Copy
+          </button>
+        </div>
+        <div class="terminal-body"><pre><span class="label">Required:</span>
+  <span class="value">Eclipse Capella 7.0+</span>     <span class="url">https://mbse-capella.org/download.html</span>
+  <span class="value">Java JDK 17+</span>             <span class="url">https://adoptium.net/</span>
+  <span class="value">Maven 3.9+</span>               <span class="url">https://maven.apache.org/</span>
+
+<span class="label">Optional:</span>
+  <span class="value">MATLAB R2022b+</span>           For simulation agent
+  <span class="value">Teamcenter AW Server</span>     For PLM integration
+  <span class="value">Ollama</span>                   For local LLM (no API key needed)</pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 2: Build -->
+  <section class="step-section" id="step-2">
+    <div class="step-header">
+      <div class="step-badge">2</div>
+      <h2 class="step-title">Build</h2>
+      <span class="step-time">~10 min</span>
+    </div>
+    <div class="step-content">
+      <p>Clone the repository and build all Eclipse plugins using the Tycho/Maven build system.</p>
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dots"><span></span><span></span><span></span></div>
+          <span class="terminal-title">bash</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="9" height="9" rx="1.5"/><path d="M4 9H2.5A1.5 1.5 0 0 1 1 7.5v-5A1.5 1.5 0 0 1 2.5 1h5A1.5 1.5 0 0 1 9 2.5V4"/></svg>
+            Copy
+          </button>
+        </div>
+        <div class="terminal-body"><pre><span class="comment"># Clone the repository</span>
+<span class="cmd">git clone</span> &lt;repo-url&gt;
+<span class="cmd">cd</span> capella-agent
+
+<span class="comment"># Build all plugins with Tycho</span>
+<span class="cmd">mvn</span> <span class="flag">clean verify</span> <span class="flag">-f</span> pom.xml
+
+<span class="comment"># Output: com.capellaagent.site/target/repository/</span></pre></div>
+      </div>
+      <div class="callout callout-info">
+        <span class="callout-icon">&#9432;</span>
+        <span>First build may take several minutes to download Capella target platform dependencies. Subsequent builds will be significantly faster.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 3: Install in Capella -->
+  <section class="step-section" id="step-3">
+    <div class="step-header">
+      <div class="step-badge">3</div>
+      <h2 class="step-title">Install in Capella</h2>
+      <span class="step-time">~5 min</span>
+    </div>
+    <div class="step-content">
+      <p>Install the built plugins into your Eclipse Capella installation using the local update site.</p>
+      <ol class="substeps">
+        <li>Open Eclipse Capella</li>
+        <li>Navigate to <strong>Help</strong> &gt; <strong>Install New Software...</strong></li>
+        <li>Click <strong>"Add..."</strong> &gt; <strong>"Local..."</strong> &gt; Browse to <code>com.capellaagent.site/target/repository</code></li>
+        <li>Check the <strong>"Capella Agent"</strong> feature</li>
+        <li>Click <strong>Next</strong> &gt; Accept license agreement &gt; <strong>Finish</strong></li>
+        <li>Restart Capella when prompted</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Step 4: Configure LLM Provider -->
+  <section class="step-section" id="step-4">
+    <div class="step-header">
+      <div class="step-badge">4</div>
+      <h2 class="step-title">Configure LLM Provider</h2>
+      <span class="step-time">~5 min</span>
+    </div>
+    <div class="step-content">
+      <p>Select and configure your preferred Large Language Model provider. Claude is recommended for best results.</p>
+
+      <div class="provider-tabs" role="tablist">
+        <button class="provider-tab active" role="tab" data-provider="claude" onclick="switchProvider('claude', this)">Claude (Recommended)</button>
+        <button class="provider-tab" role="tab" data-provider="openai" onclick="switchProvider('openai', this)">OpenAI</button>
+        <button class="provider-tab" role="tab" data-provider="groq" onclick="switchProvider('groq', this)">Groq</button>
+        <button class="provider-tab" role="tab" data-provider="ollama" onclick="switchProvider('ollama', this)">Ollama (Local)</button>
+      </div>
+
+      <!-- Claude Panel -->
+      <div class="provider-panel active" id="provider-claude">
+        <div class="card">
+          <div class="card-title">
+            <span class="icon" style="background:rgba(var(--primary-rgb),0.15);color:var(--primary);">&#9670;</span>
+            Claude by Anthropic
+          </div>
+          <p>Best performance for MBSE tasks. Requires an API key from Anthropic.</p>
+        </div>
+        <ol class="substeps">
+          <li>Get your API key from <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a></li>
+          <li>In Capella, go to <strong>Preferences</strong> &gt; <strong>Capella Agent</strong> &gt; <strong>LLM Provider</strong></li>
+          <li>Set Provider to <code>anthropic</code></li>
+          <li>Set Model to <code>claude-sonnet-4-20250514</code></li>
+          <li>Paste your API key (stored securely in Eclipse Secure Storage)</li>
+        </ol>
+      </div>
+
+      <!-- OpenAI Panel -->
+      <div class="provider-panel" id="provider-openai">
+        <div class="card">
+          <div class="card-title">
+            <span class="icon" style="background:rgba(74,222,128,0.15);color:var(--green);">&#9670;</span>
+            OpenAI
+          </div>
+          <p>GPT-4o support with optional Azure OpenAI endpoint override.</p>
+        </div>
+        <ol class="substeps">
+          <li>Get your API key from <a href="https://platform.openai.com" target="_blank" rel="noopener">platform.openai.com</a></li>
+          <li>In Capella, go to <strong>Preferences</strong> &gt; <strong>Capella Agent</strong> &gt; <strong>LLM Provider</strong></li>
+          <li>Set Provider to <code>openai</code></li>
+          <li>Set Model to <code>gpt-4o</code></li>
+          <li>Paste your API key</li>
+        </ol>
+        <div class="callout callout-info">
+          <span class="callout-icon">&#9432;</span>
+          <span>For Azure OpenAI deployments, set the endpoint override in the advanced settings to your Azure resource URL.</span>
+        </div>
+      </div>
+
+      <!-- Groq Panel -->
+      <div class="provider-panel" id="provider-groq">
+        <div class="card">
+          <div class="card-title">
+            <span class="icon" style="background:rgba(255,109,0,0.15);color:var(--secondary);">&#9670;</span>
+            Groq Cloud
+          </div>
+          <p>Ultra-fast inference on custom LPU hardware. Free tier available. Also supports DeepSeek, Mistral, OpenRouter via the same OpenAI-compatible pattern.</p>
+        </div>
+        <ol class="substeps">
+          <li>Get your API key from <a href="https://console.groq.com" target="_blank" rel="noopener">console.groq.com</a></li>
+          <li>In Capella, go to <strong>Preferences</strong> &gt; <strong>Capella Agent</strong> &gt; <strong>LLM Provider</strong></li>
+          <li>Set Provider to <code>groq</code></li>
+          <li>Set Model to <code>llama-3.3-70b-versatile</code></li>
+          <li>Paste your API key</li>
+        </ol>
+        <div class="callout callout-info">
+          <span class="callout-icon">&#9432;</span>
+          <span>Other OpenAI-compatible providers (DeepSeek, Mistral, OpenRouter) follow the same pattern &mdash; just select the provider ID and enter the API key. Use <code>custom</code> for any unlisted endpoint.</span>
+        </div>
+      </div>
+
+      <!-- Ollama Panel -->
+      <div class="provider-panel" id="provider-ollama">
+        <div class="card">
+          <div class="card-title">
+            <span class="icon" style="background:rgba(167,139,250,0.15);color:var(--purple);">&#9670;</span>
+            Ollama (Local, Free)
+          </div>
+          <p>Run models locally with no API key or cloud dependency. Great for air-gapped environments.</p>
+        </div>
+        <ol class="substeps">
+          <li>Install Ollama from <a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a></li>
+          <li>Pull a model:
+            <div class="terminal" style="margin:10px 0 0;">
+              <div class="terminal-header">
+                <div class="terminal-dots"><span></span><span></span><span></span></div>
+                <span class="terminal-title">bash</span>
+                <button class="copy-btn" onclick="copyBlock(this)">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="9" height="9" rx="1.5"/><path d="M4 9H2.5A1.5 1.5 0 0 1 1 7.5v-5A1.5 1.5 0 0 1 2.5 1h5A1.5 1.5 0 0 1 9 2.5V4"/></svg>
+                  Copy
+                </button>
+              </div>
+              <div class="terminal-body"><pre><span class="cmd">ollama pull</span> llama3.1</pre></div>
+            </div>
+          </li>
+          <li>Set Provider to <code>ollama</code></li>
+          <li>No API key needed</li>
+          <li>Endpoint: <code>http://localhost:11434</code></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 5: Teamcenter -->
+  <section class="step-section" id="step-5">
+    <div class="step-header">
+      <div class="step-badge">5</div>
+      <h2 class="step-title">Configure Teamcenter (Optional)</h2>
+      <span class="step-time">~10 min</span>
+    </div>
+    <div class="step-content">
+      <p>Connect to Siemens Teamcenter for PLM data synchronization and traceability.</p>
+      <ol class="substeps">
+        <li>Navigate to <strong>Preferences</strong> &gt; <strong>Capella Agent</strong> &gt; <strong>Teamcenter</strong></li>
+        <li>Set Gateway URL: <code>https://your-tc-server/tc</code></li>
+        <li>Select authentication method: <strong>Basic</strong> or <strong>SSO</strong></li>
+        <li>Enter username and password (stored in Eclipse Secure Storage)</li>
+        <li>Click <strong>"Test Connection"</strong> to verify connectivity</li>
+      </ol>
+      <div class="callout callout-warn">
+        <span class="callout-icon">&#9888;</span>
+        <span>Actual REST endpoint paths depend on your Teamcenter/Active Workspace version. Consult your Teamcenter administrator for the correct gateway URL.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 6: Simulation -->
+  <section class="step-section" id="step-6">
+    <div class="step-header">
+      <div class="step-badge">6</div>
+      <h2 class="step-title">Configure Simulation (Optional)</h2>
+      <span class="step-time">~5 min</span>
+    </div>
+    <div class="step-content">
+      <p>Enable MATLAB-based simulation for model validation and co-simulation workflows.</p>
+      <ol class="substeps">
+        <li>Navigate to <strong>Preferences</strong> &gt; <strong>Capella Agent</strong> &gt; <strong>Simulation</strong></li>
+        <li>Set MATLAB executable path, e.g.: <code>C:\Program Files\MATLAB\R2024a\bin\matlab.exe</code></li>
+        <li>Set working directory, e.g.: <code>C:\temp\capella-sim</code></li>
+        <li>Set timeout: <code>300</code> seconds (default)</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Step 7: Security -->
+  <section class="step-section" id="step-7">
+    <div class="step-header">
+      <div class="step-badge">7</div>
+      <h2 class="step-title">Security &amp; Access Control</h2>
+      <span class="step-time">~2 min</span>
+    </div>
+    <div class="step-content">
+      <p>Capella Agent includes built-in safety mechanisms to protect your model data.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-bottom:20px;">
+        <div class="card">
+          <div class="card-title" style="color:var(--green);">
+            <span class="icon" style="background:rgba(74,222,128,0.15);color:var(--green);">&#9711;</span>
+            READ_ONLY Mode
+          </div>
+          <p>Default mode. Safely explore and query models without risk of modification. Recommended for initial setup.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--secondary);">
+            <span class="icon" style="background:rgba(255,109,0,0.15);color:var(--secondary);">&#9998;</span>
+            READ_WRITE Mode
+          </div>
+          <p>Enable when you need the agent to create or modify model elements. All changes are tracked in the audit log.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--blue);">
+            <span class="icon" style="background:rgba(96,165,250,0.15);color:var(--blue);">&#128203;</span>
+            Audit Log
+          </div>
+          <p>All operations logged to:<br><code>workspace/.metadata/.plugins/com.capellaagent.core/audit.log</code></p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--purple);">
+            <span class="icon" style="background:rgba(167,139,250,0.15);color:var(--purple);">&#128274;</span>
+            Secure Storage
+          </div>
+          <p>All API keys encrypted via Eclipse Equinox Secure Storage. Credentials never stored in plain text.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 8: Claude Code MCP -->
+  <section class="step-section" id="step-8">
+    <div class="step-header">
+      <div class="step-badge">8</div>
+      <h2 class="step-title">Claude Code MCP Integration (Optional)</h2>
+      <span class="step-time">~5 min</span>
+    </div>
+    <div class="step-content">
+      <p>Use Claude Code terminal as an alternative AI brain. The MCP plugin starts automatically when Capella loads, exposing all 29 tools via localhost HTTP. A bridge subprocess translates MCP stdio to HTTP.</p>
+
+      <ol class="substeps">
+        <li>Install <a href="https://docs.anthropic.com/en/docs/claude-code" target="_blank" rel="noopener">Claude Code</a> and ensure <code>claude</code> is on your PATH</li>
+        <li>Ensure Capella is running with a model open (MCP endpoint auto-starts on port 9847)</li>
+        <li>Open a terminal in the <code>capella-agent</code> directory (where <code>.mcp.json</code> lives)</li>
+        <li>Run <code>claude</code> &mdash; it discovers the MCP tools automatically</li>
+        <li>Ask: <em>&quot;List all system functions in the SA layer&quot;</em></li>
+      </ol>
+
+      <div class="terminal" style="margin-top:1rem;">
+        <div class="terminal-header">
+          <div class="terminal-dots"><span></span><span></span><span></span></div>
+          <span class="terminal-title">.mcp.json</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="9" height="9" rx="1.5"/><path d="M4 9H2.5A1.5 1.5 0 0 1 1 7.5v-5A1.5 1.5 0 0 1 2.5 1h5A1.5 1.5 0 0 1 9 2.5V4"/></svg>
+            Copy
+          </button>
+        </div>
+        <div class="terminal-body"><pre>{
+  "mcpServers": {
+    "capella-live": {
+      "command": "java",
+      "args": ["-cp", "com.capellaagent.mcp/bin",
+               "com.capellaagent.mcp.bridge.McpServerBridge", "9847"]
+    }
+  }
+}</pre></div>
+      </div>
+
+      <div class="callout callout-info" style="margin-top:1rem;">
+        <span class="callout-icon">&#9432;</span>
+        <span>Set <code>CAPELLA_MCP_PORT</code> before launching Capella to use a different port. Update the port in <code>.mcp.json</code> to match. The 9 LLM providers (Groq, DeepSeek, Mistral, etc.) are for the in-Eclipse chat only &mdash; Claude Code uses its own LLM.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 9: Verification -->
+  <section class="step-section" id="step-9">
+    <div class="step-header">
+      <div class="step-badge">9</div>
+      <h2 class="step-title">Verification</h2>
+      <span class="step-time">~3 min</span>
+    </div>
+    <div class="step-content">
+      <p>Verify that Capella Agent is installed and configured correctly with a quick end-to-end test.</p>
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dots"><span></span><span></span><span></span></div>
+          <span class="terminal-title">verification steps</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="9" height="9" rx="1.5"/><path d="M4 9H2.5A1.5 1.5 0 0 1 1 7.5v-5A1.5 1.5 0 0 1 2.5 1h5A1.5 1.5 0 0 1 9 2.5V4"/></svg>
+            Copy
+          </button>
+        </div>
+        <div class="terminal-body"><pre><span class="value">1.</span> Open a Capella project with <span class="cmd">.aird</span> model
+<span class="value">2.</span> <span class="label">Window</span> &gt; <span class="label">Show View</span> &gt; <span class="label">Capella Agent</span> &gt; <span class="label">AI Model Chat</span>
+<span class="value">3.</span> Type: <span class="cmd">"List all system functions"</span>
+<span class="value">4.</span> Verify response shows model elements
+<span class="value">5.</span> Check audit log for entries</pre></div>
+      </div>
+      <div class="callout callout-info">
+        <span class="callout-icon">&#9432;</span>
+        <span>If the AI Model Chat view is not visible, ensure the Capella Agent plugins were installed correctly and Capella was restarted.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Environment Variables Reference -->
+  <section class="step-section" id="env-vars">
+    <div class="step-header">
+      <div class="step-badge" style="background:linear-gradient(135deg,var(--blue),var(--purple));">&#9881;</div>
+      <h2 class="step-title">Environment Variables Reference</h2>
+    </div>
+    <div class="step-content">
+      <p>All settings can also be configured via environment variables. These override preferences when set.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Variable</th><th>Description</th><th>Default</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>CAPELLA_AGENT_LLM_PROVIDER</td><td>Active provider ID</td><td>anthropic</td></tr>
+            <tr><td>CAPELLA_AGENT_LLM_API_KEY</td><td>API key for provider</td><td>(none)</td></tr>
+            <tr><td>CAPELLA_AGENT_LLM_MODEL</td><td>Model name</td><td>claude-sonnet-4-20250514</td></tr>
+            <tr><td>CAPELLA_AGENT_LLM_TEMPERATURE</td><td>Temperature 0.0 - 1.0</td><td>0.3</td></tr>
+            <tr><td>CAPELLA_AGENT_LLM_MAX_TOKENS</td><td>Max response tokens</td><td>4096</td></tr>
+            <tr><td>CAPELLA_AGENT_ACCESS_MODE</td><td>READ_ONLY or READ_WRITE</td><td>READ_ONLY</td></tr>
+            <tr><td>CAPELLA_AGENT_AUDIT_ENABLED</td><td>Enable audit logging</td><td>true</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Plugin Architecture -->
+  <section class="step-section" id="plugins">
+    <div class="step-header collapsible-trigger open" onclick="toggleCollapsible(this)">
+      <svg class="collapse-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4l4 4-4 4"/></svg>
+      <div class="step-badge" style="background:linear-gradient(135deg,var(--purple),var(--blue));">&#9653;</div>
+      <h2 class="step-title">Plugin Architecture</h2>
+    </div>
+    <div class="collapsible-body open" id="pluginBody">
+      <div class="plugin-grid">
+        <div class="plugin-card">
+          <div class="plugin-name">com.capellaagent.core</div>
+          <div class="plugin-desc">Core framework, agent orchestration, and Capella model access</div>
+          <div class="plugin-files">~45 source files</div>
+        </div>
+        <div class="plugin-card">
+          <div class="plugin-name">com.capellaagent.llm</div>
+          <div class="plugin-desc">LLM provider abstraction and multi-provider support</div>
+          <div class="plugin-files">~22 source files</div>
+        </div>
+        <div class="plugin-card">
+          <div class="plugin-name">com.capellaagent.teamcenter</div>
+          <div class="plugin-desc">Teamcenter REST integration and data sync</div>
+          <div class="plugin-files">~18 source files</div>
+        </div>
+        <div class="plugin-card">
+          <div class="plugin-name">com.capellaagent.simulation</div>
+          <div class="plugin-desc">MATLAB bridge and co-simulation engine</div>
+          <div class="plugin-files">~15 source files</div>
+        </div>
+        <div class="plugin-card">
+          <div class="plugin-name">com.capellaagent.ui</div>
+          <div class="plugin-desc">Chat view, preferences UI, and Eclipse integration</div>
+          <div class="plugin-files">~30 source files</div>
+        </div>
+        <div class="plugin-card">
+          <div class="plugin-name">com.capellaagent.tools</div>
+          <div class="plugin-desc">Agent tool definitions and function calling</div>
+          <div class="plugin-files">~20 source files</div>
+        </div>
+        <div class="plugin-card">
+          <div class="plugin-name">com.capellaagent.tests</div>
+          <div class="plugin-desc">Unit and integration test suites</div>
+          <div class="plugin-files">~35 source files</div>
+        </div>
+        <div class="plugin-card">
+          <div class="plugin-name">com.capellaagent.feature</div>
+          <div class="plugin-desc">Eclipse feature descriptor for installation</div>
+          <div class="plugin-files">~3 source files</div>
+        </div>
+        <div class="plugin-card">
+          <div class="plugin-name">com.capellaagent.site</div>
+          <div class="plugin-desc">P2 update site for distribution</div>
+          <div class="plugin-files">~2 source files</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Checklist -->
+  <section class="step-section" id="checklist">
+    <div class="step-header">
+      <div class="step-badge" style="background:linear-gradient(135deg,var(--green),var(--primary));">&#10003;</div>
+      <h2 class="step-title">Setup Checklist</h2>
+    </div>
+    <div class="step-content">
+      <p>Track your progress. Items are saved automatically in your browser.</p>
+
+      <div class="checklist-group">
+        <div class="checklist-group-title">Initial Setup</div>
+        <div class="checklist-item" data-key="capella-installed" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">Capella 7.0 installed</span>
+        </div>
+        <div class="checklist-item" data-key="java-configured" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">Java 17 JDK configured</span>
+        </div>
+        <div class="checklist-item" data-key="maven-available" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">Maven 3.9+ available</span>
+        </div>
+        <div class="checklist-item" data-key="repo-cloned" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">Repository cloned</span>
+        </div>
+        <div class="checklist-item" data-key="build-successful" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">Build successful (mvn clean verify)</span>
+        </div>
+      </div>
+
+      <div class="checklist-group">
+        <div class="checklist-group-title">Installation</div>
+        <div class="checklist-item" data-key="update-site-added" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">Update site added in Capella</span>
+        </div>
+        <div class="checklist-item" data-key="feature-installed" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">Capella Agent feature installed</span>
+        </div>
+        <div class="checklist-item" data-key="capella-restarted" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">Capella restarted</span>
+        </div>
+      </div>
+
+      <div class="checklist-group">
+        <div class="checklist-group-title">Configuration</div>
+        <div class="checklist-item" data-key="llm-provider-selected" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">LLM provider selected</span>
+        </div>
+        <div class="checklist-item" data-key="api-key-configured" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">API key configured</span>
+        </div>
+        <div class="checklist-item" data-key="test-query-successful" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">Test query successful</span>
+        </div>
+      </div>
+
+      <div class="checklist-group">
+        <div class="checklist-group-title">Optional</div>
+        <div class="checklist-item" data-key="tc-configured" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">Teamcenter connection configured</span>
+        </div>
+        <div class="checklist-item" data-key="tc-test-query" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">Teamcenter test query successful</span>
+        </div>
+        <div class="checklist-item" data-key="matlab-configured" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="#0A0A0F" stroke-width="2.5"><path d="M2 6l3 3 5-5"/></svg></div>
+          <span class="check-label">MATLAB path configured</span>
+        </div>
+        <div class="checklist-item" data-key="sim-test-run" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="2 6 5 9 10 3"/></svg></div>
+          <span class="check-label">Simulation test run successful</span>
+        </div>
+        <div class="checklist-item" data-key="claude-code-installed" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="2 6 5 9 10 3"/></svg></div>
+          <span class="check-label">Claude Code installed and .mcp.json present</span>
+        </div>
+        <div class="checklist-item" data-key="mcp-endpoint-active" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="2 6 5 9 10 3"/></svg></div>
+          <span class="check-label">MCP endpoint active on port 9847</span>
+        </div>
+        <div class="checklist-item" data-key="claude-code-connects" onclick="toggleCheck(this)">
+          <div class="check-box"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="2 6 5 9 10 3"/></svg></div>
+          <span class="check-label">Claude Code session connects and lists tools</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Troubleshooting -->
+  <section class="step-section" id="troubleshooting">
+    <div class="step-header">
+      <div class="step-badge" style="background:linear-gradient(135deg,var(--red),var(--secondary));">!</div>
+      <h2 class="step-title">Troubleshooting</h2>
+    </div>
+    <div class="step-content">
+      <div class="trouble-item">
+        <div class="trouble-header" onclick="toggleTrouble(this.parentElement)">
+          <svg class="trouble-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 3l4 4-4 4"/></svg>
+          <span class="trouble-symptom">"Build fails"</span>
+        </div>
+        <div class="trouble-body">
+          <div class="trouble-body-inner">
+            Verify that Java 17+ is installed and <code>JAVA_HOME</code> is set correctly. Run <code>java -version</code> to confirm. Ensure Maven 3.9+ is on your PATH and that the Capella target platform dependencies can be resolved. If behind a proxy, configure Maven proxy settings in <code>~/.m2/settings.xml</code>.
+          </div>
+        </div>
+      </div>
+      <div class="trouble-item">
+        <div class="trouble-header" onclick="toggleTrouble(this.parentElement)">
+          <svg class="trouble-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 3l4 4-4 4"/></svg>
+          <span class="trouble-symptom">"No response from LLM"</span>
+        </div>
+        <div class="trouble-body">
+          <div class="trouble-body-inner">
+            Check that your API key is valid and correctly entered. Verify network connectivity to the provider endpoint. For Ollama, ensure the service is running (<code>ollama serve</code>). Check the Eclipse Error Log view (<strong>Window &gt; Show View &gt; Error Log</strong>) for detailed error messages.
+          </div>
+        </div>
+      </div>
+      <div class="trouble-item">
+        <div class="trouble-header" onclick="toggleTrouble(this.parentElement)">
+          <svg class="trouble-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 3l4 4-4 4"/></svg>
+          <span class="trouble-symptom">"Teamcenter connection refused"</span>
+        </div>
+        <div class="trouble-body">
+          <div class="trouble-body-inner">
+            Verify the gateway URL is correct and the Teamcenter Active Workspace server is running. Check credentials and authentication method (Basic vs. SSO). Ensure network access to the server is not blocked by firewalls. Test the URL directly in a browser first.
+          </div>
+        </div>
+      </div>
+      <div class="trouble-item">
+        <div class="trouble-header" onclick="toggleTrouble(this.parentElement)">
+          <svg class="trouble-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 3l4 4-4 4"/></svg>
+          <span class="trouble-symptom">"MATLAB not found"</span>
+        </div>
+        <div class="trouble-body">
+          <div class="trouble-body-inner">
+            Verify the MATLAB executable path in preferences points to the correct <code>matlab.exe</code> (Windows) or <code>matlab</code> (Linux/macOS) binary. Ensure the MATLAB installation is R2022b or later. Check that the working directory exists and is writable.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── Sidebar mobile toggle ──
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebarOverlay');
+  var hamburger = document.getElementById('hamburger');
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  hamburger.addEventListener('click', openSidebar);
+  overlay.addEventListener('click', closeSidebar);
+
+  // Close sidebar on nav click (mobile)
+  document.querySelectorAll('.nav-link').forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 900) closeSidebar();
+    });
+  });
+
+  // ── Scroll Spy ──
+  var sections = document.querySelectorAll('.step-section');
+  var navLinks = document.querySelectorAll('.nav-link');
+
+  function updateScrollSpy() {
+    var scrollPos = window.scrollY + 120;
+    var currentId = '';
+
+    sections.forEach(function(section) {
+      if (section.offsetTop <= scrollPos) {
+        currentId = section.id;
+      }
+    });
+
+    navLinks.forEach(function(link) {
+      var href = link.getAttribute('href');
+      if (href === '#' + currentId) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
+  }
+
+  var scrollTick = false;
+  window.addEventListener('scroll', function() {
+    if (!scrollTick) {
+      requestAnimationFrame(function() {
+        updateScrollSpy();
+        scrollTick = false;
+      });
+      scrollTick = true;
+    }
+  });
+  updateScrollSpy();
+
+  // ── Copy Buttons ──
+  window.copyBlock = function(btn) {
+    var pre = btn.closest('.terminal').querySelector('pre');
+    var text = pre.textContent;
+    navigator.clipboard.writeText(text).then(function() {
+      btn.classList.add('copied');
+      btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7l3 3 6-6"/></svg> Copied';
+      setTimeout(function() {
+        btn.classList.remove('copied');
+        btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="9" height="9" rx="1.5"/><path d="M4 9H2.5A1.5 1.5 0 0 1 1 7.5v-5A1.5 1.5 0 0 1 2.5 1h5A1.5 1.5 0 0 1 9 2.5V4"/></svg> Copy';
+      }, 2000);
+    });
+  };
+
+  // ── Provider Tabs ──
+  window.switchProvider = function(provider, tab) {
+    document.querySelectorAll('.provider-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.provider-panel').forEach(function(p) { p.classList.remove('active'); });
+    tab.classList.add('active');
+    document.getElementById('provider-' + provider).classList.add('active');
+  };
+
+  // ── Checklist with localStorage ──
+  var STORAGE_KEY = 'capella-agent-checklist';
+  var checkState = {};
+
+  function loadChecklist() {
+    try {
+      var stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) checkState = JSON.parse(stored);
+    } catch(e) {}
+
+    document.querySelectorAll('.checklist-item').forEach(function(item) {
+      var key = item.getAttribute('data-key');
+      if (checkState[key]) {
+        item.classList.add('checked');
+      }
+    });
+    updateProgress();
+  }
+
+  function saveChecklist() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(checkState));
+    } catch(e) {}
+  }
+
+  function updateProgress() {
+    var total = document.querySelectorAll('.checklist-item').length;
+    var checked = document.querySelectorAll('.checklist-item.checked').length;
+    var pct = total > 0 ? (checked / total * 100) : 0;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressText').textContent = checked + ' / ' + total;
+  }
+
+  window.toggleCheck = function(item) {
+    var key = item.getAttribute('data-key');
+    item.classList.toggle('checked');
+    checkState[key] = item.classList.contains('checked');
+    saveChecklist();
+    updateProgress();
+  };
+
+  loadChecklist();
+
+  // ── Troubleshooting Collapsible ──
+  window.toggleTrouble = function(item) {
+    var body = item.querySelector('.trouble-body');
+    var isOpen = item.classList.contains('open');
+
+    if (isOpen) {
+      body.style.maxHeight = '0';
+      item.classList.remove('open');
+    } else {
+      body.style.maxHeight = body.scrollHeight + 'px';
+      item.classList.add('open');
+    }
+  };
+
+  // ── Collapsible sections ──
+  window.toggleCollapsible = function(trigger) {
+    var body = trigger.nextElementSibling;
+    trigger.classList.toggle('open');
+    body.classList.toggle('open');
+  };
+
+})();
+</script>
+</body>
+</html>

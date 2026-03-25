@@ -1,0 +1,23 @@
+# Eclipse/OSGi build output
+bin/
+target/
+*.class
+
+# Eclipse workspace metadata
+.metadata/
+.settings/
+.project
+.classpath
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+.claude/

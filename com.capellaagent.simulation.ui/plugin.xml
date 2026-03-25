@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <!-- Register the Simulation Dashboard view -->
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            id="com.capellaagent.simulation.ui.category"
+            name="Capella Agent Simulation">
+      </category>
+      <view
+            id="com.capellaagent.simulation.ui.views.SimulationDashboardView"
+            name="Simulation Dashboard"
+            class="com.capellaagent.simulation.ui.views.SimulationDashboardView"
+            category="com.capellaagent.simulation.ui.category"
+            icon="icons/simulation.png"
+            allowMultiple="false">
+      </view>
+   </extension>
+
+</plugin>

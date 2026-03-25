@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capella Agent - Strategy Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0A0A0F; --surface: #12121A; --surface-hover: #1E1E2E;
+  --terminal-bg: #1A1A2E; --terminal-border: #2A2A3E;
+  --text: #E8E8ED; --muted: #8888A0; --muted-fg: #6E6E88;
+  --primary: #00BCD4; --primary-light: #E0F7FA; --primary-rgb: 0,188,212;
+  --secondary: #FF6D00; --green: #4ADE80; --blue: #60A5FA; --purple: #A78BFA; --red: #F87171;
+  --sidebar-w: 260px;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+html { scroll-behavior: smooth; scroll-padding-top: 32px; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--muted-fg); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ─── Sidebar ─── */
+.sidebar {
+  position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100vh;
+  background: var(--surface); border-right: 1px solid var(--terminal-border);
+  display: flex; flex-direction: column; z-index: 100;
+  transition: transform .3s ease;
+}
+.sidebar-logo {
+  padding: 24px 20px; border-bottom: 1px solid var(--terminal-border);
+  display: flex; align-items: center; gap: 12px;
+}
+.sidebar-logo .monogram {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 16px;
+  color: #fff; flex-shrink: 0;
+}
+.sidebar-logo .brand { font-weight: 600; font-size: 15px; color: var(--text); }
+.sidebar-logo .brand span { color: var(--muted); font-weight: 400; font-size: 11px; display: block; margin-top: 1px; }
+
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 16px 0; }
+.sidebar-nav .nav-section { padding: 0 16px; margin-bottom: 4px; }
+.sidebar-nav .nav-section-title {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--muted-fg); padding: 8px 8px 6px; margin-top: 8px;
+}
+.sidebar-nav a {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: var(--radius-sm); color: var(--muted);
+  text-decoration: none; font-size: 13px; font-weight: 450;
+  transition: all .15s ease; position: relative;
+}
+.sidebar-nav a:hover { color: var(--text); background: var(--surface-hover); }
+.sidebar-nav a.active {
+  color: var(--primary); background: rgba(var(--primary-rgb), .08);
+}
+.sidebar-nav a.active::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 18px; border-radius: 0 3px 3px 0; background: var(--primary);
+}
+.sidebar-nav a .nav-icon { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
+.nav-sub { padding-left: 16px; }
+.nav-sub a { font-size: 12px; padding: 5px 12px; color: var(--muted-fg); }
+.nav-sub a:hover { color: var(--muted); }
+.nav-sub a.active { color: var(--primary); }
+
+.sidebar-footer {
+  padding: 16px; border-top: 1px solid var(--terminal-border);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.sidebar-footer a {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: var(--radius-sm); color: var(--muted-fg);
+  text-decoration: none; font-size: 12px; font-family: 'JetBrains Mono', monospace;
+  transition: all .15s ease;
+}
+.sidebar-footer a:hover { color: var(--primary); background: var(--surface-hover); }
+
+/* ─── Mobile menu toggle ─── */
+.menu-toggle {
+  display: none; position: fixed; top: 12px; left: 12px; z-index: 200;
+  width: 40px; height: 40px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--terminal-border);
+  color: var(--text); font-size: 18px; cursor: pointer;
+  align-items: center; justify-content: center;
+}
+.menu-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  z-index: 90; opacity: 0; transition: opacity .3s ease; pointer-events: none;
+}
+.menu-overlay.active { opacity: 1; pointer-events: auto; }
+
+/* ─── Main Content ─── */
+.main { margin-left: var(--sidebar-w); min-height: 100vh; }
+.main-inner { max-width: 1040px; margin: 0 auto; padding: 40px 40px 80px; }
+
+/* ─── Hero ─── */
+.hero { text-align: center; padding: 48px 0 56px; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  background: rgba(var(--primary-rgb), .1); color: var(--primary);
+  border: 1px solid rgba(var(--primary-rgb), .2); margin-bottom: 20px;
+}
+.hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+.hero h1 {
+  font-size: 42px; font-weight: 800; line-height: 1.15; margin-bottom: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary) 60%, var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero p { font-size: 17px; color: var(--muted); max-width: 600px; margin: 0 auto 36px; line-height: 1.7; }
+.stats-row {
+  display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;
+}
+.stat {
+  text-align: center; padding: 16px 24px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--terminal-border);
+  min-width: 130px;
+}
+.stat .num {
+  font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--blue));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.stat .label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ─── Section ─── */
+.section { margin-bottom: 56px; scroll-margin-top: 32px; }
+.section-header { margin-bottom: 24px; }
+.section-header h2 {
+  font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 10px;
+}
+.section-header h2 .icon { font-size: 20px; }
+.section-header p { color: var(--muted); font-size: 14px; margin-top: 6px; }
+
+/* ─── Quote Card ─── */
+.quote-card {
+  position: relative; padding: 28px 32px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid transparent;
+  background-clip: padding-box;
+  font-size: 15px; color: var(--muted); line-height: 1.8; font-style: italic;
+  margin-bottom: 32px;
+}
+.quote-card::before {
+  content: ''; position: absolute; inset: -1px; border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  z-index: -1;
+}
+.quote-card .quote-mark {
+  font-size: 48px; font-family: Georgia, serif; color: var(--primary);
+  line-height: 1; opacity: .4; position: absolute; top: 12px; left: 18px;
+}
+
+/* ─── Cards ─── */
+.card-grid { display: grid; gap: 16px; }
+.card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+.card {
+  padding: 22px; border-radius: var(--radius); background: var(--surface);
+  border: 1px solid var(--terminal-border); transition: all .2s ease;
+}
+.card:hover { border-color: rgba(var(--primary-rgb), .3); transform: translateY(-2px); }
+.card .card-icon {
+  width: 38px; height: 38px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: 18px; margin-bottom: 14px;
+}
+.card .card-icon.cyan { background: rgba(var(--primary-rgb), .12); color: var(--primary); }
+.card .card-icon.orange { background: rgba(255,109,0,.12); color: var(--secondary); }
+.card .card-icon.green { background: rgba(74,222,128,.12); color: var(--green); }
+.card .card-icon.blue { background: rgba(96,165,250,.12); color: var(--blue); }
+.card .card-icon.purple { background: rgba(167,139,250,.12); color: var(--purple); }
+.card .card-icon.red { background: rgba(248,113,113,.12); color: var(--red); }
+.card h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* ─── Terminal Block ─── */
+.terminal {
+  background: var(--terminal-bg); border: 1px solid var(--terminal-border);
+  border-radius: var(--radius); overflow: hidden; position: relative;
+}
+.terminal-header {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  border-bottom: 1px solid var(--terminal-border); background: rgba(0,0,0,.2);
+}
+.terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+.terminal-dot.r { background: #F87171; } .terminal-dot.y { background: #FBBF24; } .terminal-dot.g { background: #4ADE80; }
+.terminal-title { font-size: 11px; color: var(--muted-fg); font-family: 'JetBrains Mono', monospace; margin-left: 8px; }
+.terminal-body {
+  padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+  line-height: 1.7; color: var(--muted); overflow-x: auto; white-space: pre;
+}
+.terminal-body .hl-cyan { color: var(--primary); }
+.terminal-body .hl-orange { color: var(--secondary); }
+.terminal-body .hl-green { color: var(--green); }
+.terminal-body .hl-blue { color: var(--blue); }
+.terminal-body .hl-purple { color: var(--purple); }
+.terminal-body .hl-muted { color: var(--muted-fg); }
+.copy-btn {
+  position: absolute; top: 8px; right: 12px; padding: 4px 10px;
+  border-radius: 4px; background: var(--surface-hover); border: 1px solid var(--terminal-border);
+  color: var(--muted-fg); font-size: 11px; font-family: 'JetBrains Mono', monospace;
+  cursor: pointer; transition: all .15s ease; z-index: 2;
+}
+.copy-btn:hover { color: var(--primary); border-color: rgba(var(--primary-rgb), .3); }
+
+/* ─── Table ─── */
+.table-wrap {
+  border-radius: var(--radius); overflow: hidden;
+  border: 1px solid var(--terminal-border); background: var(--surface);
+}
+.table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table-wrap th {
+  text-align: left; padding: 12px 16px; background: var(--terminal-bg);
+  font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--muted); border-bottom: 1px solid var(--terminal-border);
+}
+.table-wrap td {
+  padding: 10px 16px; border-bottom: 1px solid var(--terminal-border); color: var(--muted);
+}
+.table-wrap tr:last-child td { border-bottom: none; }
+.table-wrap tr:hover td { background: var(--surface-hover); }
+.table-wrap .yes { color: var(--green); font-weight: 600; }
+.table-wrap .no { color: var(--red); opacity: .7; }
+.table-wrap .partial { color: var(--secondary); }
+.table-wrap .na { color: var(--muted-fg); }
+.table-wrap .solution-name { font-weight: 600; color: var(--text); white-space: nowrap; }
+.table-wrap .highlight-row td { background: rgba(var(--primary-rgb), .04); }
+
+/* ─── Accordion ─── */
+.accordion { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--terminal-border); }
+.accordion + .accordion { margin-top: 12px; }
+.accordion-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; background: var(--surface); cursor: pointer;
+  user-select: none; transition: background .15s ease;
+}
+.accordion-header:hover { background: var(--surface-hover); }
+.accordion-header .acc-left { display: flex; align-items: center; gap: 12px; }
+.accordion-header .acc-icon {
+  width: 32px; height: 32px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: 15px;
+}
+.accordion-header .acc-title { font-weight: 600; font-size: 15px; }
+.accordion-header .acc-count {
+  font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--muted);
+  background: var(--terminal-bg); padding: 2px 8px; border-radius: 10px;
+}
+.accordion-header .acc-chevron {
+  font-size: 14px; color: var(--muted-fg); transition: transform .2s ease;
+}
+.accordion.open .acc-chevron { transform: rotate(180deg); }
+.accordion-body {
+  max-height: 0; overflow: hidden; transition: max-height .35s ease;
+  background: var(--terminal-bg);
+}
+.accordion.open .accordion-body { max-height: 3000px; }
+.accordion-body-inner { padding: 16px 20px; }
+.tool-subsection { margin-bottom: 16px; }
+.tool-subsection:last-child { margin-bottom: 0; }
+.tool-subsection-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px;
+  color: var(--muted-fg); margin-bottom: 10px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--terminal-border);
+}
+
+.tool-card {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  border-radius: var(--radius-sm); border: 1px solid var(--terminal-border);
+  background: var(--surface); margin-bottom: 6px; transition: all .15s ease;
+}
+.tool-card:hover { border-color: rgba(var(--primary-rgb), .25); }
+.tool-card .tool-name {
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 500;
+  color: var(--text); white-space: nowrap; min-width: 200px;
+}
+.tool-card .badge {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.badge.read { background: rgba(74,222,128,.12); color: var(--green); }
+.badge.write { background: rgba(255,109,0,.12); color: var(--secondary); }
+.badge.diagram { background: rgba(96,165,250,.12); color: var(--blue); }
+.badge.plm { background: rgba(167,139,250,.12); color: var(--purple); }
+.badge.sim { background: rgba(var(--primary-rgb),.12); color: var(--primary); }
+.tool-card .tool-desc { font-size: 12px; color: var(--muted); }
+
+/* ─── Interface Cards ─── */
+.interface-card {
+  padding: 18px; border-radius: var(--radius); background: var(--surface);
+  border: 1px solid var(--terminal-border); transition: all .2s ease;
+}
+.interface-card:hover { border-color: rgba(var(--primary-rgb), .3); }
+.interface-card h4 {
+  font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;
+  color: var(--primary); margin-bottom: 6px;
+}
+.interface-card p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* ─── Tech badges ─── */
+.tech-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.tech-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  background: var(--surface); border: 1px solid var(--terminal-border);
+  font-size: 12.5px; font-weight: 500; color: var(--text); transition: all .15s ease;
+}
+.tech-badge:hover { border-color: rgba(var(--primary-rgb), .3); transform: translateY(-1px); }
+.tech-badge .tech-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─── Timeline ─── */
+.timeline {
+  display: flex; gap: 0; overflow-x: auto; padding: 20px 0;
+}
+.timeline-phase {
+  flex: 1; min-width: 160px; position: relative; padding: 0 8px;
+}
+.timeline-bar {
+  height: 4px; border-radius: 2px; margin-bottom: 16px; position: relative;
+}
+.timeline-phase:first-child .timeline-bar { border-radius: 2px 0 0 2px; }
+.timeline-phase:last-child .timeline-bar { border-radius: 0 2px 2px 0; }
+.timeline-bar::before {
+  content: ''; position: absolute; left: 0; top: -5px;
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 3px solid; background: var(--bg);
+}
+.timeline-phase:nth-child(1) .timeline-bar { background: var(--primary); }
+.timeline-phase:nth-child(1) .timeline-bar::before { border-color: var(--primary); }
+.timeline-phase:nth-child(2) .timeline-bar { background: var(--green); }
+.timeline-phase:nth-child(2) .timeline-bar::before { border-color: var(--green); }
+.timeline-phase:nth-child(3) .timeline-bar { background: var(--purple); }
+.timeline-phase:nth-child(3) .timeline-bar::before { border-color: var(--purple); }
+.timeline-phase:nth-child(4) .timeline-bar { background: var(--blue); }
+.timeline-phase:nth-child(4) .timeline-bar::before { border-color: var(--blue); }
+.timeline-phase:nth-child(5) .timeline-bar { background: var(--secondary); }
+.timeline-phase:nth-child(5) .timeline-bar::before { border-color: var(--secondary); }
+.timeline-phase .tl-label {
+  font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px;
+}
+.timeline-phase .tl-weeks {
+  font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--muted-fg); margin-bottom: 6px;
+}
+.timeline-phase .tl-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* ─── File Tree ─── */
+.file-tree {
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+  background: var(--terminal-bg); border: 1px solid var(--terminal-border);
+  border-radius: var(--radius); padding: 16px 20px;
+}
+.tree-item { padding: 3px 0; cursor: default; }
+.tree-folder {
+  cursor: pointer; user-select: none; color: var(--blue);
+  display: flex; align-items: center; gap: 6px; padding: 3px 0;
+}
+.tree-folder:hover { color: var(--primary); }
+.tree-folder .fold-icon { font-size: 10px; width: 14px; text-align: center; transition: transform .15s ease; }
+.tree-folder.collapsed .fold-icon { transform: rotate(-90deg); }
+.tree-children { padding-left: 20px; overflow: hidden; transition: max-height .25s ease; }
+.tree-folder.collapsed + .tree-children { max-height: 0 !important; }
+.tree-file { color: var(--muted); padding: 2px 0; padding-left: 20px; }
+.tree-file .file-icon { margin-right: 6px; }
+
+/* ─── Security card special ─── */
+.sec-card { position: relative; overflow: hidden; }
+.sec-card::after {
+  content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px;
+  border-radius: 0 var(--radius) 0 80px; opacity: .06;
+}
+.sec-card.sec-green::after { background: var(--green); }
+.sec-card.sec-blue::after { background: var(--blue); }
+.sec-card.sec-orange::after { background: var(--secondary); }
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.5); }
+  .menu-toggle { display: flex; }
+  .main { margin-left: 0; }
+  .main-inner { padding: 60px 20px 60px; }
+  .hero h1 { font-size: 28px; }
+  .card-grid.cols-2, .card-grid.cols-3, .card-grid.cols-4 { grid-template-columns: 1fr; }
+  .stats-row { gap: 12px; }
+  .stat { min-width: 100px; padding: 12px 16px; }
+  .stat .num { font-size: 20px; }
+  .tool-card { flex-wrap: wrap; }
+  .tool-card .tool-name { min-width: auto; }
+  .timeline { flex-direction: column; gap: 8px; }
+  .timeline-phase { min-width: auto; padding: 12px; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--terminal-border); }
+  .timeline-bar { display: none; }
+}
+@media (min-width: 901px) and (max-width: 1100px) {
+  .card-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- Mobile Menu Toggle -->
+<button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">&#9776;</button>
+<div class="menu-overlay" id="menuOverlay"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="monogram">CA</div>
+    <div class="brand">Capella Agent<span>Strategy Dashboard</span></div>
+  </div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-section">
+      <div class="nav-section-title">Overview</div>
+      <a href="#vision" data-section="vision"><span class="nav-icon">&#9670;</span> Vision</a>
+      <a href="#architecture" data-section="architecture"><span class="nav-icon">&#9645;</span> Architecture</a>
+      <a href="#competitors" data-section="competitors"><span class="nav-icon">&#9733;</span> Competitors</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">Features</div>
+      <a href="#feature-map" data-section="feature-map"><span class="nav-icon">&#9881;</span> Feature Map</a>
+      <div class="nav-sub">
+        <a href="#feature-map" data-section="feature-map">Model Chat</a>
+        <a href="#feature-map" data-section="feature-map">Teamcenter</a>
+        <a href="#feature-map" data-section="feature-map">Simulation</a>
+      </div>
+      <a href="#interfaces" data-section="interfaces"><span class="nav-icon">&#10697;</span> Key Interfaces</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">Technical</div>
+      <a href="#tech-stack" data-section="tech-stack"><span class="nav-icon">&#9783;</span> Tech Stack</a>
+      <a href="#data-layer" data-section="data-layer"><span class="nav-icon">&#9744;</span> Data Layer</a>
+      <a href="#security" data-section="security"><span class="nav-icon">&#9919;</span> Security</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">Planning</div>
+      <a href="#roadmap" data-section="roadmap"><span class="nav-icon">&#9776;</span> Roadmap</a>
+      <a href="#file-structure" data-section="file-structure"><span class="nav-icon">&#128193;</span> File Structure</a>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="README.html">&#128196; README.html</a>
+    <a href="SITECONFIGURATIONS.html">&#9881; SITECONFIGURATIONS.html</a>
+    <a href="index.html">&#127968; index.html</a>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main">
+<div class="main-inner">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge"><span class="dot"></span> Active Development</div>
+    <h1>Strategy &amp; Feature Guide</h1>
+    <p>AI-Powered Multi-Agent Ecosystem for Eclipse Capella MBSE</p>
+    <div class="stats-row">
+      <div class="stat"><div class="num">114</div><div class="label">Files</div></div>
+      <div class="stat"><div class="num">29</div><div class="label">Tools</div></div>
+      <div class="stat"><div class="num">9</div><div class="label">LLM Providers</div></div>
+      <div class="stat"><div class="num">16,210</div><div class="label">LOC</div></div>
+    </div>
+  </section>
+
+  <!-- Vision -->
+  <section class="section" id="vision">
+    <div class="section-header">
+      <h2><span class="icon">&#9670;</span> Vision</h2>
+    </div>
+    <div class="quote-card">
+      <span class="quote-mark">&ldquo;</span>
+      Capella Agent bridges the gap between AI-assisted engineering and formal MBSE methodology. By embedding intelligent agents directly inside Eclipse Capella, engineers can query, modify, and validate architecture models using natural language &mdash; while maintaining full transactional safety, undo/redo support, and EMF model integrity.
+    </div>
+    <div class="card-grid cols-2">
+      <div class="card">
+        <div class="card-icon cyan">&#9881;</div>
+        <h4>In-Client AI</h4>
+        <p>Runs inside Capella as a native Eclipse plugin, not as an external script or bridge. Full access to the live EMF model and Sirius sessions.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon orange">&#10697;</div>
+        <h4>LLM Agnostic (9 Providers)</h4>
+        <p>Claude, OpenAI, Groq, DeepSeek, Mistral, OpenRouter, Gemini, Ollama, or any custom endpoint &mdash; swap at runtime via OpenAiCompatibleProvider base class.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon purple">&#9733;</div>
+        <h4>PLM Connected</h4>
+        <p>Direct Teamcenter REST integration for importing requirements, parts, BOMs, and creating bidirectional trace links.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon blue">&#9655;</div>
+        <h4>Simulation Ready</h4>
+        <p>Extract parameters from model, run MATLAB/Simulink simulations, propagate results back, and perform what-if analysis.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon green">&#9655;</div>
+        <h4>Claude Code MCP</h4>
+        <p>MCP Server bridge lets you use Claude Code terminal as an alternative AI brain &mdash; same 29 tools, live model access, zero extra config.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section class="section" id="architecture">
+    <div class="section-header">
+      <h2><span class="icon">&#9645;</span> Architecture</h2>
+      <p>Three-agent stack with shared core services</p>
+    </div>
+    <div class="terminal">
+      <div class="terminal-header">
+        <span class="terminal-dot r"></span><span class="terminal-dot y"></span><span class="terminal-dot g"></span>
+        <span class="terminal-title">architecture.diagram</span>
+      </div>
+      <button class="copy-btn" onclick="copyTerminal(this)">Copy</button>
+      <div class="terminal-body">
+<span class="hl-muted">  +=====================================================+</span>
+<span class="hl-muted">  |</span>                <span class="hl-cyan">Eclipse Capella IDE</span>                  <span class="hl-muted">|</span>
+<span class="hl-muted">  +=====================================================+</span>
+<span class="hl-muted">  |</span>                                                     <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-orange">+--------------+</span>  <span class="hl-green">+-------------+</span>  <span class="hl-blue">+-----------+</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-orange">|  Model Chat  |</span>  <span class="hl-green">| Teamcenter  |</span>  <span class="hl-blue">|Simulation |</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-orange">|    Agent     |</span>  <span class="hl-green">|    Agent    |</span>  <span class="hl-blue">|   Agent   |</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-orange">|  (16 tools)  |</span>  <span class="hl-green">|  (7 tools)  |</span>  <span class="hl-blue">| (6 tools) |</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-orange">+--------------+</span>  <span class="hl-green">+-------------+</span>  <span class="hl-blue">+-----------+</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>          <span class="hl-muted">\              |              /</span>          <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>           <span class="hl-muted">+-------------+-------------+</span>           <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>           <span class="hl-muted">|</span>                           <span class="hl-muted">|</span>           <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-purple">+-----------------------------------------------+</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-purple">|              Shared Core Services              |</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-purple">|  ToolRegistry | LlmRouter | AgentMessageBus  |</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-purple">|  TransactionMgr | ModelAccess | DiagramMgr   |</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-purple">+-----------------------------------------------+</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>                                                     <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-muted">+-----------------------------------------------+</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-muted">|</span>     <span class="hl-cyan">EMF Model</span>  |  <span class="hl-cyan">Sirius Session</span>  |  <span class="hl-cyan">OSGi</span>     <span class="hl-muted">|</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  |</span>  <span class="hl-muted">+-----------------------------------------------+</span>  <span class="hl-muted">|</span>
+<span class="hl-muted">  +=====================================================+</span>
+</div>
+    </div>
+  </section>
+
+  <!-- Competitors -->
+  <section class="section" id="competitors">
+    <div class="section-header">
+      <h2><span class="icon">&#9733;</span> Competitive Landscape</h2>
+      <p>Feature comparison against existing solutions</p>
+    </div>
+    <div class="table-wrap" style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Solution</th><th>AI / NL</th><th>In-Eclipse</th><th>Diagrams</th><th>PLM</th><th>Simulation</th><th>Undo/Redo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="highlight-row">
+            <td class="solution-name" style="color:var(--primary)">Capella Agent</td>
+            <td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td>
+          </tr>
+          <tr>
+            <td class="solution-name">Python4Capella</td>
+            <td class="no">No</td><td class="partial">Partial</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td>
+          </tr>
+          <tr>
+            <td class="solution-name">capellambse / MCP</td>
+            <td class="yes">Yes</td><td class="no">No</td><td class="partial">Export only</td><td class="no">No</td><td class="no">No</td><td class="no">No</td>
+          </tr>
+          <tr>
+            <td class="solution-name">Tc Rich Client</td>
+            <td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td><td class="no">No</td><td class="na">N/A</td>
+          </tr>
+          <tr>
+            <td class="solution-name">MATLAB Bridges</td>
+            <td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="partial">Partial</td><td class="no">No</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Feature Map -->
+  <section class="section" id="feature-map">
+    <div class="section-header">
+      <h2><span class="icon">&#9881;</span> Feature Map</h2>
+      <p>29 tools across 3 specialized agents</p>
+    </div>
+
+    <!-- Model Chat Accordion -->
+    <div class="accordion open" id="acc-modelchat">
+      <div class="accordion-header" onclick="toggleAccordion('acc-modelchat')">
+        <div class="acc-left">
+          <div class="acc-icon" style="background:rgba(255,109,0,.12);color:var(--secondary)">&#9881;</div>
+          <span class="acc-title">Model Chat Agent</span>
+          <span class="acc-count">16 tools</span>
+        </div>
+        <span class="acc-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-body-inner">
+          <div class="tool-subsection">
+            <div class="tool-subsection-title">Read Tools (8)</div>
+            <div class="tool-card"><span class="tool-name">list_elements</span><span class="badge read">Read</span><span class="tool-desc">List all elements of a given type in the current architecture layer</span></div>
+            <div class="tool-card"><span class="tool-name">get_element_details</span><span class="badge read">Read</span><span class="tool-desc">Retrieve full details and properties of a specific model element</span></div>
+            <div class="tool-card"><span class="tool-name">search_elements</span><span class="badge read">Read</span><span class="tool-desc">Search elements by name pattern, type, or property values</span></div>
+            <div class="tool-card"><span class="tool-name">get_hierarchy</span><span class="badge read">Read</span><span class="tool-desc">Get parent-child hierarchy tree from a root element</span></div>
+            <div class="tool-card"><span class="tool-name">list_diagrams</span><span class="badge read">Read</span><span class="tool-desc">List all diagrams in the current Sirius session</span></div>
+            <div class="tool-card"><span class="tool-name">get_traceability</span><span class="badge read">Read</span><span class="tool-desc">Get upstream/downstream traceability links for an element</span></div>
+            <div class="tool-card"><span class="tool-name">list_requirements</span><span class="badge read">Read</span><span class="tool-desc">List requirements linked to model elements</span></div>
+            <div class="tool-card"><span class="tool-name">validate_model</span><span class="badge read">Read</span><span class="tool-desc">Run EMF validation rules and return diagnostics</span></div>
+          </div>
+          <div class="tool-subsection">
+            <div class="tool-subsection-title">Write Tools (6)</div>
+            <div class="tool-card"><span class="tool-name">create_element</span><span class="badge write">Write</span><span class="tool-desc">Create a new model element with specified type and properties</span></div>
+            <div class="tool-card"><span class="tool-name">create_exchange</span><span class="badge write">Write</span><span class="tool-desc">Create a functional or component exchange between elements</span></div>
+            <div class="tool-card"><span class="tool-name">allocate_function</span><span class="badge write">Write</span><span class="tool-desc">Allocate a logical or physical function to a component</span></div>
+            <div class="tool-card"><span class="tool-name">create_capability</span><span class="badge write">Write</span><span class="tool-desc">Create a capability and link involved functions/actors</span></div>
+            <div class="tool-card"><span class="tool-name">update_element</span><span class="badge write">Write</span><span class="tool-desc">Modify properties of an existing model element</span></div>
+            <div class="tool-card"><span class="tool-name">delete_element</span><span class="badge write">Write</span><span class="tool-desc">Remove an element and clean up dangling references</span></div>
+          </div>
+          <div class="tool-subsection">
+            <div class="tool-subsection-title">Diagram Tools (2)</div>
+            <div class="tool-card"><span class="tool-name">update_diagram</span><span class="badge diagram">Diagram</span><span class="tool-desc">Add or reposition elements on a Sirius diagram</span></div>
+            <div class="tool-card"><span class="tool-name">refresh_diagram</span><span class="badge diagram">Diagram</span><span class="tool-desc">Force a Sirius diagram refresh after model changes</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Teamcenter Accordion -->
+    <div class="accordion" id="acc-teamcenter">
+      <div class="accordion-header" onclick="toggleAccordion('acc-teamcenter')">
+        <div class="acc-left">
+          <div class="acc-icon" style="background:rgba(167,139,250,.12);color:var(--purple)">&#9733;</div>
+          <span class="acc-title">Teamcenter Agent</span>
+          <span class="acc-count">7 tools</span>
+        </div>
+        <span class="acc-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-body-inner">
+          <div class="tool-subsection">
+            <div class="tool-subsection-title">PLM Integration (7)</div>
+            <div class="tool-card"><span class="tool-name">search_teamcenter</span><span class="badge plm">PLM</span><span class="tool-desc">Full-text search across Teamcenter objects with type filtering</span></div>
+            <div class="tool-card"><span class="tool-name">tc_get_object</span><span class="badge plm">PLM</span><span class="tool-desc">Retrieve detailed properties of a Teamcenter object by UID</span></div>
+            <div class="tool-card"><span class="tool-name">tc_get_bom</span><span class="badge plm">PLM</span><span class="tool-desc">Get Bill of Materials structure for a Teamcenter item</span></div>
+            <div class="tool-card"><span class="tool-name">tc_list_requirements</span><span class="badge plm">PLM</span><span class="tool-desc">List requirements from Teamcenter with filtering options</span></div>
+            <div class="tool-card"><span class="tool-name">tc_import_requirement</span><span class="badge plm">PLM</span><span class="tool-desc">Import a Teamcenter requirement into the Capella model</span></div>
+            <div class="tool-card"><span class="tool-name">tc_import_part</span><span class="badge plm">PLM</span><span class="tool-desc">Import a Teamcenter part as a Capella physical component</span></div>
+            <div class="tool-card"><span class="tool-name">tc_create_trace_link</span><span class="badge plm">PLM</span><span class="tool-desc">Create bidirectional trace link between Capella and Teamcenter</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulation Accordion -->
+    <div class="accordion" id="acc-simulation">
+      <div class="accordion-header" onclick="toggleAccordion('acc-simulation')">
+        <div class="acc-left">
+          <div class="acc-icon" style="background:rgba(var(--primary-rgb),.12);color:var(--primary)">&#9655;</div>
+          <span class="acc-title">Simulation Agent</span>
+          <span class="acc-count">6 tools</span>
+        </div>
+        <span class="acc-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-body-inner">
+          <div class="tool-subsection">
+            <div class="tool-subsection-title">Simulation Engine (6)</div>
+            <div class="tool-card"><span class="tool-name">list_simulation_engines</span><span class="badge sim">Sim</span><span class="tool-desc">Discover available simulation engines (MATLAB, Simulink, etc.)</span></div>
+            <div class="tool-card"><span class="tool-name">extract_simulation_params</span><span class="badge sim">Sim</span><span class="tool-desc">Extract numeric parameters from model elements for simulation</span></div>
+            <div class="tool-card"><span class="tool-name">run_simulation</span><span class="badge sim">Sim</span><span class="tool-desc">Execute a simulation run with specified parameters and engine</span></div>
+            <div class="tool-card"><span class="tool-name">propagate_simulation_results</span><span class="badge sim">Sim</span><span class="tool-desc">Write simulation results back to model element properties</span></div>
+            <div class="tool-card"><span class="tool-name">run_what_if</span><span class="badge sim">Sim</span><span class="tool-desc">Run parameterized what-if scenarios with result comparison</span></div>
+            <div class="tool-card"><span class="tool-name">get_simulation_status</span><span class="badge sim">Sim</span><span class="tool-desc">Check progress and status of a running simulation job</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Interfaces -->
+  <section class="section" id="interfaces">
+    <div class="section-header">
+      <h2><span class="icon">&#10697;</span> Key Interfaces</h2>
+      <p>Core abstractions that enable extensibility and provider swapping</p>
+    </div>
+    <div class="card-grid cols-3">
+      <div class="interface-card">
+        <h4>ILlmProvider</h4>
+        <p>Abstracts LLM vendor APIs. Implementations for Claude, OpenAI, Gemini, and Ollama. Supports streaming responses and tool-use protocol.</p>
+      </div>
+      <div class="interface-card">
+        <h4>IToolDescriptor / IToolExecutor</h4>
+        <p>Separates tool metadata (name, schema, description) from execution logic. Enables dynamic tool discovery and registration.</p>
+      </div>
+      <div class="interface-card">
+        <h4>AbstractCapellaTool</h4>
+        <p>Base class for all Capella model tools. Provides transaction wrapping, model access helpers, and error handling scaffolding.</p>
+      </div>
+      <div class="interface-card">
+        <h4>ISimulationEngine</h4>
+        <p>Contract for simulation backends. Implementations connect to MATLAB Engine API, Simulink, or custom solvers.</p>
+      </div>
+      <div class="interface-card">
+        <h4>IAgentMessageBus</h4>
+        <p>Pub/sub message bus enabling inter-agent communication. Agents can delegate tasks and share context without tight coupling.</p>
+      </div>
+      <div class="interface-card">
+        <h4>ToolRegistry</h4>
+        <p>Central registry for all tools across agents. Supports filtering by category, access level, and agent scope. OSGi service-based.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section class="section" id="tech-stack">
+    <div class="section-header">
+      <h2><span class="icon">&#9783;</span> Tech Stack</h2>
+      <p>Production-grade technologies powering the ecosystem</p>
+    </div>
+    <div class="tech-grid">
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--primary)"></span> Eclipse Capella 7.0</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--secondary)"></span> Java 17+</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--green)"></span> EMF</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--blue)"></span> Sirius 7.0</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--purple)"></span> Gson 2.10</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--primary)"></span> HttpClient</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--secondary)"></span> Claude API</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--green)"></span> OpenAI API</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--blue)"></span> Ollama</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--purple)"></span> Teamcenter REST</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--primary)"></span> MATLAB Engine</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--secondary)"></span> Eclipse Equinox</div>
+      <div class="tech-badge"><span class="tech-dot" style="background:var(--green)"></span> Tycho / Maven</div>
+    </div>
+  </section>
+
+  <!-- Data Layer -->
+  <section class="section" id="data-layer">
+    <div class="section-header">
+      <h2><span class="icon">&#9744;</span> Data Layer</h2>
+      <p>EMF-native persistence with transactional safety</p>
+    </div>
+    <div class="card-grid cols-2">
+      <div class="card">
+        <div class="card-icon cyan">&#9783;</div>
+        <h4>No Traditional Database</h4>
+        <p>Uses EMF (Eclipse Modeling Framework) in-memory model backed by XMI/AIRD files. The Capella model IS the database &mdash; all reads and writes go through EMF resource sets.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon green">&#10003;</div>
+        <h4>TransactionalEditingDomain</h4>
+        <p>All write operations are wrapped in EMF transactions via TransactionalEditingDomain. Ensures atomicity &mdash; partial changes are rolled back on failure.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon orange">&#8634;</div>
+        <h4>RecordingCommand</h4>
+        <p>Every tool-initiated change uses RecordingCommand for full undo/redo support. Users can reverse any AI-made modification with Ctrl+Z.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon blue">&#9670;</div>
+        <h4>Sirius Session</h4>
+        <p>Diagram access goes through the Sirius Session, which manages the mapping between semantic model elements and their graphical representations.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Security -->
+  <section class="section" id="security">
+    <div class="section-header">
+      <h2><span class="icon">&#9919;</span> Security</h2>
+      <p>Defense-in-depth approach for model and credential safety</p>
+    </div>
+    <div class="card-grid cols-3">
+      <div class="card sec-card sec-green">
+        <div class="card-icon green">&#9919;</div>
+        <h4>Access Control</h4>
+        <p>READ_ONLY mode by default. Engineers must explicitly switch to READ_WRITE before any model modifications. Prevents accidental changes from AI operations.</p>
+      </div>
+      <div class="card sec-card sec-blue">
+        <div class="card-icon blue">&#128274;</div>
+        <h4>Credential Storage</h4>
+        <p>API keys and Teamcenter credentials stored in Eclipse Equinox Secure Preferences with OS-level encryption. Never persisted in plain text or project files.</p>
+      </div>
+      <div class="card sec-card sec-orange">
+        <div class="card-icon orange">&#128203;</div>
+        <h4>Audit Logging</h4>
+        <p>All tool executions are logged with timestamp, action type, element IDs, and execution result. Full audit trail for compliance and debugging.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Roadmap -->
+  <section class="section" id="roadmap">
+    <div class="section-header">
+      <h2><span class="icon">&#9776;</span> Roadmap</h2>
+      <p>13-week implementation plan across 5 phases</p>
+    </div>
+    <div class="timeline">
+      <div class="timeline-phase">
+        <div class="timeline-bar"></div>
+        <div class="tl-label">Phase 1: Foundation</div>
+        <div class="tl-weeks">Weeks 1 &ndash; 3</div>
+        <div class="tl-desc">Core plugin structure, LLM provider interface, tool registry, chat UI, EMF model access layer.</div>
+      </div>
+      <div class="timeline-phase">
+        <div class="timeline-bar"></div>
+        <div class="tl-label">Phase 2: Model Chat</div>
+        <div class="tl-weeks">Weeks 3 &ndash; 6</div>
+        <div class="tl-desc">16 model tools (read, write, diagram), transaction safety, undo/redo, validation integration.</div>
+      </div>
+      <div class="timeline-phase">
+        <div class="timeline-bar"></div>
+        <div class="tl-label">Phase 3: Teamcenter</div>
+        <div class="tl-weeks">Weeks 6 &ndash; 8</div>
+        <div class="tl-desc">REST client, search/import tools, trace links, credential management, PLM sync workflows.</div>
+      </div>
+      <div class="timeline-phase">
+        <div class="timeline-bar"></div>
+        <div class="tl-label">Phase 4: Simulation</div>
+        <div class="tl-weeks">Weeks 8 &ndash; 11</div>
+        <div class="tl-desc">MATLAB Engine bridge, parameter extraction, result propagation, what-if analysis, status monitoring.</div>
+      </div>
+      <div class="timeline-phase">
+        <div class="timeline-bar"></div>
+        <div class="tl-label">Phase 5: Integration</div>
+        <div class="tl-weeks">Weeks 11 &ndash; 13</div>
+        <div class="tl-desc">Multi-agent orchestration, message bus, cross-agent workflows, testing, documentation, release.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- File Structure -->
+  <section class="section" id="file-structure">
+    <div class="section-header">
+      <h2><span class="icon">&#128193;</span> File Structure</h2>
+      <p>9 Eclipse plugin projects composing the workspace</p>
+    </div>
+    <div class="file-tree" id="fileTree">
+      <div class="tree-folder" onclick="toggleTree(this)"><span class="fold-icon">&#9660;</span> com.capella.agent.core</div>
+      <div class="tree-children">
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ILlmProvider.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> IToolDescriptor.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> IToolExecutor.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ToolRegistry.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> AgentMessageBus.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ModelAccessService.java</div>
+        <div class="tree-file"><span class="file-icon">&#9881;</span> plugin.xml</div>
+      </div>
+
+      <div class="tree-folder" onclick="toggleTree(this)"><span class="fold-icon">&#9660;</span> com.capella.agent.llm</div>
+      <div class="tree-children">
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ClaudeProvider.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> OpenAIProvider.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> GeminiProvider.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> OllamaProvider.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> LlmRouter.java</div>
+      </div>
+
+      <div class="tree-folder" onclick="toggleTree(this)"><span class="fold-icon">&#9660;</span> com.capella.agent.chat</div>
+      <div class="tree-children">
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ModelChatAgent.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> AbstractCapellaTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ChatView.java</div>
+        <div class="tree-folder" onclick="toggleTree(this);event.stopPropagation()"><span class="fold-icon">&#9660;</span> tools/read</div>
+        <div class="tree-children">
+          <div class="tree-file"><span class="file-icon">&#128196;</span> ListElementsTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> GetElementDetailsTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> SearchElementsTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> GetHierarchyTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> ListDiagramsTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> GetTraceabilityTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> ListRequirementsTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> ValidateModelTool.java</div>
+        </div>
+        <div class="tree-folder" onclick="toggleTree(this);event.stopPropagation()"><span class="fold-icon">&#9660;</span> tools/write</div>
+        <div class="tree-children">
+          <div class="tree-file"><span class="file-icon">&#128196;</span> CreateElementTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> CreateExchangeTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> AllocateFunctionTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> CreateCapabilityTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> UpdateElementTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> DeleteElementTool.java</div>
+        </div>
+        <div class="tree-folder" onclick="toggleTree(this);event.stopPropagation()"><span class="fold-icon">&#9660;</span> tools/diagram</div>
+        <div class="tree-children">
+          <div class="tree-file"><span class="file-icon">&#128196;</span> UpdateDiagramTool.java</div>
+          <div class="tree-file"><span class="file-icon">&#128196;</span> RefreshDiagramTool.java</div>
+        </div>
+      </div>
+
+      <div class="tree-folder" onclick="toggleTree(this)"><span class="fold-icon">&#9660;</span> com.capella.agent.teamcenter</div>
+      <div class="tree-children">
+        <div class="tree-file"><span class="file-icon">&#128196;</span> TeamcenterAgent.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> TeamcenterRestClient.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> SearchTeamcenterTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> TcGetObjectTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> TcGetBomTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> TcListRequirementsTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> TcImportRequirementTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> TcImportPartTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> TcCreateTraceLinkTool.java</div>
+      </div>
+
+      <div class="tree-folder" onclick="toggleTree(this)"><span class="fold-icon">&#9660;</span> com.capella.agent.simulation</div>
+      <div class="tree-children">
+        <div class="tree-file"><span class="file-icon">&#128196;</span> SimulationAgent.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ISimulationEngine.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> MatlabEngine.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ListSimulationEnginesTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ExtractSimParamsTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> RunSimulationTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> PropagateResultsTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> RunWhatIfTool.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> GetSimStatusTool.java</div>
+      </div>
+
+      <div class="tree-folder collapsed" onclick="toggleTree(this)"><span class="fold-icon">&#9660;</span> com.capella.agent.ui</div>
+      <div class="tree-children" style="max-height:0">
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ChatViewPart.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> PreferencePage.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> StatusLineContribution.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ToolExecutionDialog.java</div>
+      </div>
+
+      <div class="tree-folder collapsed" onclick="toggleTree(this)"><span class="fold-icon">&#9660;</span> com.capella.agent.security</div>
+      <div class="tree-children" style="max-height:0">
+        <div class="tree-file"><span class="file-icon">&#128196;</span> SecurePreferencesManager.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> AccessControlManager.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> AuditLogger.java</div>
+      </div>
+
+      <div class="tree-folder collapsed" onclick="toggleTree(this)"><span class="fold-icon">&#9660;</span> com.capella.agent.tests</div>
+      <div class="tree-children" style="max-height:0">
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ToolRegistryTest.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> ModelChatAgentTest.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> TransactionSafetyTest.java</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> LlmProviderTest.java</div>
+      </div>
+
+      <div class="tree-folder collapsed" onclick="toggleTree(this)"><span class="fold-icon">&#9660;</span> com.capella.agent.feature</div>
+      <div class="tree-children" style="max-height:0">
+        <div class="tree-file"><span class="file-icon">&#9881;</span> feature.xml</div>
+        <div class="tree-file"><span class="file-icon">&#128196;</span> build.properties</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<script>
+// ─── Scroll Spy ───
+(function() {
+  const links = document.querySelectorAll('#sidebarNav a[data-section]');
+  const sections = [];
+  links.forEach(link => {
+    const id = link.getAttribute('href')?.replace('#', '');
+    if (id) {
+      const el = document.getElementById(id);
+      if (el && !sections.find(s => s.id === id)) sections.push({ id, el });
+    }
+  });
+
+  function update() {
+    let current = '';
+    const offset = 80;
+    for (const s of sections) {
+      const top = s.el.getBoundingClientRect().top;
+      if (top <= offset) current = s.id;
+    }
+    links.forEach(link => {
+      const href = link.getAttribute('href')?.replace('#', '');
+      link.classList.toggle('active', href === current);
+    });
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+
+// ─── Accordion ───
+function toggleAccordion(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ─── File Tree ───
+function toggleTree(el) {
+  el.classList.toggle('collapsed');
+  const children = el.nextElementSibling;
+  if (children && children.classList.contains('tree-children')) {
+    if (el.classList.contains('collapsed')) {
+      children.style.maxHeight = '0';
+    } else {
+      children.style.maxHeight = children.scrollHeight + 'px';
+    }
+  }
+}
+
+// Initialize open tree items
+document.querySelectorAll('.tree-folder:not(.collapsed) + .tree-children').forEach(el => {
+  el.style.maxHeight = el.scrollHeight + 'px';
+});
+
+// ─── Copy Button ───
+function copyTerminal(btn) {
+  const body = btn.parentElement.querySelector('.terminal-body');
+  const text = body.innerText || body.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+
+// ─── Mobile Menu ───
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('menuOverlay');
+
+menuToggle.addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('active');
+});
+overlay.addEventListener('click', () => {
+  sidebar.classList.remove('open');
+  overlay.classList.remove('active');
+});
+
+// Close sidebar on nav click (mobile)
+document.querySelectorAll('#sidebarNav a').forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 900) {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('active');
+    }
+  });
+});
+</script>
+</body>
+</html>

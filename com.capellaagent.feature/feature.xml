@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.capellaagent.feature"
+      label="Capella Agent - AI Multi-Agent Ecosystem"
+      version="1.0.0.qualifier"
+      provider-name="CapellaAgent">
+
+   <description>
+      Capella Agent provides an AI-powered multi-agent ecosystem for Capella MBSE.
+      Integrates LLM-driven model interaction, Teamcenter PLM connectivity,
+      and simulation engine orchestration within the Capella workbench.
+   </description>
+
+   <copyright>
+      Copyright (c) 2024 CapellaAgent Contributors.
+      All rights reserved.
+   </copyright>
+
+   <license url="https://www.eclipse.org/legal/epl-2.0/">
+      Eclipse Public License - v 2.0
+   </license>
+
+   <!-- Core plugin: LLM providers, tool framework, bus, config, security -->
+   <plugin
+         id="com.capellaagent.core"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <!-- Core UI: reusable chat widgets and markdown rendering -->
+   <plugin
+         id="com.capellaagent.core.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <!-- Model Chat: read/write/diagram tools for Capella models -->
+   <plugin
+         id="com.capellaagent.modelchat"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <!-- Model Chat UI: chat view for interactive model queries -->
+   <plugin
+         id="com.capellaagent.modelchat.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <!-- Teamcenter Integration: PLM search, import, and traceability -->
+   <plugin
+         id="com.capellaagent.teamcenter"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <!-- Simulation Integration: engine bridges, orchestration, what-if analysis -->
+   <plugin
+         id="com.capellaagent.simulation"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <!-- Simulation UI: dashboard view for simulation management -->
+   <plugin
+         id="com.capellaagent.simulation.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <!-- MCP Server Bridge: exposes tools to Claude Code via Model Context Protocol -->
+   <plugin
+         id="com.capellaagent.mcp"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>

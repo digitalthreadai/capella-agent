@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Capella Agent MCP Server Bridge
+Bundle-SymbolicName: com.capellaagent.mcp;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.capellaagent.mcp.McpActivator
+Bundle-Vendor: Capella Agent Project
+Require-Bundle: org.eclipse.core.runtime;bundle-version="3.26.0",
+ com.capellaagent.core;bundle-version="1.0.0",
+ com.google.gson;bundle-version="2.10.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-ActivationPolicy: lazy
+Export-Package: com.capellaagent.mcp,
+ com.capellaagent.mcp.bridge

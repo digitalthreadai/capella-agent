@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <!-- Extension Point: LLM Provider -->
+   <!-- Allows other bundles to contribute LLM provider implementations -->
+   <extension-point
+         id="com.capellaagent.core.llmProvider"
+         name="LLM Provider"
+         schema="schema/llmProvider.exsd"/>
+
+   <!-- Extension Point: Tool Provider -->
+   <!-- Allows agent bundles to register tools that can be invoked by LLMs -->
+   <extension-point
+         id="com.capellaagent.core.toolProvider"
+         name="Tool Provider"
+         schema="schema/toolProvider.exsd"/>
+
+</plugin>

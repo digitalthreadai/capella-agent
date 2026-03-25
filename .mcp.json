@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "capella-live": {
+      "command": "java",
+      "args": [
+        "-cp",
+        "com.capellaagent.mcp/bin",
+        "com.capellaagent.mcp.bridge.McpServerBridge",
+        "9847"
+      ],
+      "env": {}
+    }
+  }
+}

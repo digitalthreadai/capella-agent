@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Capella Agent Simulation UI
+Bundle-SymbolicName: com.capellaagent.simulation.ui;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: CapellaAgent
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-ActivationPolicy: lazy
+Require-Bundle: com.capellaagent.core;bundle-version="1.0.0",
+ com.capellaagent.simulation;bundle-version="1.0.0",
+ org.eclipse.ui;bundle-version="3.200.0",
+ org.eclipse.swt;bundle-version="3.100.0",
+ org.eclipse.core.runtime;bundle-version="3.26.0"
+Export-Package: com.capellaagent.simulation.ui.views

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <!-- Register model chat tools with the core tool provider extension point -->
+   <extension
+         point="com.capellaagent.core.toolProvider">
+      <toolProvider
+            class="com.capellaagent.modelchat.ModelChatToolRegistrar"
+            id="com.capellaagent.modelchat.toolProvider"
+            name="Model Chat Tools">
+      </toolProvider>
+   </extension>
+
+</plugin>

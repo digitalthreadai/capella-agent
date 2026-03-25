@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capella Agent - Project Overview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0A0A0F;
+      --surface: #12121A;
+      --surface-hover: #1E1E2E;
+      --terminal-bg: #1A1A2E;
+      --terminal-border: #2A2A3E;
+      --text: #E8E8ED;
+      --muted: #8888A0;
+      --muted-fg: #6E6E88;
+      --primary: #00BCD4;
+      --primary-light: #E0F7FA;
+      --primary-rgb: 0,188,212;
+      --secondary: #FF6D00;
+      --green: #4ADE80;
+      --blue: #60A5FA;
+      --purple: #A78BFA;
+      --red: #F87171;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    code, pre, .mono { font-family: 'JetBrains Mono', monospace; }
+    .gradient-text { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* Navigation */
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(10, 10, 15, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--terminal-border);
+      padding: 0 2rem;
+    }
+
+    .top-nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .top-nav-brand {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .top-nav-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    .top-nav-links a {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .top-nav-links a:hover { color: var(--primary); }
+
+    /* Shared section */
+    .section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 5rem 2rem;
+    }
+
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--primary);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+    }
+
+    .section-desc {
+      color: var(--muted);
+      font-size: 0.95rem;
+      max-width: 600px;
+      margin-bottom: 2.5rem;
+    }
+
+    /* Hero */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+    }
+
+    .hero-title {
+      font-size: clamp(2.8rem, 7vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 1rem;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      color: var(--muted);
+      max-width: 520px;
+      margin-bottom: 2rem;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 3rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn:hover { transform: translateY(-2px); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #000;
+      box-shadow: 0 4px 20px rgba(var(--primary-rgb), 0.3);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 28px rgba(var(--primary-rgb), 0.45);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--terminal-border);
+    }
+
+    .btn-secondary:hover {
+      border-color: rgba(var(--primary-rgb), 0.4);
+      box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.1);
+    }
+
+    /* Terminal */
+    .terminal {
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-border);
+      border-radius: 10px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 680px;
+      text-align: left;
+      position: relative;
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.25);
+      border-bottom: 1px solid var(--terminal-border);
+    }
+
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot--red { background: #F87171; }
+    .terminal-dot--yellow { background: #FBBF24; }
+    .terminal-dot--green { background: #4ADE80; }
+
+    .terminal-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted-fg);
+      margin-left: 8px;
+    }
+
+    .terminal-body {
+      padding: 1.25rem;
+      overflow-x: auto;
+    }
+
+    .terminal-body pre {
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: var(--muted);
+      white-space: pre;
+    }
+
+    .terminal-body .cmd { color: var(--green); }
+    .terminal-body .info { color: var(--blue); }
+    .terminal-body .success { color: var(--green); }
+    .terminal-body .comment { color: var(--muted-fg); }
+    .terminal-body .flag { color: var(--secondary); }
+    .terminal-body .path { color: var(--purple); }
+
+    /* Copy button */
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--terminal-border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--text);
+    }
+
+    .copy-btn svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .copy-btn.copied {
+      color: var(--green);
+      border-color: rgba(74, 222, 128, 0.3);
+    }
+
+    /* Architecture terminal */
+    .arch-terminal {
+      max-width: 100%;
+    }
+
+    .arch-terminal pre {
+      font-size: clamp(0.55rem, 1.5vw, 0.78rem);
+      color: var(--text);
+    }
+
+    .arch-terminal .layer-label { color: var(--primary); }
+    .arch-terminal .agent-name { color: var(--secondary); }
+    .arch-terminal .provider { color: var(--green); }
+    .arch-terminal .border-char { color: var(--terminal-border); }
+
+    /* Stack grid */
+    .stack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .stack-card {
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 8px;
+      padding: 1rem 1.15rem;
+      transition: border-color 0.2s;
+    }
+
+    .stack-card:hover {
+      border-color: rgba(var(--primary-rgb), 0.35);
+    }
+
+    .stack-card-name {
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .stack-card-role {
+      font-size: 0.75rem;
+      color: var(--muted-fg);
+    }
+
+    /* Feature sections */
+    .feature-group {
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+
+    .feature-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.15rem 1.5rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .feature-header:hover {
+      background: var(--surface-hover);
+    }
+
+    .feature-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .feature-agent {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .feature-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--primary);
+      background: rgba(var(--primary-rgb), 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .feature-chevron {
+      color: var(--muted-fg);
+      transition: transform 0.3s ease;
+      width: 20px;
+      height: 20px;
+    }
+
+    .feature-group.open .feature-chevron {
+      transform: rotate(180deg);
+    }
+
+    .feature-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+
+    .feature-group.open .feature-body {
+      max-height: 800px;
+    }
+
+    .feature-content {
+      padding: 0 1.5rem 1.5rem;
+      border-top: 1px solid var(--terminal-border);
+    }
+
+    .tool-category {
+      margin-top: 1rem;
+    }
+
+    .tool-category-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted-fg);
+      margin-bottom: 0.5rem;
+    }
+
+    .tool-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .tool-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-border);
+      padding: 3px 10px;
+      border-radius: 5px;
+      color: var(--muted);
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .tool-tag:hover {
+      color: var(--text);
+      border-color: rgba(var(--primary-rgb), 0.3);
+    }
+
+    /* File tree */
+    .file-tree-container {
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .file-tree-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .file-tree-toggle:hover {
+      background: var(--surface-hover);
+    }
+
+    .file-tree-toggle-left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .file-tree-toggle-left svg {
+      width: 18px;
+      height: 18px;
+      color: var(--primary);
+    }
+
+    .file-tree-chevron {
+      color: var(--muted-fg);
+      transition: transform 0.3s ease;
+      width: 20px;
+      height: 20px;
+    }
+
+    .file-tree-container.open .file-tree-chevron {
+      transform: rotate(180deg);
+    }
+
+    .file-tree-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+
+    .file-tree-container.open .file-tree-body {
+      max-height: 1200px;
+    }
+
+    .file-tree {
+      padding: 0 1.5rem 1.5rem;
+      border-top: 1px solid var(--terminal-border);
+    }
+
+    .file-tree pre {
+      font-size: 0.78rem;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    .file-tree .dir { color: var(--primary); font-weight: 500; }
+    .file-tree .file { color: var(--muted); }
+    .file-tree .desc { color: var(--muted-fg); }
+
+    /* Divider */
+    .section-divider {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    .section-divider hr {
+      border: none;
+      border-top: 1px solid var(--terminal-border);
+    }
+
+    /* Footer */
+    .footer {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 3rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .footer-brand {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--primary); }
+
+    .footer-copy {
+      width: 100%;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted-fg);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 1rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--terminal-border);
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .section { padding: 3rem 1.25rem; }
+      .hero { padding: 5rem 1.25rem 3rem; }
+      .top-nav-links { gap: 1rem; }
+      .stack-grid { grid-template-columns: 1fr 1fr; }
+      .footer { flex-direction: column; text-align: center; }
+      .footer-links { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <nav class="top-nav">
+    <div class="top-nav-inner">
+      <a href="index.html" class="top-nav-brand">Capella Agent</a>
+      <ul class="top-nav-links">
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#stack">Stack</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="COO.html">Strategy</a></li>
+        <li><a href="SITECONFIGURATIONS.html">Setup</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1 class="hero-title gradient-text">Capella Agent</h1>
+    <p class="hero-subtitle">AI-Powered Multi-Agent Ecosystem for Eclipse Capella</p>
+    <div class="hero-buttons">
+      <a href="SITECONFIGURATIONS.html" class="btn btn-primary">
+        Get Started
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+      <a href="COO.html" class="btn btn-secondary">View Strategy</a>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <span class="terminal-dot terminal-dot--red"></span>
+        <span class="terminal-dot terminal-dot--yellow"></span>
+        <span class="terminal-dot terminal-dot--green"></span>
+        <span class="terminal-title">terminal</span>
+      </div>
+      <div class="terminal-body">
+        <pre><span class="cmd">$</span> <span class="info">mvn</span> clean verify <span class="flag">-f</span> <span class="path">pom.xml</span>
+<span class="info">[INFO]</span> Building Capella Agent Feature 1.0.0-SNAPSHOT
+<span class="info">[INFO]</span> --- tycho-p2-publisher:assemble-repository ---
+<span class="success">[INFO] BUILD SUCCESS</span>
+
+<span class="comment"># Install in Capella:</span>
+<span class="comment"># Help > Install New Software > Add local site</span>
+<span class="comment"># Select "Capella Agent" > Next > Finish > Restart</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"><hr></div>
+
+  <!-- Architecture -->
+  <section id="architecture" class="section">
+    <div class="section-label">// Architecture</div>
+    <h2 class="section-title">Multi-Agent System Design</h2>
+    <p class="section-desc">Three specialized agents collaborate through a shared core, each backed by pluggable LLM providers and external system connectors.</p>
+
+    <div class="terminal arch-terminal">
+      <div class="terminal-header">
+        <span class="terminal-dot terminal-dot--red"></span>
+        <span class="terminal-dot terminal-dot--yellow"></span>
+        <span class="terminal-dot terminal-dot--green"></span>
+        <span class="terminal-title">architecture.txt</span>
+      </div>
+      <div class="terminal-body">
+        <pre><span class="border-char">&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;</span>
+<span class="border-char">&#9474;</span>               <span class="layer-label">Eclipse Capella 7.0</span>               <span class="border-char">&#9474;</span>
+<span class="border-char">&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;</span>
+<span class="border-char">&#9474;</span> <span class="agent-name">Model Chat</span> <span class="border-char">&#9474;</span> <span class="agent-name">Teamcenter</span> <span class="border-char">&#9474;</span> <span class="agent-name">Simulation</span>             <span class="border-char">&#9474;</span>
+<span class="border-char">&#9474;</span>  <span class="agent-name">Agent</span>     <span class="border-char">&#9474;</span>   <span class="agent-name">Agent</span>    <span class="border-char">&#9474;</span>   <span class="agent-name">Agent</span>                <span class="border-char">&#9474;</span>
+<span class="border-char">&#9474;</span> <span class="desc">(16 tools)</span> <span class="border-char">&#9474;</span> <span class="desc">(7 tools)</span>  <span class="border-char">&#9474;</span> <span class="desc">(6 tools)</span>              <span class="border-char">&#9474;</span>
+<span class="border-char">&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;</span>
+<span class="border-char">&#9474;</span>              <span class="layer-label">com.capellaagent.core</span>              <span class="border-char">&#9474;</span>
+<span class="border-char">&#9474;</span>  <span class="desc">LLM Abstraction | Tool Registry | Message Bus</span>   <span class="border-char">&#9474;</span>
+<span class="border-char">&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;</span>
+<span class="border-char">&#9474;</span> <span class="provider">Claude</span>   <span class="border-char">&#9474;</span> <span class="provider">OpenAI/Groq/...</span> <span class="border-char">&#9474;</span> <span class="provider">Ollama</span> <span class="desc">(9 providers)</span> <span class="border-char">&#9474;</span>
+<span class="border-char">&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;</span>
+<span class="border-char">&#9474;</span>  <span class="desc">Teamcenter REST</span>  <span class="border-char">&#9474;</span>  <span class="desc">MATLAB Engine</span>  <span class="border-char">&#9474;</span>  <span class="desc">Sirius</span>            <span class="border-char">&#9474;</span>
+<span class="border-char">&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"><hr></div>
+
+  <!-- Stack -->
+  <section id="stack" class="section">
+    <div class="section-label">// Technology Stack</div>
+    <h2 class="section-title">Built On Proven Foundations</h2>
+    <p class="section-desc">A carefully selected stack combining Eclipse ecosystem maturity with modern AI and integration capabilities.</p>
+
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-card-name">Eclipse Capella 7.0</div>
+        <div class="stack-card-role">Host MBSE platform</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-name">Java 17+</div>
+        <div class="stack-card-role">Runtime and language</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-name">EMF</div>
+        <div class="stack-card-role">Model framework</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-name">Sirius 7.0</div>
+        <div class="stack-card-role">Diagram rendering</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-name">Gson 2.10</div>
+        <div class="stack-card-role">JSON processing</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-name">Claude / OpenAI / Ollama</div>
+        <div class="stack-card-role">LLM providers</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-name">Teamcenter REST</div>
+        <div class="stack-card-role">PLM integration</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-name">MATLAB Engine API</div>
+        <div class="stack-card-role">Simulation bridge</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-name">Eclipse Equinox Security</div>
+        <div class="stack-card-role">Credential storage</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-name">Tycho / Maven</div>
+        <div class="stack-card-role">Build system</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"><hr></div>
+
+  <!-- Features -->
+  <section id="features" class="section">
+    <div class="section-label">// Agent Capabilities</div>
+    <h2 class="section-title">29 AI-Powered Tools Across 3 Agents</h2>
+    <p class="section-desc">Each agent is specialized for a domain, with tools that read, write, and orchestrate across the Capella ecosystem.</p>
+
+    <!-- Model Chat Agent -->
+    <div class="feature-group open">
+      <div class="feature-header" onclick="toggleFeature(this)">
+        <div class="feature-header-left">
+          <span class="feature-agent">Model Chat Agent</span>
+          <span class="feature-count">16 tools</span>
+        </div>
+        <svg class="feature-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="feature-body">
+        <div class="feature-content">
+          <div class="tool-category">
+            <div class="tool-category-label">Read</div>
+            <div class="tool-list">
+              <span class="tool-tag">list_elements</span>
+              <span class="tool-tag">get_element_details</span>
+              <span class="tool-tag">search_elements</span>
+              <span class="tool-tag">get_hierarchy</span>
+              <span class="tool-tag">list_diagrams</span>
+              <span class="tool-tag">get_traceability</span>
+              <span class="tool-tag">list_requirements</span>
+              <span class="tool-tag">validate_model</span>
+            </div>
+          </div>
+          <div class="tool-category">
+            <div class="tool-category-label">Write</div>
+            <div class="tool-list">
+              <span class="tool-tag">create_element</span>
+              <span class="tool-tag">create_exchange</span>
+              <span class="tool-tag">allocate_function</span>
+              <span class="tool-tag">create_capability</span>
+              <span class="tool-tag">update_element</span>
+              <span class="tool-tag">delete_element</span>
+            </div>
+          </div>
+          <div class="tool-category">
+            <div class="tool-category-label">Diagram</div>
+            <div class="tool-list">
+              <span class="tool-tag">update_diagram</span>
+              <span class="tool-tag">refresh_diagram</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Teamcenter Agent -->
+    <div class="feature-group">
+      <div class="feature-header" onclick="toggleFeature(this)">
+        <div class="feature-header-left">
+          <span class="feature-agent">Teamcenter Agent</span>
+          <span class="feature-count">7 tools</span>
+        </div>
+        <svg class="feature-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="feature-body">
+        <div class="feature-content">
+          <div class="tool-category">
+            <div class="tool-category-label">PLM Integration</div>
+            <div class="tool-list">
+              <span class="tool-tag">search_teamcenter</span>
+              <span class="tool-tag">tc_get_object</span>
+              <span class="tool-tag">tc_get_bom</span>
+              <span class="tool-tag">tc_list_requirements</span>
+              <span class="tool-tag">tc_import_requirement</span>
+              <span class="tool-tag">tc_import_part</span>
+              <span class="tool-tag">tc_create_trace_link</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulation Agent -->
+    <div class="feature-group">
+      <div class="feature-header" onclick="toggleFeature(this)">
+        <div class="feature-header-left">
+          <span class="feature-agent">Simulation Agent</span>
+          <span class="feature-count">6 tools</span>
+        </div>
+        <svg class="feature-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="feature-body">
+        <div class="feature-content">
+          <div class="tool-category">
+            <div class="tool-category-label">Simulation</div>
+            <div class="tool-list">
+              <span class="tool-tag">list_simulation_engines</span>
+              <span class="tool-tag">extract_simulation_params</span>
+              <span class="tool-tag">run_simulation</span>
+              <span class="tool-tag">propagate_simulation_results</span>
+              <span class="tool-tag">run_what_if</span>
+              <span class="tool-tag">get_simulation_status</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"><hr></div>
+
+  <!-- Quick Start -->
+  <section id="quickstart" class="section">
+    <div class="section-label">// Quick Start</div>
+    <h2 class="section-title">Up and Running in Minutes</h2>
+    <p class="section-desc">Clone, build, install, and start querying your Capella models with natural language.</p>
+
+    <div class="terminal" id="quickstart-terminal">
+      <div class="terminal-header">
+        <span class="terminal-dot terminal-dot--red"></span>
+        <span class="terminal-dot terminal-dot--yellow"></span>
+        <span class="terminal-dot terminal-dot--green"></span>
+        <span class="terminal-title">quickstart.sh</span>
+      </div>
+      <button class="copy-btn" onclick="copyTerminal('quickstart-code')">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        Copy
+      </button>
+      <div class="terminal-body">
+        <pre id="quickstart-code"><span class="comment"># Build</span>
+<span class="cmd">$</span> git clone &lt;repo-url&gt;
+<span class="cmd">$</span> <span class="info">cd</span> <span class="path">capella-agent</span>
+<span class="cmd">$</span> <span class="info">mvn</span> clean verify
+
+<span class="comment"># Install in Capella</span>
+<span class="comment"># Help &gt; Install New Software &gt; Add &gt; Local</span>
+<span class="comment"># &gt; com.capellaagent.site/target/repository</span>
+
+<span class="comment"># Configure LLM</span>
+<span class="comment"># Preferences &gt; Capella Agent &gt; LLM Provider &gt; Set API key</span>
+
+<span class="comment"># Use</span>
+<span class="comment"># Window &gt; Show View &gt; Capella Agent &gt; AI Model Chat</span>
+<span class="comment"># Type: "List all system functions in SA layer"</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"><hr></div>
+
+  <!-- Plugin Structure -->
+  <section id="structure" class="section">
+    <div class="section-label">// Project Structure</div>
+    <h2 class="section-title">9-Project Plugin Architecture</h2>
+    <p class="section-desc">Modular OSGi bundles following Eclipse plugin best practices with clean separation of concerns.</p>
+
+    <div class="file-tree-container open">
+      <div class="file-tree-toggle" onclick="toggleTree(this)">
+        <div class="file-tree-toggle-left">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          capella-agent/
+        </div>
+        <svg class="file-tree-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="file-tree-body">
+        <div class="file-tree">
+          <pre>
+<span class="dir">com.capellaagent.core/</span>          <span class="desc">  Core agent framework</span>
+  <span class="file">src/.../llm/</span>                   <span class="desc">  LLM abstraction layer</span>
+  <span class="file">src/.../tools/</span>                 <span class="desc">  Tool registry &amp; base classes</span>
+  <span class="file">src/.../message/</span>               <span class="desc">  Message bus &amp; routing</span>
+
+<span class="dir">com.capellaagent.chat/</span>          <span class="desc">  Model Chat Agent (16 tools)</span>
+  <span class="file">src/.../tools/read/</span>            <span class="desc">  Model query tools</span>
+  <span class="file">src/.../tools/write/</span>           <span class="desc">  Model mutation tools</span>
+  <span class="file">src/.../tools/diagram/</span>         <span class="desc">  Diagram management</span>
+
+<span class="dir">com.capellaagent.teamcenter/</span>    <span class="desc">  Teamcenter Agent (7 tools)</span>
+  <span class="file">src/.../rest/</span>                  <span class="desc">  REST client &amp; auth</span>
+  <span class="file">src/.../tools/</span>                 <span class="desc">  PLM integration tools</span>
+
+<span class="dir">com.capellaagent.simulation/</span>    <span class="desc">  Simulation Agent (6 tools)</span>
+  <span class="file">src/.../matlab/</span>                <span class="desc">  MATLAB engine bridge</span>
+  <span class="file">src/.../tools/</span>                 <span class="desc">  Simulation tools</span>
+
+<span class="dir">com.capellaagent.mcp/</span>           <span class="desc">  MCP Server Bridge (Claude Code)</span>
+  <span class="file">src/.../mcp/</span>                   <span class="desc">  HTTP endpoint &amp; tool adapter</span>
+  <span class="file">src/.../mcp/bridge/</span>            <span class="desc">  Standalone stdio bridge</span>
+
+<span class="dir">com.capellaagent.ui/</span>            <span class="desc">  Eclipse UI views &amp; dialogs</span>
+<span class="dir">com.capellaagent.feature/</span>       <span class="desc">  Eclipse feature project</span>
+<span class="dir">com.capellaagent.site/</span>          <span class="desc">  P2 update site</span>
+<span class="dir">com.capellaagent.target/</span>        <span class="desc">  Target platform definition</span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="section-divider"><hr></div>
+    <div class="footer">
+      <span class="footer-brand gradient-text">Capella Agent</span>
+      <ul class="footer-links">
+        <li><a href="index.html">Docs Home</a></li>
+        <li><a href="README.html">Overview</a></li>
+        <li><a href="COO.html">Strategy</a></li>
+        <li><a href="SITECONFIGURATIONS.html">Setup Guide</a></li>
+      </ul>
+      <p class="footer-copy">Eclipse Capella 7.0 &middot; Java 17+ &middot; EPL-2.0</p>
+    </div>
+  </footer>
+
+  <script>
+    // Accordion toggle for feature groups
+    function toggleFeature(header) {
+      const group = header.parentElement;
+      group.classList.toggle('open');
+    }
+
+    // File tree toggle
+    function toggleTree(toggle) {
+      const container = toggle.parentElement;
+      container.classList.toggle('open');
+    }
+
+    // Copy to clipboard
+    function copyTerminal(elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+
+      const text = el.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = el.closest('.terminal').querySelector('.copy-btn');
+        if (btn) {
+          btn.classList.add('copied');
+          btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Copied
+          `;
+          setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              Copy
+            `;
+          }, 2000);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

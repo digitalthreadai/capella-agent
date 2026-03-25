@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <!-- View Category -->
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            id="com.capellaagent"
+            name="Capella Agent">
+      </category>
+      <view
+            id="com.capellaagent.modelchat.ui.views.ModelChatView"
+            name="AI Model Chat"
+            icon="icons/chat_16.png"
+            category="com.capellaagent"
+            class="com.capellaagent.modelchat.ui.views.ModelChatView"
+            allowMultiple="false"
+            restorable="true">
+      </view>
+   </extension>
+
+   <!-- Commands -->
+   <extension
+         point="org.eclipse.ui.commands">
+      <command
+            id="com.capellaagent.modelchat.ui.commands.sendMessage"
+            name="Send Chat Message"
+            description="Sends the current message in the AI Model Chat"
+            categoryId="com.capellaagent">
+      </command>
+      <command
+            id="com.capellaagent.modelchat.ui.commands.clearHistory"
+            name="Clear Chat History"
+            description="Clears the conversation history in the AI Model Chat"
+            categoryId="com.capellaagent">
+      </command>
+      <category
+            id="com.capellaagent"
+            name="Capella Agent">
+      </category>
+   </extension>
+
+   <!-- Handlers -->
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            commandId="com.capellaagent.modelchat.ui.commands.sendMessage"
+            class="com.capellaagent.modelchat.ui.commands.SendMessageHandler">
+         <activeWhen>
+            <with variable="activePartId">
+               <equals value="com.capellaagent.modelchat.ui.views.ModelChatView"/>
+            </with>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="com.capellaagent.modelchat.ui.commands.clearHistory"
+            class="com.capellaagent.modelchat.ui.commands.ClearHistoryHandler">
+         <activeWhen>
+            <with variable="activePartId">
+               <equals value="com.capellaagent.modelchat.ui.views.ModelChatView"/>
+            </with>
+         </activeWhen>
+      </handler>
+   </extension>
+
+   <!-- Key Bindings -->
+   <extension
+         point="org.eclipse.ui.bindings">
+      <key
+            commandId="com.capellaagent.modelchat.ui.commands.sendMessage"
+            contextId="com.capellaagent.modelchat.ui.views.ModelChatView"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="ENTER">
+      </key>
+   </extension>
+
+   <!-- Context for key binding scope -->
+   <extension
+         point="org.eclipse.ui.contexts">
+      <context
+            id="com.capellaagent.modelchat.ui.views.ModelChatView"
+            name="AI Model Chat View"
+            parentId="org.eclipse.ui.contexts.window">
+      </context>
+   </extension>
+
+</plugin>
