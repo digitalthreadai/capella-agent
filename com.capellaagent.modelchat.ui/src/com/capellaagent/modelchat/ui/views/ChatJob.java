@@ -83,7 +83,7 @@ public class ChatJob extends Job {
             monitor.beginTask("Processing chat message", IProgressMonitor.UNKNOWN);
 
             // Add user message to the session
-            session.addMessage(LlmMessage.user(userMessage));
+            session.addUserMessage(userMessage);
 
             // PLACEHOLDER: Get the LLM provider from registry
             // LlmProvider provider = LlmProviderRegistry.getInstance().getProvider(providerName);
@@ -153,8 +153,7 @@ public class ChatJob extends Job {
                         }
 
                         // Add tool result to session
-                        session.addMessage(LlmMessage.toolResult(
-                                toolCallId, toolName, toolResult.toJson()));
+                        session.addToolResult(toolCallId, toolResult.toJson());
                     }
                 }
 
@@ -164,7 +163,7 @@ public class ChatJob extends Job {
                     onTextResponse.accept(text);
 
                     // Add assistant text to session
-                    session.addMessage(LlmMessage.assistant(text));
+                    session.addAssistantMessage(text);
                 }
 
                 // If no tool calls in this iteration, we are done

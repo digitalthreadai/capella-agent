@@ -11,12 +11,9 @@ Require-Bundle: com.capellaagent.core;bundle-version="1.0.0",
  org.eclipse.core.runtime;bundle-version="3.26.0",
  org.eclipse.emf.transaction;bundle-version="1.9.0",
  com.google.gson;bundle-version="2.10.0",
- org.eclipse.sirius;bundle-version="7.0.0"
+ org.eclipse.sirius;bundle-version="7.0.0";resolution:=optional
 Export-Package: com.capellaagent.simulation,
  com.capellaagent.simulation.bridge,
  com.capellaagent.simulation.orchestrator,
  com.capellaagent.simulation.tools,
  com.capellaagent.simulation.config
-Import-Package: org.eclipse.sirius.business.api.session,
- org.eclipse.emf.transaction,
- org.eclipse.core.runtime

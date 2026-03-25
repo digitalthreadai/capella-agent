@@ -12,12 +12,9 @@ Require-Bundle: com.capellaagent.core;bundle-version="1.0.0",
  com.google.gson;bundle-version="2.10.0",
  org.eclipse.equinox.security;bundle-version="1.3.0",
  org.eclipse.emf.transaction;bundle-version="1.9.0",
- org.eclipse.sirius;bundle-version="7.0.0"
+ org.eclipse.sirius;bundle-version="7.0.0";resolution:=optional
 Export-Package: com.capellaagent.teamcenter,
  com.capellaagent.teamcenter.client,
  com.capellaagent.teamcenter.api,
  com.capellaagent.teamcenter.import_,
  com.capellaagent.teamcenter.tools
-Import-Package: org.eclipse.sirius.business.api.session,
- org.eclipse.emf.transaction,
- org.eclipse.equinox.security.storage

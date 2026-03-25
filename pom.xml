@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.capellaagent</groupId>
+  <artifactId>com.capellaagent.parent</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Capella Agent - Parent</name>
+  <description>AI-powered multi-agent ecosystem for Eclipse Capella MBSE</description>
+
+  <properties>
+    <tycho-version>4.0.9</tycho-version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+  </properties>
+
+  <modules>
+    <module>com.capellaagent.core</module>
+    <module>com.capellaagent.core.ui</module>
+    <module>com.capellaagent.modelchat</module>
+    <module>com.capellaagent.modelchat.ui</module>
+    <module>com.capellaagent.teamcenter</module>
+    <module>com.capellaagent.simulation</module>
+    <module>com.capellaagent.simulation.ui</module>
+    <module>com.capellaagent.mcp</module>
+    <module>com.capellaagent.feature</module>
+    <module>com.capellaagent.site</module>
+  </modules>
+
+  <repositories>
+    <!-- Eclipse 2024-03 (4.31) platform -->
+    <repository>
+      <id>eclipse-platform</id>
+      <url>https://download.eclipse.org/releases/2024-03</url>
+      <layout>p2</layout>
+    </repository>
+    <!-- Eclipse Orbit for third-party bundles (Gson, etc.) -->
+    <repository>
+      <id>eclipse-orbit</id>
+      <url>https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2024-03</url>
+      <layout>p2</layout>
+    </repository>
+  </repositories>
+
+  <build>
+    <plugins>
+      <!-- Tycho: Maven builds for Eclipse/OSGi -->
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-maven-plugin</artifactId>
+        <version>${tycho-version}</version>
+        <extensions>true</extensions>
+      </plugin>
+
+      <!-- Target platform configuration -->
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>target-platform-configuration</artifactId>
+        <version>${tycho-version}</version>
+        <configuration>
+          <environments>
+            <environment>
+              <os>win32</os>
+              <ws>win32</ws>
+              <arch>x86_64</arch>
+            </environment>
+            <environment>
+              <os>linux</os>
+              <ws>gtk</ws>
+              <arch>x86_64</arch>
+            </environment>
+            <environment>
+              <os>macosx</os>
+              <ws>cocoa</ws>
+              <arch>x86_64</arch>
+            </environment>
+          </environments>
+          <!-- Resolve dependencies from p2 repositories defined above -->
+          <dependency-resolution>
+            <optionalDependencies>ignore</optionalDependencies>
+          </dependency-resolution>
+        </configuration>
+      </plugin>
+
+      <!-- Source plugin for source bundles -->
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-source-plugin</artifactId>
+        <version>${tycho-version}</version>
+        <executions>
+          <execution>
+            <id>plugin-source</id>
+            <goals>
+              <goal>plugin-source</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

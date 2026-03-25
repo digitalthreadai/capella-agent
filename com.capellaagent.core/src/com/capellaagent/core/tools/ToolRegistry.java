@@ -57,6 +57,17 @@ public final class ToolRegistry {
     }
 
     /**
+     * Convenience method to register a tool that implements both
+     * {@link IToolDescriptor} and {@link IToolExecutor} (e.g., {@link AbstractCapellaTool}).
+     *
+     * @param tool the tool instance implementing both interfaces
+     * @throws IllegalArgumentException if a tool with the same name is already registered
+     */
+    public <T extends IToolDescriptor & IToolExecutor> void register(T tool) {
+        register((IToolDescriptor) tool, (IToolExecutor) tool);
+    }
+
+    /**
      * Unregisters a tool by name.
      *
      * @param name the tool name to unregister
@@ -97,6 +108,32 @@ public final class ToolRegistry {
             LOG.log(Level.SEVERE, "Unexpected error executing tool " + name, e);
             throw new ToolExecutionException(ToolExecutionException.ERR_EXECUTION,
                     "Unexpected error executing tool " + name + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Executes a tool by name with the given JSON arguments string.
+     * <p>
+     * This is the preferred entry point for the ChatJob orchestration loop,
+     * which receives tool arguments as a raw JSON string from the LLM.
+     *
+     * @param name    the tool function name
+     * @param argsJson the arguments as a JSON string
+     * @return the execution result as a ToolResult
+     */
+    public ToolResult executeTool(String name, String argsJson) {
+        try {
+            JsonObject args = argsJson != null && !argsJson.isBlank()
+                    ? com.google.gson.JsonParser.parseString(argsJson).getAsJsonObject()
+                    : new JsonObject();
+            JsonObject result = execute(name, args);
+            return ToolResult.success(result);
+        } catch (ToolExecutionException e) {
+            LOG.log(Level.WARNING, "Tool " + name + " failed: " + e.getMessage(), e);
+            return ToolResult.error(e.getMessage());
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Unexpected error executing tool " + name, e);
+            return ToolResult.error("Unexpected error: " + e.getMessage());
         }
     }
 

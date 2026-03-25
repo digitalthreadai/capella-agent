@@ -15,15 +15,8 @@ Require-Bundle: com.capellaagent.core;bundle-version="1.0.0",
  com.google.gson;bundle-version="2.10.0",
  org.eclipse.jface;bundle-version="3.28.0",
  org.eclipse.swt;bundle-version="3.122.0",
- org.eclipse.core.resources;bundle-version="3.18.0"
+ org.eclipse.core.resources;bundle-version="3.18.0",
+ org.eclipse.core.jobs;bundle-version="3.13.0"
 Export-Package: com.capellaagent.modelchat.ui.views,
  com.capellaagent.modelchat.ui.commands,
  com.capellaagent.modelchat.ui.adapters
-Import-Package: org.eclipse.ui.part,
- org.eclipse.jface.viewers,
- org.eclipse.swt.custom,
- org.eclipse.swt.widgets,
- org.eclipse.swt.layout,
- org.eclipse.swt.events,
- org.eclipse.swt.graphics,
- org.eclipse.core.jobs
