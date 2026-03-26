@@ -38,12 +38,7 @@
       <url>https://download.eclipse.org/releases/2024-03</url>
       <layout>p2</layout>
     </repository>
-    <!-- Eclipse Orbit for third-party bundles (Gson, etc.) -->
-    <repository>
-      <id>eclipse-orbit</id>
-      <url>https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2024-03</url>
-      <layout>p2</layout>
-    </repository>
+    <!-- Gson is now embedded in com.capellaagent.core/lib/ - no Orbit needed -->
   </repositories>
 
   <build>
