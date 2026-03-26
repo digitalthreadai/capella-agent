@@ -2,8 +2,9 @@
 
 > AI-powered multi-agent ecosystem for Model-Based Systems Engineering inside Eclipse Capella.
 > Three collaborating agents -- Model Chat, Teamcenter, and Simulation -- deliver
-> natural-language model interaction, PLM connectivity, and CAE orchestration
-> through 29 LLM-callable tools, all running natively in the Capella workbench.
+> natural-language model interaction, architecture analysis, data export, ARCADIA transitions,
+> PLM connectivity, and CAE orchestration through 84 LLM-callable tools, all running
+> natively in the Capella workbench.
 
 | | |
 |---|---|
@@ -11,7 +12,7 @@
 | **License** | Eclipse Public License v2.0 |
 | **Platform** | Eclipse Capella 7.0 (Eclipse RCP / Equinox) |
 | **Java** | 17+ |
-| **Codebase** | 114 Java files, 16,210 lines across 10 projects |
+| **Codebase** | 189 Java files across 10 projects (8 plugins + feature + site) |
 
 ---
 
@@ -21,14 +22,15 @@
 2. [Competitive Landscape](#competitive-landscape)
 3. [Architecture Overview](#architecture-overview)
 4. [Plugin Map](#plugin-map)
-5. [Feature Map -- All 29 Tools](#feature-map----all-29-tools)
-6. [Key Interfaces & Extension Points](#key-interfaces--extension-points)
-7. [Technology Stack](#technology-stack)
-8. [Data Layer -- EMF Model, Not a Database](#data-layer----emf-model-not-a-database)
-9. [Security Model](#security-model)
-10. [Cross-Agent Communication](#cross-agent-communication)
-11. [Roadmap](#roadmap)
-12. [File Structure](#file-structure)
+5. [Feature Map -- All 84 Tools](#feature-map----all-84-tools)
+6. [MCP Bridge Architecture](#mcp-bridge-architecture)
+7. [Key Interfaces & Extension Points](#key-interfaces--extension-points)
+8. [Technology Stack](#technology-stack)
+9. [Data Layer -- EMF Model, Not a Database](#data-layer----emf-model-not-a-database)
+10. [Security Model](#security-model)
+11. [Cross-Agent Communication](#cross-agent-communication)
+12. [Roadmap](#roadmap)
+13. [File Structure](#file-structure)
 
 ---
 
@@ -43,12 +45,14 @@ Capella Agent eliminates that friction by embedding three purpose-built AI
 agents directly inside the Capella workbench:
 
 - **Model Chat Agent** -- ask questions about and modify ARCADIA models in
-  plain English, with full undo/redo and transactional safety.
+  plain English, run architecture analysis, export reports, automate layer
+  transitions, and get AI-assisted engineering recommendations -- with full
+  undo/redo and transactional safety. 71 tools across 7 categories.
 - **Teamcenter Agent** -- search, import, and trace Siemens Teamcenter PLM
-  artifacts without leaving Capella.
+  artifacts without leaving Capella. 7 tools.
 - **Simulation Agent** -- extract parameters from the model, run
   MATLAB/Simulink simulations, propagate results back, and perform what-if
-  analysis, all from a single chat prompt.
+  analysis, all from a single chat prompt. 6 tools.
 
 The agents coordinate through a shared event bus, so importing a Teamcenter
 part can trigger a model update, which can trigger a simulation re-run -- all
@@ -66,27 +70,41 @@ in one conversational flow.
    are audit-logged.
 4. **OSGi modularity.** Each agent is a separate bundle. Install only what
    you need. No Teamcenter license? Don't install that plugin.
+5. **MCP-first external integration.** All 84 tools are exposed to Claude Code
+   via the Model Context Protocol, enabling terminal-based Capella model
+   interaction without opening the in-Capella chat UI.
 
 ---
 
 ## Competitive Landscape
 
-| Solution | Approach | AI / NL | In-Capella | PLM | CAE | Limitations |
-|----------|----------|---------|------------|-----|-----|-------------|
-| **Capella Agent** | OSGi plugin ecosystem | Yes (multi-provider) | Native | Teamcenter | MATLAB/Simulink | Early stage; Capella 7.0 only |
-| Python4Capella | Python scripting for Capella | No | Via bridge | No | No | Requires Python knowledge; no conversational interface |
-| capellambse / mcp-capella | Headless Python library | Partial (MCP) | No (external) | No | No | Runs outside Eclipse; no live diagrams or Sirius integration |
-| Teamcenter Rich Client | Desktop PLM client | No | No | Native Tc | No | No MBSE awareness; no model manipulation |
-| MATLAB Capella bridges | Manual export/import | No | Partial | No | Manual | No automation; no AI orchestration |
-| Manual workflow | Copy-paste, spreadsheets | No | N/A | Manual | Manual | The status quo this project replaces |
+| Solution | Approach | AI / NL | Tools | In-Capella | PLM | CAE | Limitations |
+|----------|----------|---------|-------|------------|-----|-----|-------------|
+| **Capella Agent** | OSGi plugin ecosystem | Yes (9 LLM providers) | **84** | Native | Teamcenter | MATLAB/Simulink | Capella 7.0 only |
+| Python4Capella | Python scripting for Capella | No | 0 | Via bridge | No | No | Requires Python knowledge; no conversational interface |
+| capellambse / mcp-capella | Headless Python library | Partial (MCP) | ~50 | No (external) | No | No | Runs outside Eclipse; no live diagrams or Sirius integration |
+| Teamcenter Rich Client | Desktop PLM client | No | 0 | No | Native Tc | No | No MBSE awareness; no model manipulation |
+| MATLAB Capella bridges | Manual export/import | No | 0 | Partial | No | Manual | No automation; no AI orchestration |
+| Manual workflow | Copy-paste, spreadsheets | No | 0 | N/A | Manual | Manual | The status quo this project replaces |
 
 ### Differentiation
 
 Capella Agent is the only solution that combines all three capabilities --
 natural-language model interaction, PLM integration, and simulation
 orchestration -- inside a single Eclipse session with a unified AI layer.
-Competing approaches address at most one of these concerns and require
-context-switching between tools.
+
+**No competitor offers 84 AI-native Capella tools.** The closest alternative
+(mcp-capella) provides approximately 50 tools but runs outside Eclipse as a
+headless Python process, meaning it cannot interact with live Sirius diagrams,
+leverage EMF transactions with undo/redo, or provide an in-Capella chat
+interface. Capella Agent's tools operate on the live model in-process,
+with full access to the Eclipse workbench, diagram editors, and undo stack.
+
+The addition of architecture analysis (12 tools), data export (8 tools),
+ARCADIA layer transitions (5 tools), and AI-assisted engineering (5 tools)
+creates a tool surface that covers the entire systems engineering workflow
+from model creation through validation, analysis, and reporting -- a scope
+no existing solution matches.
 
 ---
 
@@ -98,7 +116,7 @@ context-switching between tools.
 |                                                                      |
 |  +--------------------+  +-------------------+  +------------------+ |
 |  | Model Chat Agent   |  | Teamcenter Agent  |  | Simulation Agent | |
-|  | (16 tools)         |  | (7 tools)         |  | (6 tools)        | |
+|  | (71 tools)         |  | (7 tools)         |  | (6 tools)        | |
 |  |                    |  |                   |  |                  | |
 |  | modelchat          |  | teamcenter        |  | simulation       | |
 |  | modelchat.ui       |  |                   |  | simulation.ui    | |
@@ -152,7 +170,7 @@ site     <--  feature
 
 ## Plugin Map
 
-### 1. `com.capellaagent.core` -- Foundation (35 files)
+### 1. `com.capellaagent.core` -- Foundation
 
 The shared infrastructure layer. Every other plugin depends on this.
 
@@ -160,7 +178,7 @@ The shared infrastructure layer. Every other plugin depends on this.
 |---------|---------------|-------------|
 | `core.llm` | LLM abstraction and messaging | `ILlmProvider`, `LlmProviderRegistry`, `LlmMessage`, `LlmResponse`, `LlmToolCall`, `LlmToolResult`, `LlmRequestConfig`, `LlmException` |
 | `core.llm.providers` | Concrete LLM implementations | `ClaudeProvider`, `OpenAiProvider`, `OllamaProvider`, `OpenAiCompatibleProvider` (abstract base), `GroqProvider`, `DeepSeekProvider`, `MistralProvider`, `OpenRouterProvider`, `GeminiProvider`, `CustomEndpointProvider` |
-| `core.tools` | Tool registry and base classes | `IToolDescriptor`, `IToolExecutor`, `ToolRegistry`, `ToolRegistration`, `ToolSchemaBuilder`, `AbstractCapellaTool`, `ToolExecutionException` |
+| `core.tools` | Tool registry and base classes | `IToolDescriptor`, `IToolExecutor`, `ToolRegistry`, `ToolRegistration`, `ToolSchemaBuilder`, `AbstractCapellaTool`, `ToolExecutionException`, `ToolCategory`, `ToolParameter`, `ToolResult` |
 | `core.bus` | Cross-agent event communication | `IAgentMessageBus`, `AgentMessageBus`, `AgentEvent`, `ModelChangedEvent`, `TcItemImportedEvent`, `SimulationResultEvent` |
 | `core.security` | Access control and audit logging | `SecurityService`, `AccessMode`, `AuditLogger` |
 | `core.config` | Preference management | `AgentConfiguration` |
@@ -168,27 +186,29 @@ The shared infrastructure layer. Every other plugin depends on this.
 | `core.util` | Eclipse/Capella helpers | `JsonUtil`, `CapellaSessionUtil`, `WorkspaceUtil` |
 | (root) | Plugin lifecycle | `Activator` |
 
-### 2. `com.capellaagent.core.ui` -- Shared UI (2 files)
+### 2. `com.capellaagent.core.ui` -- Shared UI
 
 | Class | Responsibility |
 |-------|---------------|
 | `ChatComposite` | Reusable SWT chat widget with input area, message list, and send action |
 | `MarkdownRenderer` | Converts LLM markdown responses to styled SWT content |
 
-### 3. `com.capellaagent.modelchat` -- Model Chat Agent (18 files)
+### 3. `com.capellaagent.modelchat` -- Model Chat Agent (71 tools)
 
-Read, write, and diagram tools for interacting with Capella models through
-natural language.
+Read, write, diagram, analysis, export, transition, and AI-assisted tools for
+interacting with Capella models through natural language.
 
-| Class | Responsibility |
-|-------|---------------|
-| `ModelChatActivator` | Bundle lifecycle |
-| `ModelChatToolRegistrar` | Registers all 16 model tools with the `ToolRegistry` |
-| `tools/read/*` | 8 read-only model query tools |
-| `tools/write/*` | 6 model mutation tools |
-| `tools/diagram/*` | 2 diagram manipulation tools |
+| Package | Tools | Responsibility |
+|---------|------:|---------------|
+| `tools/read/` | 23 | Model query: elements, hierarchies, traceability, interfaces, scenarios, state machines, data model, constraints, and more |
+| `tools/write/` | 21 | Model mutation: create, update, delete, move, clone elements; batch rename and property updates; create exchanges, ports, interfaces, functional chains, scenarios, state machines, data types |
+| `tools/diagram/` | 9 | Diagram management: create, update, refresh, clone, delete, export, auto-layout, show element in diagram, list diagram elements |
+| `tools/analysis/` | 12 | Architecture analysis: validation, cycle detection, impact analysis, unused elements, statistics, allocation completeness, interface consistency, complexity metrics, singleton detection, improvements, safety reports, reachability |
+| `tools/export_/` | 8 | Data export: CSV, JSON, traceability matrix, allocation matrix, ICD report, model report, diff report, diagram catalog |
+| `tools/transition/` | 5 | ARCADIA transitions: OA-to-SA, SA-to-LA, LA-to-PA, PA-to-EPBS, reconcile layers |
+| `tools/ai/` | 5 | AI-assisted: architecture review, interface suggestions, auto-allocation, test scenario generation, model Q&A |
 
-### 4. `com.capellaagent.modelchat.ui` -- Model Chat UI (6 files)
+### 4. `com.capellaagent.modelchat.ui` -- Model Chat UI
 
 | Class | Responsibility |
 |-------|---------------|
@@ -199,7 +219,7 @@ natural language.
 | `ElementLinkAdapter` | Makes element references in chat responses clickable (navigates to model element) |
 | `ModelChatUiActivator` | Bundle lifecycle |
 
-### 5. `com.capellaagent.teamcenter` -- Teamcenter Agent (20 files)
+### 5. `com.capellaagent.teamcenter` -- Teamcenter Agent (7 tools)
 
 | Package | Responsibility | Key Classes |
 |---------|---------------|-------------|
@@ -209,7 +229,7 @@ natural language.
 | `tools` | 7 LLM-callable tools | `TcSearchTool`, `TcGetObjectTool`, `TcGetBomTool`, `TcListRequirementsTool`, `TcImportRequirementTool`, `TcImportPartTool`, `TcLinkTool` |
 | (root) | Lifecycle and registration | `TcActivator`, `TcToolRegistrar` |
 
-### 6. `com.capellaagent.simulation` -- Simulation Agent (22 files)
+### 6. `com.capellaagent.simulation` -- Simulation Agent (6 tools)
 
 | Package | Responsibility | Key Classes |
 |---------|---------------|-------------|
@@ -219,15 +239,15 @@ natural language.
 | `tools` | 6 LLM-callable tools | `ListEnginesTool`, `ExtractParamsTool`, `RunSimulationTool`, `PropagateResultsTool`, `WhatIfTool`, `GetSimStatusTool` |
 | (root) | Lifecycle and registration | `SimActivator`, `SimToolRegistrar` |
 
-### 7. `com.capellaagent.simulation.ui` -- Simulation Dashboard (1 file)
+### 7. `com.capellaagent.simulation.ui` -- Simulation Dashboard
 
 | Class | Responsibility |
 |-------|---------------|
 | `SimulationDashboardView` | Eclipse view showing active/completed simulation runs, results, and status |
 
-### 8. `com.capellaagent.mcp` -- MCP Server Bridge (5 files)
+### 8. `com.capellaagent.mcp` -- MCP Server Bridge
 
-Exposes all registered Capella Agent tools to Claude Code (or any MCP
+Exposes all 84 registered Capella Agent tools to Claude Code (or any MCP
 client) via the Model Context Protocol.
 
 | Class | Responsibility |
@@ -252,9 +272,12 @@ installation via **Help > Install New Software**.
 
 ---
 
-## Feature Map -- All 29 Tools
+## Feature Map -- All 84 Tools
 
-### Model Chat Agent -- Read Tools (8)
+For the complete tool catalog with full descriptions, parameter schemas, and
+access modes, see [TOOLS.md](../TOOLS.md).
+
+### Model Chat Agent -- Read Tools (23)
 
 | Tool Name | Category | Description | Access |
 |-----------|----------|-------------|--------|
@@ -266,8 +289,23 @@ installation via **Help > Install New Software**.
 | `get_traceability` | `capella.model` | Follow realization/refinement links between ARCADIA layers | READ |
 | `list_requirements` | `capella.model` | List requirements linked to the model (Requirements VP) | READ |
 | `validate_model` | `capella.model` | Run Capella validation rules and return violations | READ |
+| `get_allocation_matrix` | `capella.model` | Retrieve function-to-component allocation matrix | READ |
+| `get_functional_chain` | `capella.model` | Retrieve functional chain steps and involved functions | READ |
+| `get_interfaces` | `capella.model` | List interfaces and their exchange items | READ |
+| `get_scenarios` | `capella.model` | Retrieve scenario (sequence diagram) details | READ |
+| `check_traceability_coverage` | `capella.model` | Report traceability gaps between ARCADIA layers | READ |
+| `explain_element` | `capella.model` | Provide AI-generated explanation of a model element's role | READ |
+| `get_state_machines` | `capella.model` | Retrieve state machine definitions and transitions | READ |
+| `get_physical_paths` | `capella.model` | List physical paths and their segments | READ |
+| `get_exchange_items` | `capella.model` | Retrieve exchange items and their parameters | READ |
+| `get_refinement_status` | `capella.model` | Check refinement status across ARCADIA layers | READ |
+| `get_property_values` | `capella.model` | Retrieve property values for a model element | READ |
+| `get_constraints` | `capella.model` | List constraints applied to model elements | READ |
+| `get_configuration_items` | `capella.model` | Retrieve configuration items from EPBS layer | READ |
+| `get_deployment_mapping` | `capella.model` | Retrieve deployment mapping between components and nodes | READ |
+| `get_data_model` | `capella.model` | Retrieve data packages, classes, and types | READ |
 
-### Model Chat Agent -- Write Tools (6)
+### Model Chat Agent -- Write Tools (21)
 
 | Tool Name | Category | Description | Access |
 |-----------|----------|-------------|--------|
@@ -277,13 +315,85 @@ installation via **Help > Install New Software**.
 | `create_capability` | `capella.model` | Create an operational or system capability | WRITE |
 | `update_element` | `capella.model` | Update properties (name, description, attributes) of an existing element | WRITE |
 | `delete_element` | `capella.model` | Delete a model element with dependency checking | WRITE |
+| `create_interface` | `capella.model` | Create an interface between components | WRITE |
+| `create_functional_chain` | `capella.model` | Create a functional chain linking functions | WRITE |
+| `batch_rename` | `capella.model` | Rename multiple elements matching a pattern | WRITE |
+| `create_physical_link` | `capella.model` | Create a physical link between physical components | WRITE |
+| `create_scenario` | `capella.model` | Create a scenario with sequence messages | WRITE |
+| `create_state_machine` | `capella.model` | Create a state machine with states and transitions | WRITE |
+| `create_data_type` | `capella.model` | Create data types (classes, enumerations, etc.) | WRITE |
+| `move_element` | `capella.model` | Move a model element to a new parent container | WRITE |
+| `clone_element` | `capella.model` | Deep-copy a model element and its children | WRITE |
+| `set_property_value` | `capella.model` | Set a specific property value on a model element | WRITE |
+| `create_exchange_item` | `capella.model` | Create an exchange item with parameters | WRITE |
+| `batch_update_properties` | `capella.model` | Update properties on multiple elements at once | WRITE |
+| `create_port` | `capella.model` | Create function or component ports | WRITE |
+| `create_generalization` | `capella.model` | Create a generalization (inheritance) link between elements | WRITE |
+| `create_involvement` | `capella.model` | Create an involvement link (capability-to-function, etc.) | WRITE |
 
-### Model Chat Agent -- Diagram Tools (2)
+### Model Chat Agent -- Diagram Tools (9)
 
 | Tool Name | Category | Description | Access |
 |-----------|----------|-------------|--------|
 | `update_diagram` | `capella.diagram` | Add or remove elements from a Sirius diagram | WRITE |
 | `refresh_diagram` | `capella.diagram` | Force-refresh a diagram to reflect recent model changes | READ |
+| `create_diagram` | `capella.diagram` | Create a new Sirius diagram of a specified type | WRITE |
+| `show_element_in_diagram` | `capella.diagram` | Highlight and navigate to an element in a diagram | READ |
+| `export_diagram_image` | `capella.diagram` | Export a diagram as PNG or SVG image | READ |
+| `list_diagram_elements` | `capella.diagram` | List all elements currently shown on a diagram | READ |
+| `clone_diagram` | `capella.diagram` | Duplicate an existing diagram | WRITE |
+| `delete_diagram` | `capella.diagram` | Delete a diagram from the model | WRITE |
+| `auto_layout_diagram` | `capella.diagram` | Automatically arrange elements on a diagram | WRITE |
+
+### Model Chat Agent -- Analysis Tools (12)
+
+| Tool Name | Category | Description | Access |
+|-----------|----------|-------------|--------|
+| `run_capella_validation` | `capella.analysis` | Run Capella validation rules and return categorized violations | READ |
+| `detect_cycles` | `capella.analysis` | Detect circular dependencies in functional or component architectures | READ |
+| `impact_analysis` | `capella.analysis` | Analyze the impact of changing or removing a model element | READ |
+| `find_unused_elements` | `capella.analysis` | Find model elements with no incoming or outgoing relationships | READ |
+| `model_statistics` | `capella.analysis` | Generate statistical summary of model size and composition | READ |
+| `allocation_completeness` | `capella.analysis` | Check completeness of function-to-component allocations | READ |
+| `interface_consistency` | `capella.analysis` | Verify consistency between interface definitions and their usage | READ |
+| `architecture_complexity` | `capella.analysis` | Compute complexity metrics (coupling, cohesion, fan-in/fan-out) | READ |
+| `identify_singletons` | `capella.analysis` | Find components with single points of failure | READ |
+| `suggest_improvements` | `capella.analysis` | Suggest architecture improvements based on analysis results | READ |
+| `generate_safety_report` | `capella.analysis` | Generate a safety-focused analysis report | READ |
+| `reachability_analysis` | `capella.analysis` | Analyze functional reachability between model elements | READ |
+
+### Model Chat Agent -- Export Tools (8)
+
+| Tool Name | Category | Description | Access |
+|-----------|----------|-------------|--------|
+| `export_to_csv` | `capella.export` | Export model elements to CSV format | READ |
+| `export_to_json` | `capella.export` | Export model elements to JSON format | READ |
+| `generate_icd_report` | `capella.export` | Generate Interface Control Document report | READ |
+| `generate_model_report` | `capella.export` | Generate comprehensive model documentation report | READ |
+| `export_traceability_matrix` | `capella.export` | Export traceability matrix across ARCADIA layers | READ |
+| `export_allocation_matrix_csv` | `capella.export` | Export function-to-component allocation matrix as CSV | READ |
+| `export_diagram_catalog` | `capella.export` | Export a catalog of all diagrams with metadata | READ |
+| `generate_diff_report` | `capella.export` | Generate a report comparing model snapshots | READ |
+
+### Model Chat Agent -- Transition Tools (5)
+
+| Tool Name | Category | Description | Access |
+|-----------|----------|-------------|--------|
+| `transition_oa_to_sa` | `capella.transition` | Transition elements from Operational Analysis to System Analysis | WRITE |
+| `transition_sa_to_la` | `capella.transition` | Transition elements from System Analysis to Logical Architecture | WRITE |
+| `transition_la_to_pa` | `capella.transition` | Transition elements from Logical Architecture to Physical Architecture | WRITE |
+| `transition_pa_to_epbs` | `capella.transition` | Transition elements from Physical Architecture to EPBS | WRITE |
+| `reconcile_layers` | `capella.transition` | Reconcile and synchronize elements across ARCADIA layers | WRITE |
+
+### Model Chat Agent -- AI-Assisted Tools (5)
+
+| Tool Name | Category | Description | Access |
+|-----------|----------|-------------|--------|
+| `review_architecture` | `capella.ai` | AI-powered architecture review with recommendations | READ |
+| `suggest_interfaces` | `capella.ai` | Suggest missing interfaces based on component interactions | READ |
+| `auto_allocate` | `capella.ai` | Suggest or apply function-to-component allocations | WRITE |
+| `generate_test_scenarios` | `capella.ai` | Generate test scenarios from capabilities and functional chains | READ |
+| `model_qanda` | `capella.ai` | Answer natural-language questions about the model | READ |
 
 ### Teamcenter Agent (7)
 
@@ -307,6 +417,63 @@ installation via **Help > Install New Software**.
 | `propagate_simulation_results` | `simulation` | Write simulation outputs back to Capella model element properties | WRITE |
 | `run_what_if` | `simulation` | Run multiple simulation variants by sweeping parameter ranges | WRITE |
 | `get_simulation_status` | `simulation` | Check the status of an in-progress or completed simulation run | READ |
+
+---
+
+## MCP Bridge Architecture
+
+The `com.capellaagent.mcp` plugin enables Claude Code (or any MCP-compatible
+client) to call all 84 Capella Agent tools from outside Eclipse. This is
+the key integration point for developers who prefer terminal-based workflows.
+
+### How It Works
+
+```
++------------------+      stdio (JSON-RPC 2.0)      +-------------------+
+|                  |  <----------------------------> |                   |
+|   Claude Code    |                                 |  Bridge Subprocess|
+|   (terminal)     |                                 |  (McpServerBridge |
+|                  |                                 |   + McpStdio-     |
++------------------+                                 |     Transport)    |
+                                                     +--------+----------+
+                                                              |
+                                                        HTTP (localhost:9847)
+                                                              |
+                                                     +--------v----------+
+                                                     |  McpHttpEndpoint  |
+                                                     |  (Eclipse plugin) |
+                                                     +--------+----------+
+                                                              |
+                                                     +--------v----------+
+                                                     |  McpToolAdapter   |
+                                                     |  MCP schema <-->  |
+                                                     |  IToolDescriptor  |
+                                                     +--------+----------+
+                                                              |
+                                                     +--------v----------+
+                                                     |   ToolRegistry    |
+                                                     |   (84 tools)      |
+                                                     +-------------------+
+```
+
+### Data Flow
+
+1. Claude Code starts the bridge subprocess as defined in `.mcp.json`.
+2. The bridge speaks MCP stdio (JSON-RPC 2.0) on stdin/stdout.
+3. When Claude Code invokes a tool, the bridge translates the MCP request
+   into an HTTP POST to `localhost:9847`.
+4. `McpHttpEndpoint` receives the request inside the Eclipse process.
+5. `McpToolAdapter` maps MCP tool names and parameter schemas to internal
+   `IToolDescriptor` / `IToolExecutor` contracts.
+6. The tool executes with full access to the live EMF model, Sirius diagrams,
+   and all Eclipse APIs.
+7. Results flow back through the same chain to Claude Code.
+
+### Configuration
+
+The `.mcp.json` file at the project root configures Claude Code to discover
+the MCP bridge automatically. No manual editing is required unless you change
+the default port (set `CAPELLA_MCP_PORT` environment variable).
 
 ---
 
@@ -502,7 +669,7 @@ User: "Import the brake caliper from Teamcenter, then simulate its thermal load"
 
 ## Roadmap
 
-### Phase 1: Foundation (Weeks 1-3)
+### Phase 1: Foundation -- Complete
 
 | Deliverable | Status | Details |
 |-------------|--------|---------|
@@ -515,61 +682,61 @@ User: "Import the brake caliper from Teamcenter, then simulate its thermal load"
 | `SecurityService` and `AuditLogger` | Complete | Access control, credential storage, audit trail |
 | `AgentConfiguration` preferences | Complete | Eclipse preference store integration |
 
-### Phase 2: Model Chat Agent (Weeks 3-6)
+### Phase 2: Model Chat Agent (Core Tools) -- Complete
 
 | Deliverable | Status | Details |
 |-------------|--------|---------|
-| 8 read tools | Complete | list, get, search, hierarchy, diagrams, traceability, requirements, validate |
-| 6 write tools | Complete | create element/exchange/capability, allocate, update, delete |
-| 2 diagram tools | Complete | update_diagram, refresh_diagram |
+| 8 read tools (original) | Complete | list, get, search, hierarchy, diagrams, traceability, requirements, validate |
+| 6 write tools (original) | Complete | create element/exchange/capability, allocate, update, delete |
+| 2 diagram tools (original) | Complete | update_diagram, refresh_diagram |
 | `ChatComposite` reusable widget | Complete | SWT chat widget with markdown rendering |
 | `ModelChatView` dockable view | Complete | Eclipse view with send/clear commands |
 | `ElementLinkAdapter` | Complete | Clickable element references in chat |
 
-### Phase 3: Teamcenter Agent (Weeks 6-8)
+### Phase 3: Teamcenter & Simulation Agents -- Complete
 
 | Deliverable | Status | Details |
 |-------------|--------|---------|
 | `TcRestClient` with session management | Complete | Active Workspace REST, token refresh |
-| 4 read tools | Complete | search, get_object, get_bom, list_requirements |
-| 3 write tools | Complete | import_requirement, import_part, create_trace_link |
-| `TcToCapellaMapper` | Complete | Tc item-to-EMF element mapping |
-| `RequirementImporter` / `PartImporter` | Complete | Structured import with conflict detection |
-
-### Phase 4: Simulation Agent (Weeks 8-11)
-
-| Deliverable | Status | Details |
-|-------------|--------|---------|
-| `ISimulationEngine` interface | Complete | Engine abstraction with lifecycle |
-| `MatlabEngineBridge` (Java API) | Complete | In-process MATLAB connection |
-| `MatlabCommandBridge` (CLI fallback) | Complete | Command-line MATLAB for environments without Engine API |
-| `SimulationOrchestrator` | Complete | End-to-end extract-run-propagate workflow |
-| `WhatIfManager` | Complete | Parameter sweep and variant comparison |
-| 6 simulation tools | Complete | list, extract, run, propagate, what_if, status |
+| 7 Teamcenter tools | Complete | search, get_object, get_bom, list_requirements, import_requirement, import_part, create_trace_link |
+| `ISimulationEngine` + MATLAB bridges | Complete | Java Engine API + CLI fallback |
+| 6 Simulation tools | Complete | list, extract, run, propagate, what_if, status |
 | `SimulationDashboardView` | Complete | Eclipse view for run management |
 
-### Phase 5: Integration & Polish (Weeks 11-13)
+### Phase 4: Model Chat Agent Expansion -- Complete
 
 | Deliverable | Status | Details |
 |-------------|--------|---------|
-| Cross-agent event flows | Planned | Full TcItemImported -> Simulate pipeline |
-| Eclipse Feature packaging | Complete | feature.xml with all 8 plugins |
-| p2 Update Site | Complete | category.xml for install-new-software |
-| End-to-end integration tests | Planned | Multi-agent scenario tests |
-| User documentation | Planned | Install guide, user manual, tool reference |
-| Performance profiling | Planned | Large model (10k+ elements) benchmarks |
+| 15 additional read tools | Complete | Interfaces, scenarios, state machines, physical paths, exchange items, data model, constraints, configuration items, deployment, refinement status, and more |
+| 15 additional write tools | Complete | Clone, move, batch rename, batch update, ports, interfaces, functional chains, scenarios, state machines, data types, physical links, exchange items, generalizations, involvements |
+| 7 additional diagram tools | Complete | Create, clone, delete, export image, auto-layout, show element, list elements |
+| 12 analysis tools (new category) | Complete | Validation, cycles, impact, unused elements, statistics, allocation completeness, interface consistency, complexity, singletons, improvements, safety, reachability |
+| 8 export tools (new category) | Complete | CSV, JSON, traceability matrix, allocation matrix, ICD, model report, diff report, diagram catalog |
+| 5 transition tools (new category) | Complete | OA-to-SA, SA-to-LA, LA-to-PA, PA-to-EPBS, reconcile |
+| 5 AI-assisted tools (new category) | Complete | Architecture review, suggest interfaces, auto-allocate, test scenarios, Q&A |
 
-### Phase 6: Claude Code Integration (Complete)
+### Phase 5: MCP Bridge & Provider Expansion -- Complete
 
 | Deliverable | Status | Details |
 |-------------|--------|---------|
-| `com.capellaagent.mcp` plugin | Complete | MCP Server bridge exposing all tools to Claude Code |
+| `com.capellaagent.mcp` plugin | Complete | MCP Server bridge exposing all 84 tools to Claude Code |
 | `McpHttpEndpoint` | Complete | Embedded HTTP server on localhost:9847 |
 | `McpServerBridge` + `McpStdioTransport` | Complete | Bridge subprocess translating MCP stdio (JSON-RPC 2.0) to HTTP |
 | `McpToolAdapter` | Complete | Bidirectional translation between MCP tool schemas and internal tool contracts |
 | `.mcp.json` configuration | Complete | Project-root config file for Claude Code discovery |
 | `OpenAiCompatibleProvider` base class | Complete | Abstract base enabling ~15-line new provider implementations |
 | 6 additional LLM providers | Complete | Groq, DeepSeek, Mistral, OpenRouter, Gemini, Custom Endpoint |
+
+### Phase 6: Integration & Polish -- In Progress
+
+| Deliverable | Status | Details |
+|-------------|--------|---------|
+| Cross-agent event flows | Complete | Full TcItemImported -> Simulate pipeline |
+| Eclipse Feature packaging | Complete | feature.xml with all 8 plugins |
+| p2 Update Site | Complete | category.xml for install-new-software |
+| End-to-end integration tests | Planned | Multi-agent scenario tests |
+| User documentation | Complete | README, COO, SITECONFIGURATIONS, TOOLS reference |
+| Performance profiling | Planned | Large model (10k+ elements) benchmarks |
 
 ### Future Directions
 
@@ -590,7 +757,7 @@ User: "Import the brake caliper from Teamcenter, then simulate its thermal load"
 ```
 capella-agent/
 |
-+-- com.capellaagent.core/                          # Foundation plugin (35 files)
++-- com.capellaagent.core/                          # Foundation plugin
 |   +-- META-INF/
 |   |   +-- MANIFEST.MF
 |   +-- build.properties
@@ -636,16 +803,19 @@ capella-agent/
 |       |   +-- AbstractCapellaTool.java
 |       |   +-- IToolDescriptor.java
 |       |   +-- IToolExecutor.java
+|       |   +-- ToolCategory.java
 |       |   +-- ToolExecutionException.java
+|       |   +-- ToolParameter.java
 |       |   +-- ToolRegistration.java
 |       |   +-- ToolRegistry.java
+|       |   +-- ToolResult.java
 |       |   +-- ToolSchemaBuilder.java
 |       +-- util/
 |           +-- CapellaSessionUtil.java
 |           +-- JsonUtil.java
 |           +-- WorkspaceUtil.java
 |
-+-- com.capellaagent.core.ui/                       # Shared UI components (2 files)
++-- com.capellaagent.core.ui/                       # Shared UI components
 |   +-- META-INF/
 |   |   +-- MANIFEST.MF
 |   +-- build.properties
@@ -655,7 +825,7 @@ capella-agent/
 |       +-- widgets/
 |           +-- ChatComposite.java
 |
-+-- com.capellaagent.modelchat/                     # Model Chat Agent (18 files)
++-- com.capellaagent.modelchat/                     # Model Chat Agent (71 tools)
 |   +-- META-INF/
 |   |   +-- MANIFEST.MF
 |   +-- build.properties
@@ -664,27 +834,98 @@ capella-agent/
 |       +-- ModelChatActivator.java
 |       +-- ModelChatToolRegistrar.java
 |       +-- tools/
-|           +-- diagram/
-|           |   +-- RefreshDiagramTool.java
-|           |   +-- UpdateDiagramTool.java
-|           +-- read/
+|           +-- read/                               # 23 read-only query tools
+|           |   +-- CheckTraceabilityCoverageTool.java
+|           |   +-- ExplainElementTool.java
+|           |   +-- GetAllocationMatrixTool.java
+|           |   +-- GetConfigurationItemsTool.java
+|           |   +-- GetConstraintsTool.java
+|           |   +-- GetDataModelTool.java
+|           |   +-- GetDeploymentMappingTool.java
 |           |   +-- GetElementDetailsTool.java
+|           |   +-- GetExchangeItemsTool.java
+|           |   +-- GetFunctionalChainTool.java
 |           |   +-- GetHierarchyTool.java
+|           |   +-- GetInterfacesTool.java
+|           |   +-- GetPhysicalPathsTool.java
+|           |   +-- GetPropertyValuesTool.java
+|           |   +-- GetRefinementStatusTool.java
+|           |   +-- GetScenariosTool.java
+|           |   +-- GetStateMachinesTool.java
 |           |   +-- GetTraceabilityTool.java
 |           |   +-- ListDiagramsTool.java
 |           |   +-- ListElementsTool.java
 |           |   +-- ListRequirementsTool.java
 |           |   +-- SearchElementsTool.java
 |           |   +-- ValidateModelTool.java
-|           +-- write/
-|               +-- AllocateFunctionTool.java
-|               +-- CreateCapabilityTool.java
-|               +-- CreateElementTool.java
-|               +-- CreateExchangeTool.java
-|               +-- DeleteElementTool.java
-|               +-- UpdateElementTool.java
+|           +-- write/                              # 21 model mutation tools
+|           |   +-- AllocateFunctionTool.java
+|           |   +-- BatchRenameTool.java
+|           |   +-- BatchUpdatePropertiesTool.java
+|           |   +-- CloneElementTool.java
+|           |   +-- CreateCapabilityTool.java
+|           |   +-- CreateDataTypeTool.java
+|           |   +-- CreateElementTool.java
+|           |   +-- CreateExchangeItemTool.java
+|           |   +-- CreateExchangeTool.java
+|           |   +-- CreateFunctionalChainTool.java
+|           |   +-- CreateGeneralizationTool.java
+|           |   +-- CreateInterfaceTool.java
+|           |   +-- CreateInvolvementTool.java
+|           |   +-- CreatePhysicalLinkTool.java
+|           |   +-- CreatePortTool.java
+|           |   +-- CreateScenarioTool.java
+|           |   +-- CreateStateMachineTool.java
+|           |   +-- DeleteElementTool.java
+|           |   +-- MoveElementTool.java
+|           |   +-- SetPropertyValueTool.java
+|           |   +-- UpdateElementTool.java
+|           +-- diagram/                            # 9 diagram manipulation tools
+|           |   +-- AutoLayoutDiagramTool.java
+|           |   +-- CloneDiagramTool.java
+|           |   +-- CreateDiagramTool.java
+|           |   +-- DeleteDiagramTool.java
+|           |   +-- ExportDiagramImageTool.java
+|           |   +-- ListDiagramElementsTool.java
+|           |   +-- RefreshDiagramTool.java
+|           |   +-- ShowElementInDiagramTool.java
+|           |   +-- UpdateDiagramTool.java
+|           +-- analysis/                           # 12 architecture analysis tools
+|           |   +-- AllocationCompletenessTool.java
+|           |   +-- ArchitectureComplexityTool.java
+|           |   +-- DetectCyclesTool.java
+|           |   +-- FindUnusedElementsTool.java
+|           |   +-- GenerateSafetyReportTool.java
+|           |   +-- IdentifySingletonsTool.java
+|           |   +-- ImpactAnalysisTool.java
+|           |   +-- InterfaceConsistencyTool.java
+|           |   +-- ModelStatisticsTool.java
+|           |   +-- ReachabilityAnalysisTool.java
+|           |   +-- RunCapellaValidationTool.java
+|           |   +-- SuggestImprovementsTool.java
+|           +-- export_/                            # 8 export and reporting tools
+|           |   +-- ExportAllocationMatrixCsvTool.java
+|           |   +-- ExportDiagramCatalogTool.java
+|           |   +-- ExportToCsvTool.java
+|           |   +-- ExportToJsonTool.java
+|           |   +-- ExportTraceabilityMatrixTool.java
+|           |   +-- GenerateDiffReportTool.java
+|           |   +-- GenerateIcdReportTool.java
+|           |   +-- GenerateModelReportTool.java
+|           +-- transition/                         # 5 ARCADIA layer transition tools
+|           |   +-- ReconcileLayersTool.java
+|           |   +-- TransitionLaToPaTool.java
+|           |   +-- TransitionOaToSaTool.java
+|           |   +-- TransitionPaToEpbsTool.java
+|           |   +-- TransitionSaToLaTool.java
+|           +-- ai/                                 # 5 AI-assisted engineering tools
+|               +-- AutoAllocateTool.java
+|               +-- GenerateTestScenariosTool.java
+|               +-- ModelQAndATool.java
+|               +-- ReviewArchitectureTool.java
+|               +-- SuggestInterfacesTool.java
 |
-+-- com.capellaagent.modelchat.ui/                  # Model Chat UI (6 files)
++-- com.capellaagent.modelchat.ui/                  # Model Chat UI
 |   +-- META-INF/
 |   |   +-- MANIFEST.MF
 |   +-- build.properties
@@ -700,7 +941,7 @@ capella-agent/
 |           +-- ChatJob.java
 |           +-- ModelChatView.java
 |
-+-- com.capellaagent.teamcenter/                    # Teamcenter Agent (20 files)
++-- com.capellaagent.teamcenter/                    # Teamcenter Agent (7 tools)
 |   +-- META-INF/
 |   |   +-- MANIFEST.MF
 |   +-- build.properties
@@ -731,7 +972,7 @@ capella-agent/
 |           +-- TcListRequirementsTool.java
 |           +-- TcSearchTool.java
 |
-+-- com.capellaagent.simulation/                    # Simulation Agent (22 files)
++-- com.capellaagent.simulation/                    # Simulation Agent (6 tools)
 |   +-- META-INF/
 |   |   +-- MANIFEST.MF
 |   +-- build.properties
@@ -764,7 +1005,7 @@ capella-agent/
 |           +-- RunSimulationTool.java
 |           +-- WhatIfTool.java
 |
-+-- com.capellaagent.simulation.ui/                 # Simulation Dashboard (1 file)
++-- com.capellaagent.simulation.ui/                 # Simulation Dashboard
 |   +-- META-INF/
 |   |   +-- MANIFEST.MF
 |   +-- build.properties
@@ -772,7 +1013,7 @@ capella-agent/
 |   +-- src/com/capellaagent/simulation/ui/views/
 |       +-- SimulationDashboardView.java
 |
-+-- com.capellaagent.mcp/                             # MCP Server Bridge (5 files)
++-- com.capellaagent.mcp/                             # MCP Server Bridge
 |   +-- META-INF/
 |   |   +-- MANIFEST.MF
 |   +-- build.properties

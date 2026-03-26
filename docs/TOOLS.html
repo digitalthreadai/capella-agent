@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Tools Catalog — 95 Tools — Capella Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A0A0F;--surface:#12121A;--surface2:#1A1A26;--surface3:#222233;
+  --text:#E8E8ED;--muted:#8888A0;--dim:#55556A;
+  --primary:#FFD600;--secondary:#E87040;
+  --green:#4ADE80;--blue:#60A5FA;--purple:#A78BFA;
+  --orange:#F59E0B;--red:#F87171;--pink:#F472B6;--cyan:#22D3EE;--teal:#2DD4BF;
+  --yellow:#FFD600;
+  --sidebar-w:260px;--radius:10px;--radius-sm:6px;
+}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{
+  font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);
+  line-height:1.6;-webkit-font-smoothing:antialiased;
+}
+code,.mono{font-family:'JetBrains Mono',monospace}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+
+/* ── Sidebar ── */
+.sidebar{
+  position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;
+  background:var(--surface);border-right:1px solid var(--surface3);
+  display:flex;flex-direction:column;z-index:100;overflow:hidden;
+  transition:transform .3s ease;
+}
+.sidebar-header{
+  padding:24px 20px 16px;border-bottom:1px solid var(--surface3);flex-shrink:0;
+}
+.sidebar-logo{
+  font-size:15px;font-weight:700;letter-spacing:-.3px;
+  display:flex;align-items:center;gap:10px;
+}
+.sidebar-logo .icon{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+}
+.sidebar-search{
+  padding:12px 16px;border-bottom:1px solid var(--surface3);flex-shrink:0;
+}
+.sidebar-search input{
+  width:100%;padding:8px 12px;border-radius:var(--radius-sm);
+  border:1px solid var(--surface3);background:var(--bg);color:var(--text);
+  font-size:13px;font-family:'Inter',sans-serif;outline:none;
+  transition:border-color .2s;
+}
+.sidebar-search input::placeholder{color:var(--dim)}
+.sidebar-search input:focus{border-color:var(--primary)}
+.sidebar-nav{flex:1;overflow-y:auto;padding:8px 0}
+.sidebar-nav::-webkit-scrollbar{width:4px}
+.sidebar-nav::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
+.nav-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 20px;font-size:13px;font-weight:500;color:var(--muted);
+  cursor:pointer;transition:all .15s;border-left:3px solid transparent;
+}
+.nav-item:hover{color:var(--text);background:var(--surface2)}
+.nav-item.active{color:var(--text);background:var(--surface2);border-left-color:var(--primary)}
+.nav-badge{
+  font-size:11px;font-weight:600;padding:1px 7px;border-radius:10px;
+  background:var(--surface3);color:var(--muted);min-width:24px;text-align:center;
+}
+.nav-item.active .nav-badge{background:var(--primary);color:var(--bg)}
+.sidebar-footer{
+  padding:16px 20px;border-top:1px solid var(--surface3);font-size:11px;color:var(--dim);flex-shrink:0;
+}
+.sidebar-footer a{color:var(--dim);margin-right:12px}
+.sidebar-footer a:hover{color:var(--text)}
+
+/* ── Mobile toggle ── */
+.mobile-toggle{
+  display:none;position:fixed;top:14px;left:14px;z-index:200;
+  width:40px;height:40px;border-radius:8px;border:1px solid var(--surface3);
+  background:var(--surface);color:var(--text);font-size:18px;cursor:pointer;
+  align-items:center;justify-content:center;
+}
+.overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90;
+}
+
+/* ── Main content ── */
+.main{margin-left:var(--sidebar-w);min-height:100vh}
+
+/* ── Hero ── */
+.hero{
+  padding:72px 48px 48px;
+  background:linear-gradient(180deg,var(--surface) 0%,var(--bg) 100%);
+  border-bottom:1px solid var(--surface3);
+}
+.hero-title{
+  font-size:clamp(32px,5vw,52px);font-weight:800;letter-spacing:-1.5px;line-height:1.15;
+  background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 50%,var(--purple) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;margin-bottom:12px;
+}
+.hero-sub{font-size:17px;color:var(--muted);font-weight:400;margin-bottom:28px}
+.hero-badges{display:flex;flex-wrap:wrap;gap:8px}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+  border-radius:20px;font-size:12px;font-weight:600;
+  background:var(--surface2);border:1px solid var(--surface3);
+}
+.hero-badge .dot{width:8px;height:8px;border-radius:50%}
+
+/* ── Filter bar ── */
+.filter-bar{
+  position:sticky;top:0;z-index:50;
+  padding:14px 48px;display:flex;flex-wrap:wrap;gap:8px;
+  background:rgba(10,10,15,.85);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--surface3);
+}
+.chip{
+  padding:6px 16px;border-radius:20px;font-size:13px;font-weight:500;
+  border:1px solid var(--surface3);background:var(--surface);color:var(--muted);
+  cursor:pointer;transition:all .2s;user-select:none;
+}
+.chip:hover{border-color:var(--dim);color:var(--text)}
+.chip.active{color:var(--bg);font-weight:600}
+.chip[data-cat="all"].active{background:var(--text);border-color:var(--text)}
+.chip[data-cat="model-read"].active{background:var(--blue);border-color:var(--blue)}
+.chip[data-cat="model-write"].active{background:var(--green);border-color:var(--green)}
+.chip[data-cat="diagram"].active{background:var(--purple);border-color:var(--purple)}
+.chip[data-cat="analysis"].active{background:var(--orange);border-color:var(--orange)}
+.chip[data-cat="export"].active{background:var(--yellow);border-color:var(--yellow)}
+.chip[data-cat="transition"].active{background:var(--red);border-color:var(--red)}
+.chip[data-cat="ai-intelligence"].active{background:var(--pink);border-color:var(--pink)}
+.chip[data-cat="teamcenter"].active{background:var(--cyan);border-color:var(--cyan)}
+.chip[data-cat="simulation"].active{background:var(--teal);border-color:var(--teal)}
+
+/* ── Category sections ── */
+.cat-section{padding:40px 48px 0}
+.cat-heading{
+  display:flex;align-items:center;gap:12px;margin-bottom:24px;
+  padding-bottom:16px;border-bottom:1px solid var(--surface3);
+}
+.cat-heading h2{font-size:22px;font-weight:700;letter-spacing:-.4px}
+.cat-count{
+  font-size:12px;font-weight:600;padding:3px 10px;border-radius:10px;color:var(--bg);
+}
+
+/* ── Grid ── */
+.tools-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;
+  padding-bottom:32px;
+}
+.tool-card{
+  background:var(--surface);border:1px solid var(--surface3);border-radius:var(--radius);
+  overflow:hidden;transition:border-color .2s,transform .15s,box-shadow .2s;cursor:pointer;
+}
+.tool-card:hover{border-color:var(--dim);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.tool-card.expanded{border-color:var(--primary)}
+.card-top{padding:18px 20px 14px}
+.card-name{
+  font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;
+  color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:10px;
+}
+.card-badge{
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:600;
+  padding:2px 8px;border-radius:8px;color:var(--bg);white-space:nowrap;
+}
+.badge-model-read{background:var(--blue)}
+.badge-model-write{background:var(--green)}
+.badge-diagram{background:var(--purple)}
+.badge-analysis{background:var(--orange)}
+.badge-export{background:var(--yellow)}
+.badge-transition{background:var(--red)}
+.badge-ai-intelligence{background:var(--pink)}
+.badge-teamcenter{background:var(--cyan)}
+.badge-simulation{background:var(--teal)}
+.card-desc{font-size:13px;color:var(--muted);line-height:1.5}
+.card-details{
+  max-height:0;overflow:hidden;transition:max-height .35s ease;
+}
+.tool-card.expanded .card-details{max-height:600px}
+.card-details-inner{padding:0 20px 18px}
+.card-section-title{
+  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--dim);margin:12px 0 8px;
+}
+.example-prompt{
+  font-size:12.5px;color:var(--muted);padding:7px 12px;margin-bottom:6px;
+  border-left:3px solid var(--surface3);background:var(--surface2);border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  font-style:italic;
+}
+.tool-card.expanded .example-prompt{border-left-color:var(--primary)}
+.param-list{list-style:none}
+.param-list li{
+  font-size:12px;padding:4px 0;color:var(--muted);
+  display:flex;align-items:baseline;gap:8px;
+}
+.param-list .pname{font-family:'JetBrains Mono',monospace;color:var(--text);font-size:11px}
+.card-expand-hint{
+  text-align:center;padding:6px;font-size:11px;color:var(--dim);
+  border-top:1px solid var(--surface3);transition:color .2s;
+}
+.tool-card:hover .card-expand-hint{color:var(--muted)}
+.tool-card.expanded .card-expand-hint{display:none}
+
+/* ── Footer ── */
+.page-footer{
+  padding:40px 48px;margin-top:24px;border-top:1px solid var(--surface3);
+  display:flex;flex-wrap:wrap;gap:24px;align-items:center;
+  font-size:13px;color:var(--dim);
+}
+.page-footer a{color:var(--muted)}
+.page-footer a:hover{color:var(--text)}
+.footer-sep{color:var(--surface3)}
+
+/* ── No results ── */
+.no-results{
+  grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--dim);font-size:15px;
+  display:none;
+}
+.no-results.visible{display:block}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .overlay.open{display:block}
+  .mobile-toggle{display:flex}
+  .main{margin-left:0}
+  .hero{padding:72px 24px 36px}
+  .filter-bar{padding:14px 24px}
+  .cat-section{padding:32px 24px 0}
+  .tools-grid{grid-template-columns:1fr}
+  .page-footer{padding:32px 24px}
+}
+@media(max-width:480px){
+  .hero-title{font-size:28px}
+  .tools-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Mobile hamburger -->
+<button class="mobile-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">&#9776;</button>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <div class="icon">CA</div>
+      <span>Capella Agent</span>
+    </div>
+  </div>
+  <div class="sidebar-search">
+    <input type="text" id="searchInput" placeholder="Search 95 tools..." oninput="handleSearch(this.value)">
+  </div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-item active" data-cat="all" onclick="filterCategory('all',this)">
+      All Tools <span class="nav-badge">95</span>
+    </div>
+    <div class="nav-item" data-cat="model-read" onclick="filterCategory('model-read',this)">
+      Model Read <span class="nav-badge">21</span>
+    </div>
+    <div class="nav-item" data-cat="model-write" onclick="filterCategory('model-write',this)">
+      Model Write <span class="nav-badge">21</span>
+    </div>
+    <div class="nav-item" data-cat="diagram" onclick="filterCategory('diagram',this)">
+      Diagram <span class="nav-badge">9</span>
+    </div>
+    <div class="nav-item" data-cat="analysis" onclick="filterCategory('analysis',this)">
+      Analysis <span class="nav-badge">13</span>
+    </div>
+    <div class="nav-item" data-cat="export" onclick="filterCategory('export',this)">
+      Export <span class="nav-badge">8</span>
+    </div>
+    <div class="nav-item" data-cat="transition" onclick="filterCategory('transition',this)">
+      Transition <span class="nav-badge">5</span>
+    </div>
+    <div class="nav-item" data-cat="ai-intelligence" onclick="filterCategory('ai-intelligence',this)">
+      AI Intelligence <span class="nav-badge">5</span>
+    </div>
+    <div class="nav-item" data-cat="teamcenter" onclick="filterCategory('teamcenter',this)">
+      Teamcenter <span class="nav-badge">7</span>
+    </div>
+    <div class="nav-item" data-cat="simulation" onclick="filterCategory('simulation',this)">
+      Simulation <span class="nav-badge">6</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="README.html">README</a>
+    <a href="COO.html">COO</a>
+    <a href="SITECONFIGURATIONS.html">Setup</a>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1 class="hero-title">AI Tools Catalog</h1>
+    <p class="hero-sub">95 production-ready tools for Capella MBSE &mdash; model, analyze, export, simulate.</p>
+    <div class="hero-badges">
+      <span class="hero-badge"><span class="dot" style="background:var(--blue)"></span>Model Read 21</span>
+      <span class="hero-badge"><span class="dot" style="background:var(--green)"></span>Model Write 21</span>
+      <span class="hero-badge"><span class="dot" style="background:var(--purple)"></span>Diagram 9</span>
+      <span class="hero-badge"><span class="dot" style="background:var(--orange)"></span>Analysis 13</span>
+      <span class="hero-badge"><span class="dot" style="background:var(--yellow)"></span>Export 8</span>
+      <span class="hero-badge"><span class="dot" style="background:var(--red)"></span>Transition 5</span>
+      <span class="hero-badge"><span class="dot" style="background:var(--pink)"></span>AI Intelligence 5</span>
+      <span class="hero-badge"><span class="dot" style="background:var(--cyan)"></span>Teamcenter 7</span>
+      <span class="hero-badge"><span class="dot" style="background:var(--teal)"></span>Simulation 6</span>
+    </div>
+  </section>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar" id="filterBar">
+    <span class="chip active" data-cat="all" onclick="filterCategory('all',this)">All (95)</span>
+    <span class="chip" data-cat="model-read" onclick="filterCategory('model-read',this)">Model Read (21)</span>
+    <span class="chip" data-cat="model-write" onclick="filterCategory('model-write',this)">Model Write (21)</span>
+    <span class="chip" data-cat="diagram" onclick="filterCategory('diagram',this)">Diagram (9)</span>
+    <span class="chip" data-cat="analysis" onclick="filterCategory('analysis',this)">Analysis (13)</span>
+    <span class="chip" data-cat="export" onclick="filterCategory('export',this)">Export (8)</span>
+    <span class="chip" data-cat="transition" onclick="filterCategory('transition',this)">Transition (5)</span>
+    <span class="chip" data-cat="ai-intelligence" onclick="filterCategory('ai-intelligence',this)">AI Intelligence (5)</span>
+    <span class="chip" data-cat="teamcenter" onclick="filterCategory('teamcenter',this)">Teamcenter (7)</span>
+    <span class="chip" data-cat="simulation" onclick="filterCategory('simulation',this)">Simulation (6)</span>
+  </div>
+
+  <!-- Tool Sections (generated by JS) -->
+  <div id="content"></div>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <a href="README.html">README</a>
+    <span class="footer-sep">|</span>
+    <a href="COO.html">COO &mdash; Component Ownership</a>
+    <span class="footer-sep">|</span>
+    <a href="SITECONFIGURATIONS.html">Setup &amp; Configuration</a>
+    <span class="footer-sep">|</span>
+    <span>Capella Agent &copy; 2026</span>
+  </footer>
+</div>
+
+<script>
+// ── Tool Data ──
+const TOOLS = [
+  // MODEL READ (21)
+  {name:"list_elements",cat:"model-read",catLabel:"Model Read",desc:"List elements by architecture layer and type.",prompts:["List all physical functions","Show SA components","List logical actors"]},
+  {name:"get_element_details",cat:"model-read",catLabel:"Model Read",desc:"Retrieve full element properties and metadata.",prompts:["Show details of component X","What are the properties of function Y?"]},
+  {name:"search_elements",cat:"model-read",catLabel:"Model Read",desc:"Search for elements by name pattern or keyword.",prompts:["Find all elements containing 'sensor'","Search for functions named 'Process'"]},
+  {name:"get_element_hierarchy",cat:"model-read",catLabel:"Model Read",desc:"Display the containment tree of an element.",prompts:["Show the hierarchy of component X","What are the children of this package?"]},
+  {name:"list_diagrams",cat:"model-read",catLabel:"Model Read",desc:"List all diagrams with metadata and types.",prompts:["List all diagrams","Show physical architecture diagrams"]},
+  {name:"list_requirements",cat:"model-read",catLabel:"Model Read",desc:"List requirements with traceability links.",prompts:["List all requirements","Show requirements linked to component X"]},
+  {name:"get_traceability",cat:"model-read",catLabel:"Model Read",desc:"Follow realization chains across layers.",prompts:["Show traceability for function X","What realizes this logical function?"]},
+  {name:"validate_model",cat:"model-read",catLabel:"Model Read",desc:"Run structural validation on the model.",prompts:["Validate the physical architecture","Check for model issues"]},
+  {name:"get_allocation_matrix",cat:"model-read",catLabel:"Model Read",desc:"Show function-to-component allocation mapping.",prompts:["Show allocation matrix for PA","Which functions are allocated where?"]},
+  {name:"get_functional_chain",cat:"model-read",catLabel:"Model Read",desc:"Retrieve functional chain steps and exchanges.",prompts:["Show functional chain details","Trace the data processing chain"]},
+  {name:"get_interfaces",cat:"model-read",catLabel:"Model Read",desc:"List interfaces and associated exchange items.",prompts:["List all SA interfaces","Show interfaces of component X"]},
+  {name:"get_scenarios",cat:"model-read",catLabel:"Model Read",desc:"List scenarios with message sequences.",prompts:["List scenarios in SA","Show interaction sequences"]},
+  {name:"explain_element",cat:"model-read",catLabel:"Model Read",desc:"AI-powered comprehensive element context explanation.",prompts:["Explain component X","What does this function do in context?"]},
+  {name:"get_state_machines",cat:"model-read",catLabel:"Model Read",desc:"List states, transitions, and regions.",prompts:["Show state machines","What states does component X have?"]},
+  {name:"get_data_model",cat:"model-read",catLabel:"Model Read",desc:"Retrieve classes, data types, and enumerations.",prompts:["Show the data model","List all data types in SA"]},
+  {name:"get_physical_paths",cat:"model-read",catLabel:"Model Read",desc:"Show physical link routing between nodes.",prompts:["Show physical paths","How are components physically connected?"]},
+  {name:"get_exchange_items",cat:"model-read",catLabel:"Model Read",desc:"List exchange items and their element associations.",prompts:["List exchange items","What data flows through interface X?"]},
+  {name:"get_property_values",cat:"model-read",catLabel:"Model Read",desc:"Read custom property values of model elements.",prompts:["Show properties of element X","What custom values are set?"]},
+  {name:"get_constraints",cat:"model-read",catLabel:"Model Read",desc:"Retrieve constraints applied to elements.",prompts:["List constraints on component X","Show all model constraints"]},
+  {name:"get_configuration_items",cat:"model-read",catLabel:"Model Read",desc:"List EPBS configuration items.",prompts:["List configuration items","Show EPBS structure"]},
+  {name:"get_deployment_mapping",cat:"model-read",catLabel:"Model Read",desc:"Show deployment of behavior to nodes.",prompts:["Show deployment mapping","Where is component X deployed?"]},
+
+  // MODEL WRITE (21)
+  {name:"create_element",cat:"model-write",catLabel:"Model Write",desc:"Create a new function, component, or actor.",prompts:["Create a physical function named 'Process Data'","Add a logical component called 'Sensor Module'"]},
+  {name:"create_exchange",cat:"model-write",catLabel:"Model Write",desc:"Create a functional or component exchange.",prompts:["Create a functional exchange between F1 and F2","Add component exchange"]},
+  {name:"allocate_function",cat:"model-write",catLabel:"Model Write",desc:"Allocate a function to a component.",prompts:["Allocate 'Process Data' to 'CPU Module'","Map function to component"]},
+  {name:"create_capability",cat:"model-write",catLabel:"Model Write",desc:"Create a new capability or mission.",prompts:["Create capability 'Self-Diagnosis'","Add operational capability"]},
+  {name:"update_element",cat:"model-write",catLabel:"Model Write",desc:"Rename or update element properties.",prompts:["Rename component X to 'Navigation Unit'","Update description of function Y"]},
+  {name:"delete_element",cat:"model-write",catLabel:"Model Write",desc:"Delete an element from the model.",prompts:["Delete the unused component X","Remove function Y"]},
+  {name:"create_interface",cat:"model-write",catLabel:"Model Write",desc:"Create an interface with exchange items.",prompts:["Create interface 'ISensorData'","Add interface with exchange items"]},
+  {name:"create_functional_chain",cat:"model-write",catLabel:"Model Write",desc:"Create a functional chain linking functions.",prompts:["Create functional chain 'Data Flow'","Link functions in a chain"]},
+  {name:"create_physical_link",cat:"model-write",catLabel:"Model Write",desc:"Create a physical link between nodes.",prompts:["Create physical link between Node A and Node B"]},
+  {name:"batch_rename",cat:"model-write",catLabel:"Model Write",desc:"Mass rename elements matching a pattern.",prompts:["Rename all functions starting with 'old_' to 'new_'","Preview rename changes"]},
+  {name:"create_scenario",cat:"model-write",catLabel:"Model Write",desc:"Create an interaction scenario.",prompts:["Create interaction scenario 'Boot Sequence'"]},
+  {name:"create_state_machine",cat:"model-write",catLabel:"Model Write",desc:"Add a state machine to a component.",prompts:["Add state machine to component X"]},
+  {name:"create_data_type",cat:"model-write",catLabel:"Model Write",desc:"Create an enumeration or class data type.",prompts:["Create enumeration 'SensorStatus'","Add class 'Measurement'"]},
+  {name:"move_element",cat:"model-write",catLabel:"Model Write",desc:"Move an element to a different package.",prompts:["Move function X to package Y"]},
+  {name:"clone_element",cat:"model-write",catLabel:"Model Write",desc:"Deep clone an element with children.",prompts:["Clone component X with all children"]},
+  {name:"set_property_value",cat:"model-write",catLabel:"Model Write",desc:"Set a custom property value on an element.",prompts:["Set priority of function X to 'high'"]},
+  {name:"create_exchange_item",cat:"model-write",catLabel:"Model Write",desc:"Create a new exchange item definition.",prompts:["Create exchange item 'TemperatureReading'"]},
+  {name:"batch_update_properties",cat:"model-write",catLabel:"Model Write",desc:"Bulk update properties across elements.",prompts:["Set description on all unset functions"]},
+  {name:"create_port",cat:"model-write",catLabel:"Model Write",desc:"Add a port to a function or component.",prompts:["Add input port to function X"]},
+  {name:"create_involvement",cat:"model-write",catLabel:"Model Write",desc:"Link a function to a capability.",prompts:["Involve function X in capability Y"]},
+  {name:"create_generalization",cat:"model-write",catLabel:"Model Write",desc:"Create an inheritance relationship.",prompts:["Make ComponentB extend ComponentA"]},
+
+  // DIAGRAM (9)
+  {name:"update_diagram",cat:"diagram",catLabel:"Diagram",desc:"Add or remove elements from a diagram.",prompts:["Add component X to the PAB diagram"]},
+  {name:"refresh_diagram",cat:"diagram",catLabel:"Diagram",desc:"Synchronize diagram with model state.",prompts:["Refresh the physical architecture diagram"]},
+  {name:"create_diagram",cat:"diagram",catLabel:"Diagram",desc:"Create a new diagram of a given type.",prompts:["Create a new PAB diagram for component X"]},
+  {name:"export_diagram_image",cat:"diagram",catLabel:"Diagram",desc:"Export a diagram as a PNG or SVG image.",prompts:["Export diagram as PNG"]},
+  {name:"show_element_in_diagram",cat:"diagram",catLabel:"Diagram",desc:"Find which diagrams display a given element.",prompts:["Which diagrams show component X?"]},
+  {name:"list_diagram_elements",cat:"diagram",catLabel:"Diagram",desc:"List all elements shown in a diagram.",prompts:["What's shown in this diagram?"]},
+  {name:"clone_diagram",cat:"diagram",catLabel:"Diagram",desc:"Duplicate an existing diagram.",prompts:["Clone the system architecture diagram"]},
+  {name:"auto_layout_diagram",cat:"diagram",catLabel:"Diagram",desc:"Automatically arrange diagram layout.",prompts:["Auto-arrange the physical architecture diagram"]},
+  {name:"delete_diagram",cat:"diagram",catLabel:"Diagram",desc:"Remove a diagram from the model.",prompts:["Delete the unused diagram"]},
+
+  // ANALYSIS (13)
+  {name:"check_traceability_coverage",cat:"analysis",catLabel:"Analysis",desc:"Identify traceability gaps between layers.",prompts:["Check traceability from SA to LA","Which SA elements have no LA realization?"]},
+  {name:"run_capella_validation",cat:"analysis",catLabel:"Analysis",desc:"Execute Capella validation rules.",prompts:["Run validation on PA","Check for naming issues"]},
+  {name:"detect_cycles",cat:"analysis",catLabel:"Analysis",desc:"Find circular dependencies in exchanges.",prompts:["Find circular dependencies in SA exchanges"]},
+  {name:"impact_analysis",cat:"analysis",catLabel:"Analysis",desc:"Analyze the impact of a proposed change.",prompts:["What would break if I delete component X?"]},
+  {name:"find_unused_elements",cat:"analysis",catLabel:"Analysis",desc:"Detect unreferenced or orphan elements.",prompts:["Find unused functions in PA","Which components have no allocations?"]},
+  {name:"model_statistics",cat:"analysis",catLabel:"Analysis",desc:"Generate model-wide metrics and statistics.",prompts:["Show model statistics","How many elements per layer?"]},
+  {name:"allocation_completeness",cat:"analysis",catLabel:"Analysis",desc:"Check function allocation coverage.",prompts:["Check allocation completeness in PA"]},
+  {name:"get_refinement_status",cat:"analysis",catLabel:"Analysis",desc:"Identify elements not yet refined to the next layer.",prompts:["What SA elements haven't been refined to LA?"]},
+  {name:"interface_consistency",cat:"analysis",catLabel:"Analysis",desc:"Validate interface consistency within a layer.",prompts:["Check interface consistency in LA"]},
+  {name:"reachability_analysis",cat:"analysis",catLabel:"Analysis",desc:"Determine if a path exists between functions.",prompts:["Can function A reach function B?"]},
+  {name:"architecture_complexity",cat:"analysis",catLabel:"Analysis",desc:"Compute architecture complexity metrics.",prompts:["Analyze architecture complexity of PA"]},
+  {name:"identify_singletons",cat:"analysis",catLabel:"Analysis",desc:"Find components with only one allocated function.",prompts:["Find components with only one function"]},
+  {name:"generate_safety_report",cat:"analysis",catLabel:"Analysis",desc:"Generate FMEA-style safety analysis report.",prompts:["Generate FMEA-style safety report for PA"]},
+
+  // EXPORT (8)
+  {name:"export_to_csv",cat:"export",catLabel:"Export",desc:"Export elements to CSV format.",prompts:["Export all PA functions to CSV"]},
+  {name:"export_to_json",cat:"export",catLabel:"Export",desc:"Export model structure as JSON.",prompts:["Export the model structure as JSON"]},
+  {name:"generate_icd_report",cat:"export",catLabel:"Export",desc:"Generate an Interface Control Document.",prompts:["Generate interface control document for component X"]},
+  {name:"generate_model_report",cat:"export",catLabel:"Export",desc:"Create a comprehensive model health report.",prompts:["Generate comprehensive model health report"]},
+  {name:"export_traceability_matrix",cat:"export",catLabel:"Export",desc:"Export cross-layer traceability matrix.",prompts:["Export SA-to-LA traceability matrix"]},
+  {name:"export_allocation_matrix_csv",cat:"export",catLabel:"Export",desc:"Export function allocation matrix to CSV.",prompts:["Export function allocation matrix as CSV"]},
+  {name:"export_diagram_catalog",cat:"export",catLabel:"Export",desc:"Generate a catalog of all diagrams.",prompts:["List all diagrams with details"]},
+  {name:"generate_diff_report",cat:"export",catLabel:"Export",desc:"Report recent model changes.",prompts:["What changed in the model recently?"]},
+
+  // TRANSITION (5)
+  {name:"transition_oa_to_sa",cat:"transition",catLabel:"Transition",desc:"Transition operational activities to system functions.",prompts:["Transition operational activities to system functions"]},
+  {name:"transition_sa_to_la",cat:"transition",catLabel:"Transition",desc:"Refine system architecture to logical architecture.",prompts:["Refine system functions to logical functions"]},
+  {name:"transition_la_to_pa",cat:"transition",catLabel:"Transition",desc:"Transition logical to physical architecture.",prompts:["Transition logical to physical architecture"]},
+  {name:"reconcile_layers",cat:"transition",catLabel:"Transition",desc:"Check consistency between architecture layers.",prompts:["Check consistency between SA and LA"]},
+  {name:"transition_pa_to_epbs",cat:"transition",catLabel:"Transition",desc:"Create EPBS items from physical components.",prompts:["Create EPBS items from physical components"]},
+
+  // AI INTELLIGENCE (5)
+  {name:"review_architecture",cat:"ai-intelligence",catLabel:"AI Intelligence",desc:"AI-powered architecture quality review.",prompts:["Review the architecture quality of PA"]},
+  {name:"suggest_interfaces",cat:"ai-intelligence",catLabel:"AI Intelligence",desc:"Suggest missing interfaces between components.",prompts:["Suggest missing interfaces between components"]},
+  {name:"auto_allocate",cat:"ai-intelligence",catLabel:"AI Intelligence",desc:"AI-suggested function-to-component allocations.",prompts:["Suggest function-to-component allocations"]},
+  {name:"generate_test_scenarios",cat:"ai-intelligence",catLabel:"AI Intelligence",desc:"Generate verification scenarios for capabilities.",prompts:["Generate verification scenarios for capabilities"]},
+  {name:"model_qa",cat:"ai-intelligence",catLabel:"AI Intelligence",desc:"Answer natural-language questions about the model.",prompts:["Summarize the overall model architecture"]},
+
+  // TEAMCENTER (7)
+  {name:"search_teamcenter",cat:"teamcenter",catLabel:"Teamcenter",desc:"Search Teamcenter for items or requirements.",prompts:["Search Teamcenter for sensor requirements"]},
+  {name:"tc_get_object",cat:"teamcenter",catLabel:"Teamcenter",desc:"Retrieve a Teamcenter object by ID.",prompts:["Get details of Teamcenter item ABC123"]},
+  {name:"tc_get_bom",cat:"teamcenter",catLabel:"Teamcenter",desc:"Get BOM structure for an assembly.",prompts:["Show BOM structure for assembly X"]},
+  {name:"tc_list_requirements",cat:"teamcenter",catLabel:"Teamcenter",desc:"List Teamcenter requirements for a project.",prompts:["List Teamcenter requirements for project X"]},
+  {name:"tc_import_requirement",cat:"teamcenter",catLabel:"Teamcenter",desc:"Import a requirement from Teamcenter into Capella.",prompts:["Import requirement from Teamcenter into SA"]},
+  {name:"tc_import_part",cat:"teamcenter",catLabel:"Teamcenter",desc:"Import part structure from Teamcenter.",prompts:["Import part structure from Teamcenter"]},
+  {name:"tc_create_trace_link",cat:"teamcenter",catLabel:"Teamcenter",desc:"Create a traceability link to Teamcenter.",prompts:["Link Capella element to Teamcenter requirement"]},
+
+  // SIMULATION (6)
+  {name:"list_simulation_engines",cat:"simulation",catLabel:"Simulation",desc:"List available simulation engines.",prompts:["What simulation engines are available?"]},
+  {name:"extract_simulation_params",cat:"simulation",catLabel:"Simulation",desc:"Extract simulation parameters from model.",prompts:["Get simulation parameters from model"]},
+  {name:"run_simulation",cat:"simulation",catLabel:"Simulation",desc:"Execute a simulation run with model parameters.",prompts:["Run MATLAB simulation with model parameters"]},
+  {name:"propagate_simulation_results",cat:"simulation",catLabel:"Simulation",desc:"Write simulation results back into the model.",prompts:["Write simulation results back to model"]},
+  {name:"run_what_if",cat:"simulation",catLabel:"Simulation",desc:"Run parameter sweep what-if analysis.",prompts:["Run parameter sweep for thermal analysis"]},
+  {name:"get_simulation_status",cat:"simulation",catLabel:"Simulation",desc:"Check the status of a running simulation.",prompts:["Is the simulation still running?"]}
+];
+
+const CATEGORIES = [
+  {id:"model-read",label:"Model Read",count:21,color:"var(--blue)"},
+  {id:"model-write",label:"Model Write",count:21,color:"var(--green)"},
+  {id:"diagram",label:"Diagram",count:9,color:"var(--purple)"},
+  {id:"analysis",label:"Analysis",count:13,color:"var(--orange)"},
+  {id:"export",label:"Export",count:8,color:"var(--yellow)"},
+  {id:"transition",label:"Transition",count:5,color:"var(--red)"},
+  {id:"ai-intelligence",label:"AI Intelligence",count:5,color:"var(--pink)"},
+  {id:"teamcenter",label:"Teamcenter",count:7,color:"var(--cyan)"},
+  {id:"simulation",label:"Simulation",count:6,color:"var(--teal)"}
+];
+
+// ── Render ──
+function renderContent(){
+  const container = document.getElementById('content');
+  let html = '';
+  CATEGORIES.forEach(cat => {
+    const tools = TOOLS.filter(t => t.cat === cat.id);
+    html += `<section class="cat-section" id="cat-${cat.id}" data-cat="${cat.id}">
+      <div class="cat-heading">
+        <h2>${cat.label}</h2>
+        <span class="cat-count" style="background:${cat.color}">${cat.count}</span>
+      </div>
+      <div class="tools-grid">`;
+    tools.forEach((t,i) => {
+      html += `<div class="tool-card" data-cat="${t.cat}" data-name="${t.name}" onclick="toggleCard(this)">
+        <div class="card-top">
+          <div class="card-name">
+            ${t.name}
+            <span class="card-badge badge-${t.cat}">${t.catLabel}</span>
+          </div>
+          <div class="card-desc">${t.desc}</div>
+        </div>
+        <div class="card-details">
+          <div class="card-details-inner">
+            <div class="card-section-title">Example Prompts</div>
+            ${t.prompts.map(p => `<div class="example-prompt">"${p}"</div>`).join('')}
+          </div>
+        </div>
+        <div class="card-expand-hint">Click to expand</div>
+      </div>`;
+    });
+    html += `<div class="no-results" id="no-${cat.id}">No matching tools in this category.</div>`;
+    html += '</div></section>';
+  });
+  container.innerHTML = html;
+}
+
+// ── Card expand ──
+function toggleCard(el){
+  el.classList.toggle('expanded');
+}
+
+// ── Category filter ──
+let activeCat = 'all';
+function filterCategory(cat, clickedEl){
+  activeCat = cat;
+  // Update chips
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.cat === cat));
+  // Update sidebar
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
+  // Show/hide sections
+  document.querySelectorAll('.cat-section').forEach(s => {
+    s.style.display = (cat === 'all' || s.dataset.cat === cat) ? '' : 'none';
+  });
+  // Re-apply search
+  handleSearch(document.getElementById('searchInput').value);
+  // Scroll to top of content if specific category
+  if(cat !== 'all'){
+    const section = document.getElementById('cat-' + cat);
+    if(section) section.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  // Close mobile sidebar
+  if(window.innerWidth <= 900) closeSidebar();
+}
+
+// ── Search ──
+function handleSearch(query){
+  const q = query.toLowerCase().trim();
+  document.querySelectorAll('.cat-section').forEach(section => {
+    if(activeCat !== 'all' && section.dataset.cat !== activeCat){
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = '';
+    let visibleCount = 0;
+    section.querySelectorAll('.tool-card').forEach(card => {
+      const name = card.dataset.name;
+      const match = !q || name.includes(q);
+      card.style.display = match ? '' : 'none';
+      if(match) visibleCount++;
+    });
+    const noRes = section.querySelector('.no-results');
+    if(noRes) noRes.classList.toggle('visible', visibleCount === 0 && (activeCat === 'all' || section.dataset.cat === activeCat));
+  });
+  updateVisibleCount(q);
+}
+
+function updateVisibleCount(q){
+  const visible = document.querySelectorAll('.tool-card:not([style*="display: none"])').length;
+  // Update sidebar badge for 'all'
+  const allBadge = document.querySelector('.nav-item[data-cat="all"] .nav-badge');
+  if(allBadge && q) allBadge.textContent = visible;
+  else if(allBadge) allBadge.textContent = '95';
+}
+
+// ── Sidebar mobile ──
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// ── Scroll spy ──
+function initScrollSpy(){
+  const sections = document.querySelectorAll('.cat-section');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        const cat = entry.target.dataset.cat;
+        document.querySelectorAll('.nav-item').forEach(n => {
+          if(activeCat === 'all') n.classList.toggle('active', n.dataset.cat === cat);
+        });
+      }
+    });
+  },{rootMargin:'-100px 0px -60% 0px',threshold:0});
+  sections.forEach(s => observer.observe(s));
+}
+
+// ── Init ──
+renderContent();
+initScrollSpy();
+</script>
+</body>
+</html>

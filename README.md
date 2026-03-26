@@ -1,6 +1,6 @@
 # Capella Agent
 
-> AI-powered multi-agent ecosystem for Eclipse Capella, bringing LLM-driven model interaction, Teamcenter PLM integration, and simulation orchestration directly into the MBSE workbench.
+> AI-powered multi-agent ecosystem for Eclipse Capella, bringing 84 LLM-callable tools for model interaction, architecture analysis, PLM integration, and simulation orchestration directly into the MBSE workbench.
 
 [![Java 17+](https://img.shields.io/badge/Java-17%2B-blue.svg)](https://openjdk.org/)
 [![Eclipse Capella 7.0](https://img.shields.io/badge/Capella-7.0-green.svg)](https://www.eclipse.org/capella/)
@@ -8,7 +8,7 @@
 
 ## Why This Exists
 
-Systems engineers working in Capella spend significant time on repetitive model queries, cross-tool traceability lookups, and manual simulation workflows. Capella Agent places AI assistants directly inside the Capella workbench so you can ask questions about your model in natural language, import PLM data from Teamcenter without leaving Capella, and run what-if simulations guided by an LLM that understands your architecture.
+Systems engineers working in Capella spend significant time on repetitive model queries, cross-tool traceability lookups, manual data exports, and context-switching between simulation tools. Capella Agent places AI assistants directly inside the Capella workbench so you can ask questions about your model in natural language, run architecture analysis, export reports, automate ARCADIA layer transitions, import PLM data from Teamcenter, and run what-if simulations -- all without leaving Eclipse.
 
 ## Architecture
 
@@ -23,7 +23,7 @@ Systems engineers working in Capella spend significant time on repetitive model 
 |           |                      |                       |           |
 |  +--------v----------+  +-------v-----------+  +--------v---------+  |
 |  |  Model Chat Agent |  |  Simulation Agent |  |  Teamcenter Agent|  |
-|  |  16 tools         |  |  6 tools          |  |  7 tools         |  |
+|  |  71 tools         |  |  6 tools          |  |  7 tools         |  |
 |  |  (modelchat)      |  |  (simulation)     |  |  (teamcenter)    |  |
 |  +--------+----------+  +--------+----------+  +--------+---------+  |
 |           |                      |                       |           |
@@ -52,6 +52,22 @@ Systems engineers working in Capella spend significant time on repetitive model 
               +----------------+
 ```
 
+## Tool Categories
+
+Capella Agent ships with **84 tools** across **9 categories**. For the complete tool catalog with descriptions and access modes, see [TOOLS.md](TOOLS.md).
+
+| Category | Tools | Description |
+|----------|------:|-------------|
+| **Read** | 23 | Query model elements, hierarchies, traceability, interfaces, scenarios, state machines, and more |
+| **Write** | 21 | Create, update, delete, move, and clone model elements; batch operations |
+| **Diagram** | 9 | Create, update, clone, delete, export, and auto-layout Sirius diagrams |
+| **Analysis** | 12 | Validation, cycle detection, impact analysis, complexity metrics, safety reports |
+| **Export** | 8 | CSV, JSON, traceability matrices, ICD reports, model reports, diff reports |
+| **Transition** | 5 | Automate ARCADIA layer transitions (OA-to-SA, SA-to-LA, LA-to-PA, PA-to-EPBS) and reconciliation |
+| **AI-Assisted** | 5 | Architecture review, interface suggestions, auto-allocation, test scenario generation, Q&A |
+| **Teamcenter** | 7 | Search, import, and trace Siemens Teamcenter PLM artifacts |
+| **Simulation** | 6 | MATLAB/Simulink parameter extraction, execution, result propagation, what-if analysis |
+
 ## Technology Stack
 
 | Layer | Technology |
@@ -65,83 +81,15 @@ Systems engineers working in Capella spend significant time on repetitive model 
 | Simulation | MATLAB Engine API for Java |
 | PLM | Teamcenter Active Workspace REST API |
 
-## Features
-
-### Model Chat Agent (16 tools)
-
-Query, modify, and visualize your Capella model through natural language.
-
-**Read tools** -- work in both `READ_ONLY` and `READ_WRITE` modes:
-
-| Tool | Description |
-|---|---|
-| `ListElements` | List model elements by layer and type |
-| `GetElementDetails` | Retrieve full details of a specific element |
-| `SearchElements` | Search elements by name, type, or keyword |
-| `GetHierarchy` | Navigate containment and decomposition trees |
-| `ListDiagrams` | List all diagrams in the model |
-| `ListRequirements` | List requirements and their allocations |
-| `GetTraceability` | Follow traceability links across layers |
-| `ValidateModel` | Run model validation rules and report issues |
-
-**Write tools** -- require `READ_WRITE` mode:
-
-| Tool | Description |
-|---|---|
-| `CreateElement` | Create a new model element (component, function, etc.) |
-| `CreateExchange` | Create functional or component exchanges |
-| `AllocateFunction` | Allocate functions to components |
-| `CreateCapability` | Create operational or system capabilities |
-| `UpdateElement` | Modify properties of an existing element |
-| `DeleteElement` | Remove an element from the model |
-
-**Diagram tools**:
-
-| Tool | Description |
-|---|---|
-| `UpdateDiagram` | Add or remove elements on a diagram |
-| `RefreshDiagram` | Refresh a diagram to reflect model changes |
-
-### Teamcenter Agent (7 tools)
-
-Bridge Capella models with Siemens Teamcenter PLM data.
-
-| Tool | Description |
-|---|---|
-| `TcSearch` | Full-text search across Teamcenter objects |
-| `TcGetObject` | Retrieve detailed object properties |
-| `TcGetBom` | Navigate bill-of-materials structures |
-| `TcListRequirements` | List requirements from Teamcenter |
-| `TcImportRequirement` | Import a Teamcenter requirement into Capella |
-| `TcImportPart` | Import a Teamcenter part as a Capella component |
-| `TcLink` | Create traceability links between Capella and TC objects |
-
-### Simulation Agent (6 tools)
-
-Orchestrate simulation engines and propagate results back into the model.
-
-| Tool | Description |
-|---|---|
-| `ListEngines` | List available simulation engines (MATLAB, etc.) |
-| `ExtractParams` | Extract simulation parameters from model elements |
-| `RunSimulation` | Execute a simulation on a connected engine |
-| `PropagateResults` | Write simulation outputs back to model properties |
-| `WhatIf` | Run what-if analysis with parameter variations |
-| `GetSimStatus` | Check the status of a running or completed simulation |
-
-### MCP Server Bridge
-
-The `com.capellaagent.mcp` plugin exposes all 29 tools to Claude Code via the Model Context Protocol. An embedded HTTP endpoint on `localhost:9847` communicates with a bridge subprocess that speaks MCP stdio (JSON-RPC 2.0), so you can query and modify your Capella model from the Claude Code terminal.
-
-### LLM Providers (9)
+## LLM Providers (9)
 
 Capella Agent ships with nine LLM providers. Six extend the `OpenAiCompatibleProvider` abstract base class, making it possible to add a new OpenAI-compatible provider in roughly 15 lines of code.
 
 | Provider | Provider ID | Notes |
 |---|---|---|
-| Anthropic Claude | `anthropic` | Default provider |
+| Anthropic Claude | `anthropic` | Default provider; recommended for full 84-tool support |
 | OpenAI | `openai` | GPT-4o and other models |
-| Groq | `groq` | Fast inference |
+| Groq | `groq` | Fast inference (see token limits note in [SITECONFIGURATIONS.md](SITECONFIGURATIONS.md)) |
 | DeepSeek | `deepseek` | DeepSeek models |
 | Mistral | `mistral` | Mistral AI models |
 | OpenRouter | `openrouter` | Multi-model marketplace |
@@ -158,6 +106,8 @@ git clone https://github.com/your-org/capella-agent.git
 cd capella-agent
 mvn clean verify -f pom.xml
 ```
+
+A successful build produces a **p2 update site** at `com.capellaagent.site/target/repository/`.
 
 ### 2. Install
 
@@ -206,11 +156,15 @@ capella-agent/
 |
 |-- com.capellaagent.core.ui/        Reusable UI: ChatComposite, MarkdownRenderer
 |
-|-- com.capellaagent.modelchat/      Model Chat agent: 16 tools for Capella models
+|-- com.capellaagent.modelchat/      Model Chat agent: 71 tools for Capella models
 |   +-- src/.../modelchat/
-|       |-- tools/read/              8 read-only query tools
-|       |-- tools/write/             6 model mutation tools
-|       +-- tools/diagram/           2 diagram manipulation tools
+|       |-- tools/read/              23 read-only query tools
+|       |-- tools/write/             21 model mutation tools
+|       |-- tools/diagram/           9 diagram manipulation tools
+|       |-- tools/analysis/          12 architecture analysis tools
+|       |-- tools/export_/           8 export and reporting tools
+|       |-- tools/transition/        5 ARCADIA layer transition tools
+|       +-- tools/ai/               5 AI-assisted engineering tools
 |
 |-- com.capellaagent.modelchat.ui/   Model Chat view: Eclipse view, commands, adapters
 |
@@ -241,7 +195,7 @@ capella-agent/
 +-- com.capellaagent.site/           P2 update site for installation
 ```
 
-**114 Java source files, 16,210 lines of code across 10 projects (8 plugins + feature + site).**
+**189 Java source files across 10 projects (8 plugins + feature + site).**
 
 ## Configuration Summary
 
@@ -265,8 +219,9 @@ For the complete configuration reference, see [SITECONFIGURATIONS.md](SITECONFIG
 | Document | Description |
 |---|---|
 | [README.md](README.md) | This file -- project overview and quick start |
+| [TOOLS.md](TOOLS.md) | Complete catalog of all 84 tools with descriptions and access modes |
 | [SITECONFIGURATIONS.md](SITECONFIGURATIONS.md) | Full setup, configuration, and troubleshooting guide |
-| [COO.md](COO.md) | Code ownership and contribution areas |
+| [COO.md](COO.md) | Code ownership, architecture, and strategy guide |
 
 ## Contributing
 
@@ -286,7 +241,7 @@ Contributions are welcome. Before you start:
 2. Implement `getName()`, `getDescription()`, `getParametersSchema()`, and `doExecute(JsonObject)`.
 3. Register the tool in the relevant `ToolRegistrar` (`ModelChatToolRegistrar`, `TcToolRegistrar`, or `SimToolRegistrar`).
 4. Write tools use `requireWriteMode()` to enforce access control. Read tools work in both modes.
-5. Update the tool reference table in this README.
+5. Update the tool catalog in [TOOLS.md](TOOLS.md).
 
 ### Adding a New LLM Provider
 

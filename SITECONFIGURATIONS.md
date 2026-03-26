@@ -77,6 +77,8 @@ A successful build produces:
 
 The update site directory contains `artifacts.jar`, `content.jar`, and the plugin/feature JARs that Capella uses for installation.
 
+> **Capella p2 repository**: If the build fails because it cannot resolve Capella dependencies, ensure you have set `CAPELLA_TARGET_URL` to point at a Capella p2 repository (see section 2.2). Alternatively, you can generate a local p2 repo from your Capella installation by pointing the target platform definition at the `plugins/` and `features/` directories inside your Capella install folder.
+
 ### 2.4 Build Output Summary
 
 | Artifact | Location |
@@ -156,6 +158,7 @@ You can override preferences with environment variables. Set these before launch
 - Requires an API key from [console.groq.com](https://console.groq.com/).
 - Provider ID: `groq`.
 - Extends `OpenAiCompatibleProvider`. Configure a model name such as `llama-3.3-70b-versatile`.
+- **Token limitation**: Groq imposes strict context window and rate limits on free-tier accounts. With 84 tools registered, the tool schema alone can consume a significant portion of the context window. If you experience `413 Request Entity Too Large` or truncated responses, switch to Claude or OpenAI, which support larger context windows. Alternatively, use Groq only with a subset of tools by installing fewer agent plugins.
 
 **DeepSeek**
 - Requires an API key from [platform.deepseek.com](https://platform.deepseek.com/).
@@ -300,7 +303,26 @@ Claude Code  <--stdio/JSON-RPC 2.0-->  Bridge subprocess  <--HTTP-->  Eclipse pl
 
 ### 8.3 Configuration
 
-The `.mcp.json` file in the project root configures Claude Code to discover the MCP bridge. No manual editing is required unless you change the default port.
+The `.mcp.json` file in the project root configures Claude Code to discover the MCP bridge. A working configuration is included in the repository. If you need to create or customize it, the file should look like this:
+
+```json
+{
+  "mcpServers": {
+    "capella-agent": {
+      "command": "java",
+      "args": [
+        "-jar",
+        "com.capellaagent.mcp/target/com.capellaagent.mcp-1.0.0-SNAPSHOT.jar"
+      ],
+      "env": {
+        "CAPELLA_MCP_PORT": "9847"
+      }
+    }
+  }
+}
+```
+
+Place this file at the root of the `capella-agent` project directory. Claude Code reads `.mcp.json` automatically when you run `claude` from that directory.
 
 **Environment variable**:
 
@@ -309,6 +331,14 @@ The `.mcp.json` file in the project root configures Claude Code to discover the 
 | `CAPELLA_MCP_PORT` | Port for the MCP HTTP endpoint inside Eclipse | `9847` |
 
 To use a non-default port, set `CAPELLA_MCP_PORT` before launching Capella and update the port reference in `.mcp.json` accordingly.
+
+### 8.5 Verifying MCP Tool Registration
+
+After starting Claude Code with Capella running, verify that all 84 tools are available:
+
+1. In the Claude Code terminal, type: `/tools`
+2. You should see all Capella Agent tools listed (search, list_elements, create_element, etc.).
+3. If tools are missing, check that all Capella Agent bundles are active (see Troubleshooting below).
 
 ### 8.4 Using Claude Code with Capella
 
@@ -418,3 +448,59 @@ Check that the gateway URL is correct and the Active Workspace server is reachab
 ### MATLAB engine not detected
 
 Verify that `MATLAB_HOME` is set correctly and that the MATLAB executable exists at `$MATLAB_HOME/bin/matlab` (Linux/macOS) or `$MATLAB_HOME\bin\matlab.exe` (Windows).
+
+### "No tools registered" or tools list is empty
+
+This means the agent bundles failed to activate and register their tools with the `ToolRegistry`. To diagnose:
+
+1. Open **Help > About Eclipse Capella > Installation Details > Plug-ins**.
+2. Verify that `com.capellaagent.core`, `com.capellaagent.modelchat`, and any other agent bundles are listed.
+3. Check the **Status** column -- all Capella Agent bundles should show `ACTIVE`.
+4. If a bundle shows `INSTALLED` or `RESOLVED` but not `ACTIVE`, it failed to start. Check the Eclipse error log (**Window > Show View > General > Error Log**) for the root cause.
+5. Common causes: missing dependency (Capella platform not matching), class loading errors from incompatible JDK version, or a missing required bundle.
+
+If using Claude Code via MCP and no tools appear, confirm that Capella is running and the MCP endpoint is active on port 9847. You can test the endpoint directly:
+
+```bash
+curl http://localhost:9847/health
+```
+
+### "Rate limit exceeded" or HTTP 429 errors
+
+Your LLM provider is throttling requests. Options:
+
+1. **Switch providers** -- change to a provider with higher rate limits (Claude or OpenAI typically offer higher throughput than free-tier Groq).
+2. **Upgrade your tier** -- most providers offer higher rate limits on paid plans.
+3. **Reduce request frequency** -- wait between complex queries that trigger multiple tool calls.
+4. **Use Ollama for local inference** -- local providers have no rate limits.
+
+### "No response from LLM" or empty responses
+
+The LLM provider is not responding. Check the following:
+
+1. **API key**: Open **Window > Preferences > Capella Agent > LLM Provider** and verify your API key is set and valid.
+2. **Network connectivity**: Ensure your machine can reach the provider's API endpoint (check proxy settings in **Window > Preferences > General > Network Connections**).
+3. **Provider status**: Check the provider's status page (e.g., [status.anthropic.com](https://status.anthropic.com/) for Claude).
+4. **Model name**: Verify the model name is valid for your provider. An incorrect model name can cause silent failures.
+5. **Max tokens**: Ensure `CAPELLA_AGENT_LLM_MAX_TOKENS` is set to a reasonable value (default 4096).
+
+### Tools returning generic advice instead of model-specific results
+
+If the agent responds with general systems engineering advice rather than data from your actual Capella model, the tools are not being called by the LLM. This is a distinct problem from "no tools registered" -- the tools exist but the LLM is choosing not to use them.
+
+Possible causes and fixes:
+
+1. **Bundle activation**: Verify all agent bundles are active (see "No tools registered" above). If tools are not registered, the LLM has no tools to call.
+2. **No active model session**: Ensure you have a `.aird` file open in Capella. Without an active model, tools report no data and the LLM falls back to general knowledge.
+3. **Provider capabilities**: Some smaller LLM models have weak tool-calling support. Use `claude-sonnet-4-20250514`, `gpt-4o`, or a similarly capable model.
+4. **Too many tools**: With 84 tools registered, some providers with small context windows may truncate the tool list. If using Groq or a small Ollama model, consider installing only the agent bundles you need, or switch to a provider with a larger context window.
+
+### MCP bridge connection refused
+
+If Claude Code reports that it cannot connect to the MCP bridge:
+
+1. Confirm Capella is running and a model is open.
+2. Check that port 9847 is not blocked by a firewall or occupied by another process.
+3. Verify the `.mcp.json` file exists at the project root and contains valid configuration.
+4. Check the Capella error log for MCP endpoint startup errors.
+5. Try restarting Capella -- the MCP endpoint starts during bundle activation.
