@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <!-- Preference Pages -->
+   <extension point="org.eclipse.ui.preferencePages">
+
+      <!-- Main Capella Agent preference page -->
+      <page
+            id="com.capellaagent.preferences"
+            name="Capella Agent"
+            class="com.capellaagent.core.ui.preferences.CapellaAgentPreferencePage">
+      </page>
+
+      <!-- Teamcenter sub-page -->
+      <page
+            id="com.capellaagent.preferences.teamcenter"
+            name="Teamcenter"
+            category="com.capellaagent.preferences"
+            class="com.capellaagent.core.ui.preferences.TeamcenterPreferencePage">
+      </page>
+
+      <!-- Simulation sub-page -->
+      <page
+            id="com.capellaagent.preferences.simulation"
+            name="Simulation"
+            category="com.capellaagent.preferences"
+            class="com.capellaagent.core.ui.preferences.SimulationPreferencePage">
+      </page>
+
+   </extension>
+
+</plugin>
