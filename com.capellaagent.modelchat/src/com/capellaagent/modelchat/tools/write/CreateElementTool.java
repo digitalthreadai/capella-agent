@@ -75,10 +75,12 @@ public class CreateElementTool extends AbstractCapellaTool {
     @Override
     protected List<ToolParameter> defineParameters() {
         List<ToolParameter> params = new ArrayList<>();
-        params.add(ToolParameter.requiredString("layer",
-                "Architecture layer: oa, sa, la, pa"));
-        params.add(ToolParameter.requiredString("type",
-                "Element type to create: function, component, actor"));
+        params.add(ToolParameter.requiredEnum("layer",
+                "Architecture layer: oa, sa, la, pa",
+                VALID_LAYERS));
+        params.add(ToolParameter.requiredEnum("type",
+                "Element type to create: function, component, actor",
+                VALID_TYPES));
         params.add(ToolParameter.requiredString("name",
                 "Name of the new element"));
         params.add(ToolParameter.optionalString("parent_uuid",

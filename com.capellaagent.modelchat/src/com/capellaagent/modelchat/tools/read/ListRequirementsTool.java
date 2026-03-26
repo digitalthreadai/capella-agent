@@ -1,9 +1,11 @@
 package com.capellaagent.modelchat.tools.read;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.capellaagent.core.capella.CapellaModelService;
 import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolCategory;
 import com.capellaagent.core.tools.ToolParameter;
@@ -12,18 +14,23 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.eclipse.emf.ecore.EObject;
-
-// PLACEHOLDER imports for Capella Requirements Viewpoint (VP)
-// import org.polarsys.capella.vp.requirements.CapellaRequirements.CapellaOutgoingRelation;
-// import org.polarsys.capella.vp.requirements.CapellaRequirements.CapellaIncomingRelation;
-// import org.polarsys.kitalpha.vp.requirements.Requirements.Requirement;
-// import org.polarsys.kitalpha.vp.requirements.Requirements.RequirementsPackage;
+import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
+import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.sirius.business.api.session.Session;
+import org.polarsys.capella.common.data.modellingcore.ModelElement;
 
 /**
- * Lists requirements from the Capella Requirements viewpoint.
+ * Lists requirements from the Capella model.
  * <p>
- * Can list all requirements in the model or filter to those linked to a specific
- * model element. Returns requirement name, ID, text preview, and linked elements.
+ * Uses a generic traversal approach that works with or without the Requirements
+ * Viewpoint (VP) add-on. Identifies requirement elements by checking if the
+ * eClass name contains "Requirement". When the Requirements VP is installed,
+ * this catches Requirement, SystemUserRequirement, SystemFunctionalRequirement,
+ * etc. When it is not installed, this tool returns an empty list with a note.
+ * <p>
+ * For each requirement found, extracts available attributes (name, text/description,
+ * ReqIF identifier) and linked model elements via outgoing relations.
  *
  * <h3>Tool Specification</h3>
  * <ul>
@@ -64,40 +71,9 @@ public class ListRequirementsTool extends AbstractCapellaTool {
         String linkedToUuid = getOptionalString(parameters, "linked_to_uuid", null);
 
         try {
-            // PLACEHOLDER: Capella Requirements VP API
-            //
-            // Requirements viewpoint access approach:
-            //
-            // 1. Find all Requirement instances in the model:
-            //    Session session = getActiveSession();
-            //    for (Resource res : session.getSemanticResources()) {
-            //        TreeIterator<EObject> it = res.getAllContents();
-            //        while (it.hasNext()) {
-            //            EObject obj = it.next();
-            //            if (obj instanceof Requirement req) {
-            //                allRequirements.add(req);
-            //            }
-            //        }
-            //    }
-            //
-            // 2. If linkedToUuid is specified, filter to requirements that have a
-            //    relation (CapellaOutgoingRelation or CapellaIncomingRelation) pointing
-            //    to the element with the given UUID:
-            //    EObject targetElement = resolveByUuid(linkedToUuid);
-            //    for (Requirement req : allRequirements) {
-            //        for (AbstractRelation rel : req.getOwnedRelations()) {
-            //            if (rel instanceof CapellaOutgoingRelation outRel) {
-            //                if (outRel.getTarget() == targetElement) {
-            //                    filteredReqs.add(req);
-            //                }
-            //            }
-            //        }
-            //    }
-            //
-            // 3. For each requirement, extract:
-            //    - req.getReqIFIdentifier() or req.getId() for the requirement ID
-            //    - req.getReqIFText() or req.getReqIFName() for the text
-            //    - req.getOwnedRelations() for linked elements
+            // Thread safety: read operations should ideally use read-exclusive context
+            CapellaModelService modelService = getModelService();
+            Session session = getActiveSession();
 
             EObject linkedElement = null;
             if (linkedToUuid != null && !linkedToUuid.isBlank()) {
@@ -107,7 +83,7 @@ public class ListRequirementsTool extends AbstractCapellaTool {
                 }
             }
 
-            List<EObject> requirements = queryRequirements(linkedElement);
+            List<EObject> requirements = queryRequirements(session, linkedElement);
 
             JsonArray requirementsArray = new JsonArray();
             int count = 0;
@@ -119,13 +95,21 @@ public class ListRequirementsTool extends AbstractCapellaTool {
                 JsonObject reqJson = new JsonObject();
                 reqJson.addProperty("name", getElementName(reqObj));
                 reqJson.addProperty("uuid", getElementId(reqObj));
+                reqJson.addProperty("type", reqObj.eClass().getName());
 
-                // PLACEHOLDER: Extract requirement-specific fields
-                // Requirement req = (Requirement) reqObj;
-                // reqJson.addProperty("requirement_id", req.getReqIFIdentifier());
-                // reqJson.addProperty("text", truncate(req.getReqIFText(), 500));
-                reqJson.addProperty("requirement_id", "");
-                reqJson.addProperty("text", truncate(getElementDescription(reqObj), 500));
+                // Extract requirement-specific fields via reflection
+                // The Requirements VP defines getReqIFIdentifier() and getReqIFText()
+                String reqId = getFeatureAsString(reqObj, "ReqIFIdentifier");
+                if (reqId == null || reqId.isEmpty()) {
+                    reqId = getFeatureAsString(reqObj, "id");
+                }
+                reqJson.addProperty("requirement_id", reqId != null ? reqId : "");
+
+                String reqText = getFeatureAsString(reqObj, "ReqIFText");
+                if (reqText == null || reqText.isEmpty()) {
+                    reqText = getElementDescription(reqObj);
+                }
+                reqJson.addProperty("text", truncate(reqText, 500));
 
                 // Build linked elements array
                 JsonArray linkedElements = buildLinkedElements(reqObj);
@@ -146,6 +130,12 @@ public class ListRequirementsTool extends AbstractCapellaTool {
             }
             response.add("requirements", requirementsArray);
 
+            if (requirementsArray.size() == 0 && linkedToUuid == null) {
+                response.addProperty("note",
+                        "No requirements found. The Requirements Viewpoint add-on may not be "
+                        + "installed or the model may not contain requirements.");
+            }
+
             return ToolResult.success(response);
 
         } catch (Exception e) {
@@ -154,37 +144,151 @@ public class ListRequirementsTool extends AbstractCapellaTool {
     }
 
     /**
-     * Queries requirements from the model, optionally filtering by linked element.
+     * Queries requirements from the model by traversing all semantic resources
+     * and looking for elements whose eClass name contains "Requirement".
+     * <p>
+     * If {@code linkedElement} is non-null, filters to requirements that have
+     * an outgoing relation targeting that element.
      *
+     * @param session       the Sirius session
      * @param linkedElement if non-null, only return requirements linked to this element
      * @return list of requirement EObjects
      */
-    private List<EObject> queryRequirements(EObject linkedElement) {
-        // PLACEHOLDER: Implement actual Requirements VP query
-        return new ArrayList<>();
+    private List<EObject> queryRequirements(Session session, EObject linkedElement) {
+        List<EObject> allRequirements = new ArrayList<>();
+        int maxCollect = MAX_REQUIREMENTS + 1;
+
+        for (Resource resource : session.getSemanticResources()) {
+            Iterator<EObject> allContents = resource.getAllContents();
+            while (allContents.hasNext() && allRequirements.size() < maxCollect) {
+                EObject obj = allContents.next();
+                String eClassName = obj.eClass().getName();
+
+                // Match requirement elements by eClass name pattern
+                if (eClassName.contains("Requirement")
+                        && !eClassName.contains("Pkg")
+                        && !eClassName.contains("Package")) {
+
+                    if (linkedElement == null) {
+                        allRequirements.add(obj);
+                    } else {
+                        // Check if this requirement has a relation to the linked element
+                        if (isLinkedTo(obj, linkedElement)) {
+                            allRequirements.add(obj);
+                        }
+                    }
+                }
+            }
+            if (allRequirements.size() >= maxCollect) break;
+        }
+
+        return allRequirements;
     }
 
     /**
-     * Builds the array of elements linked to a requirement via relations.
+     * Checks if a requirement has any outgoing relation that targets the given element.
+     * Examines all non-containment EReferences for a match.
+     *
+     * @param requirement   the requirement to check
+     * @param targetElement the target element to look for
+     * @return true if a link exists
+     */
+    private boolean isLinkedTo(EObject requirement, EObject targetElement) {
+        for (EReference ref : requirement.eClass().getEAllReferences()) {
+            if (ref.isContainment()) continue;
+            try {
+                Object value = requirement.eGet(ref);
+                if (value == targetElement) return true;
+                if (value instanceof List<?>) {
+                    for (Object item : (List<?>) value) {
+                        if (item == targetElement) return true;
+                    }
+                }
+            } catch (Exception e) {
+                // Skip inaccessible references
+            }
+        }
+
+        // Also check owned relations (children that are relation objects)
+        for (EObject child : requirement.eContents()) {
+            String childClassName = child.eClass().getName();
+            if (childClassName.contains("Relation") || childClassName.contains("Link")) {
+                for (EReference ref : child.eClass().getEAllReferences()) {
+                    if (ref.isContainment()) continue;
+                    try {
+                        Object value = child.eGet(ref);
+                        if (value == targetElement) return true;
+                    } catch (Exception e) {
+                        // Skip
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Builds the array of elements linked to a requirement via outgoing relations.
+     * Traverses child relation objects looking for non-containment references to
+     * model elements.
      *
      * @param requirement the requirement EObject
      * @return a JsonArray of linked element summaries
      */
     private JsonArray buildLinkedElements(EObject requirement) {
         JsonArray linked = new JsonArray();
-        // PLACEHOLDER: Navigate CapellaOutgoingRelation / CapellaIncomingRelation
-        // Requirement req = (Requirement) requirement;
-        // for (AbstractRelation rel : req.getOwnedRelations()) {
-        //     if (rel instanceof CapellaOutgoingRelation outRel && outRel.getTarget() != null) {
-        //         CapellaElement target = outRel.getTarget();
-        //         JsonObject linkObj = new JsonObject();
-        //         linkObj.addProperty("name", target.getName());
-        //         linkObj.addProperty("uuid", target.getId());
-        //         linkObj.addProperty("type", target.eClass().getName());
-        //         linkObj.addProperty("relation_type", "outgoing");
-        //         linked.add(linkObj);
-        //     }
-        // }
+        int count = 0;
+
+        // Check owned children for relation objects
+        for (EObject child : requirement.eContents()) {
+            if (count >= 20) break; // Limit linked elements per requirement
+            String childClassName = child.eClass().getName();
+
+            if (childClassName.contains("Relation") || childClassName.contains("Link")) {
+                // Look for target references in the relation
+                for (EReference ref : child.eClass().getEAllReferences()) {
+                    if (ref.isContainment()) continue;
+                    try {
+                        Object value = child.eGet(ref);
+                        if (value instanceof EObject) {
+                            EObject target = (EObject) value;
+                            // Avoid self-references back to the requirement
+                            if (target != requirement && target != child) {
+                                JsonObject linkObj = new JsonObject();
+                                linkObj.addProperty("name", getElementName(target));
+                                linkObj.addProperty("uuid", getElementId(target));
+                                linkObj.addProperty("type", target.eClass().getName());
+                                linkObj.addProperty("relation_type",
+                                        childClassName.contains("Outgoing") ? "outgoing" : "incoming");
+                                linked.add(linkObj);
+                                count++;
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Skip inaccessible references
+                    }
+                }
+            }
+        }
+
         return linked;
+    }
+
+    /**
+     * Gets a feature value as a string by feature name, using the EMF reflective API.
+     * Returns null if the feature does not exist or has no value.
+     *
+     * @param element     the EObject
+     * @param featureName the EStructuralFeature name
+     * @return the value as a string, or null
+     */
+    private String getFeatureAsString(EObject element, String featureName) {
+        EStructuralFeature feature = element.eClass().getEStructuralFeature(featureName);
+        if (feature != null) {
+            Object value = element.eGet(feature);
+            return value != null ? value.toString() : null;
+        }
+        return null;
     }
 }

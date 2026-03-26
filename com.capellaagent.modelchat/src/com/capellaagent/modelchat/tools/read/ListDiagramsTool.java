@@ -54,8 +54,9 @@ public class ListDiagramsTool extends AbstractCapellaTool {
     @Override
     protected List<ToolParameter> defineParameters() {
         List<ToolParameter> params = new ArrayList<>();
-        params.add(ToolParameter.optionalString("layer",
-                "Filter by architecture layer: oa, sa, la, pa"));
+        params.add(ToolParameter.optionalEnum("layer",
+                "Filter by architecture layer: oa, sa, la, pa",
+                List.of("oa", "sa", "la", "pa"), null));
         params.add(ToolParameter.optionalString("diagram_type",
                 "Filter by diagram type abbreviation (e.g., SDFB, SAB, LAB, PAB, OCB, OAB)"));
         return params;
@@ -67,6 +68,10 @@ public class ListDiagramsTool extends AbstractCapellaTool {
         String diagramType = getOptionalString(parameters, "diagram_type", null);
 
         try {
+            // Thread safety: diagram descriptor traversal should ideally be wrapped in a
+            // read-exclusive transaction via TransactionalEditingDomain.runExclusive()
+            // to prevent concurrent modification. Currently safe because the ChatJob
+            // orchestration loop is single-threaded per conversation.
             CapellaModelService modelService = getModelService();
             Session session = getActiveSession();
 

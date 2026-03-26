@@ -65,10 +65,12 @@ public class CreateExchangeTool extends AbstractCapellaTool {
     @Override
     protected List<ToolParameter> defineParameters() {
         List<ToolParameter> params = new ArrayList<>();
-        params.add(ToolParameter.requiredString("layer",
-                "Architecture layer: oa, sa, la, pa"));
-        params.add(ToolParameter.requiredString("type",
-                "Exchange type: functional_exchange or component_exchange"));
+        params.add(ToolParameter.requiredEnum("layer",
+                "Architecture layer: oa, sa, la, pa",
+                List.of("oa", "sa", "la", "pa")));
+        params.add(ToolParameter.requiredEnum("type",
+                "Exchange type: functional_exchange or component_exchange",
+                List.of("functional_exchange", "component_exchange")));
         params.add(ToolParameter.requiredString("source_uuid",
                 "UUID of the source element (function or component)"));
         params.add(ToolParameter.requiredString("target_uuid",

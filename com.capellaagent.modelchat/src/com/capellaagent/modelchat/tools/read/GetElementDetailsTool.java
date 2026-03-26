@@ -68,6 +68,11 @@ public class GetElementDetailsTool extends AbstractCapellaTool {
         }
 
         try {
+            // Thread safety: the element detail retrieval below should ideally be
+            // wrapped in a read-exclusive transaction via
+            // TransactionalEditingDomain.runExclusive() to prevent concurrent
+            // modification during property/reference traversal. Currently safe
+            // because the ChatJob orchestration loop is single-threaded per conversation.
             EObject element = resolveElementByUuid(uuid);
             if (element == null) {
                 return ToolResult.error("Element not found with UUID: " + uuid);

@@ -62,12 +62,14 @@ public class ListElementsTool extends AbstractCapellaTool {
     @Override
     protected List<ToolParameter> defineParameters() {
         List<ToolParameter> params = new ArrayList<>();
-        params.add(ToolParameter.requiredString("layer",
+        params.add(ToolParameter.requiredEnum("layer",
                 "Architecture layer to query: oa (Operational Analysis), "
-                + "sa (System Analysis), la (Logical Architecture), pa (Physical Architecture)"));
-        params.add(ToolParameter.optionalString("element_type",
+                + "sa (System Analysis), la (Logical Architecture), pa (Physical Architecture)",
+                VALID_LAYERS));
+        params.add(ToolParameter.optionalEnum("element_type",
                 "Type of elements to list: functions, components, actors, exchanges, "
-                + "capabilities, or all (default: all)"));
+                + "capabilities, or all (default: all)",
+                VALID_TYPES, "all"));
         params.add(ToolParameter.optionalInteger("max_results",
                 "Maximum number of elements to return (default: 100, max: 500)"));
         return params;
@@ -95,6 +97,10 @@ public class ListElementsTool extends AbstractCapellaTool {
         maxResults = Math.max(1, Math.min(maxResults, 500));
 
         try {
+            // Thread safety: the model query below should ideally be wrapped in a
+            // read-exclusive transaction via TransactionalEditingDomain.runExclusive()
+            // to prevent concurrent modification during traversal. Currently safe because
+            // the ChatJob orchestration loop is single-threaded per conversation.
             CapellaModelService modelService = getModelService();
             Session session = getActiveSession();
             BlockArchitecture architecture = modelService.getArchitecture(session, layer);

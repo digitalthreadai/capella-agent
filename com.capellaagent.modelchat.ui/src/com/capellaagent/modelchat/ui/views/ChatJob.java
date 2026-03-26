@@ -48,6 +48,7 @@ public class ChatJob extends Job {
 
     private static final String JOB_NAME = "AI Model Chat";
     private static final int MAX_TOOL_ITERATIONS = 20;
+    private static final int MAX_WRITE_TOOLS_PER_TURN = 5;
 
     private final ConversationSession session;
     private final String userMessage;
@@ -109,6 +110,7 @@ public class ChatJob extends Job {
             // Orchestration loop
             boolean done = false;
             int iterations = 0;
+            int writeToolCount = 0;
 
             while (!done && !monitor.isCanceled() && iterations < MAX_TOOL_ITERATIONS) {
                 iterations++;
@@ -140,6 +142,22 @@ public class ChatJob extends Job {
                         String toolName = toolCall.getName();
                         String toolArgs = toolCall.getArguments();
                         String toolCallId = toolCall.getId();
+
+                        // Rate limit: check if this is a write tool
+                        boolean isWriteTool = isWriteToolName(toolName);
+                        if (isWriteTool) {
+                            writeToolCount++;
+                            if (writeToolCount > MAX_WRITE_TOOLS_PER_TURN) {
+                                onTextResponse.accept(
+                                        "[Safety limit reached: more than "
+                                        + MAX_WRITE_TOOLS_PER_TURN
+                                        + " write operations in a single turn. "
+                                        + "Please review the changes made so far "
+                                        + "before continuing.]");
+                                done = true;
+                                break;
+                            }
+                        }
 
                         // Notify UI about tool execution
                         onToolExecution.accept(toolName);
@@ -198,6 +216,24 @@ public class ChatJob extends Job {
     }
 
     /**
+     * Determines whether a tool name corresponds to a write operation.
+     * Write tools modify the Capella model and are subject to rate limiting.
+     *
+     * @param toolName the tool name to check
+     * @return true if the tool performs write operations
+     */
+    private boolean isWriteToolName(String toolName) {
+        if (toolName == null) return false;
+        return toolName.equals("create_element")
+                || toolName.equals("update_element")
+                || toolName.equals("delete_element")
+                || toolName.equals("allocate_function")
+                || toolName.equals("create_capability")
+                || toolName.equals("create_exchange")
+                || toolName.equals("update_diagram");
+    }
+
+    /**
      * Calls the LLM provider with the current session messages and tool definitions.
      * <p>
      * PLACEHOLDER: This method wraps the actual LLM provider invocation. The real
@@ -216,12 +252,32 @@ public class ChatJob extends Job {
             // Get available tool descriptors from the registry (all categories)
             List<IToolDescriptor> tools = ToolRegistry.getInstance().getTools();
 
+            // Debug: log how many tools are available (helps diagnose tool registration issues)
+            java.util.logging.Logger.getLogger("ChatJob").info(
+                    "LLM call with " + tools.size() + " tools registered, provider: "
+                    + provider.getDisplayName());
+            if (tools.isEmpty()) {
+                onTextResponse.accept("[Warning: No tools registered. The modelchat bundle may not be activated. "
+                        + "Please close and reopen the AI Model Chat view.]");
+            }
+
             // Build request config from user preferences
             AgentConfiguration config = AgentConfiguration.getInstance();
             String systemPrompt = "You are an AI assistant for Eclipse Capella MBSE. "
                     + "Help engineers query and modify their architecture models. "
                     + "Use the provided tools to read model elements, create relationships, "
-                    + "and update diagrams. Always explain what you are doing.";
+                    + "and update diagrams. Always explain what you are doing.\n\n"
+                    + "IMPORTANT SAFETY RULES FOR WRITE OPERATIONS:\n"
+                    + "- For any write operation (creating, updating, or deleting model elements), "
+                    + "you MUST first describe exactly what you plan to do and ask the user for "
+                    + "explicit confirmation BEFORE calling the tool.\n"
+                    + "- Never call create_element, update_element, delete_element, "
+                    + "allocate_function, create_capability, create_exchange, or update_diagram "
+                    + "without the user's prior approval in the conversation.\n"
+                    + "- When the user confirms, proceed with the tool call.\n"
+                    + "- After a write operation, summarize what was changed.\n"
+                    + "- For delete_element, always set confirm=true (the user already confirmed "
+                    + "via the conversation).";
 
             LlmRequestConfig requestConfig = new LlmRequestConfig(
                     config.getLlmModelId().isEmpty() ? null : config.getLlmModelId(),

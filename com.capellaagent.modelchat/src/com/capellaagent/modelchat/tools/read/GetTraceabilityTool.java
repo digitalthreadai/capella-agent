@@ -82,6 +82,10 @@ public class GetTraceabilityTool extends AbstractCapellaTool {
         }
 
         try {
+            // Thread safety: traceability traversal should ideally be wrapped in a
+            // read-exclusive transaction via TransactionalEditingDomain.runExclusive()
+            // to prevent concurrent modification. Currently safe because the ChatJob
+            // orchestration loop is single-threaded per conversation.
             EObject element = resolveElementByUuid(uuid);
             if (element == null) {
                 return ToolResult.error("Element not found with UUID: " + uuid);

@@ -1,6 +1,11 @@
 package com.capellaagent.modelchat.ui;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Plugin;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -26,10 +31,33 @@ public class ModelChatUiActivator extends Plugin {
         return instance;
     }
 
+    private static final Logger LOG = Logger.getLogger(ModelChatUiActivator.class.getName());
+
     @Override
     public void start(BundleContext context) throws Exception {
         super.start(context);
         instance = this;
+
+        // Force-start the modelchat bundle so its tools get registered with ToolRegistry.
+        // Without this, the lazy activation policy means tools are never registered
+        // because no class from com.capellaagent.modelchat is directly loaded by the UI.
+        ensureBundleStarted("com.capellaagent.modelchat");
+        ensureBundleStarted("com.capellaagent.core");
+    }
+
+    /**
+     * Ensures the specified OSGi bundle is started (activator has run).
+     */
+    private void ensureBundleStarted(String symbolicName) {
+        Bundle bundle = Platform.getBundle(symbolicName);
+        if (bundle != null && bundle.getState() != Bundle.ACTIVE) {
+            try {
+                bundle.start(Bundle.START_TRANSIENT);
+                LOG.info("Force-started bundle: " + symbolicName);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Failed to start bundle: " + symbolicName, e);
+            }
+        }
     }
 
     @Override

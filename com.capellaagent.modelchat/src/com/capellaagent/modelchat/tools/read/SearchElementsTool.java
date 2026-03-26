@@ -69,10 +69,12 @@ public class SearchElementsTool extends AbstractCapellaTool {
         List<ToolParameter> params = new ArrayList<>();
         params.add(ToolParameter.requiredString("query",
                 "Name pattern to search for. Supports substring match or Java regex syntax."));
-        params.add(ToolParameter.optionalString("element_type",
-                "Filter by type: functions, components, actors, exchanges, capabilities"));
-        params.add(ToolParameter.optionalString("layer",
-                "Filter by architecture layer: oa, sa, la, pa"));
+        params.add(ToolParameter.optionalEnum("element_type",
+                "Filter by type: functions, components, actors, exchanges, capabilities",
+                List.of("functions", "components", "actors", "exchanges", "capabilities"), null));
+        params.add(ToolParameter.optionalEnum("layer",
+                "Filter by architecture layer: oa, sa, la, pa",
+                List.of("oa", "sa", "la", "pa"), null));
         params.add(ToolParameter.optionalBoolean("case_sensitive",
                 "Whether the search is case-sensitive (default: false)"));
         return params;
@@ -101,6 +103,10 @@ public class SearchElementsTool extends AbstractCapellaTool {
         }
 
         try {
+            // Thread safety: the model search below should ideally be wrapped in a
+            // read-exclusive transaction via TransactionalEditingDomain.runExclusive()
+            // to prevent concurrent modification during traversal. Currently safe because
+            // the ChatJob orchestration loop is single-threaded per conversation.
             CapellaModelService modelService = getModelService();
             Session session = getActiveSession();
 

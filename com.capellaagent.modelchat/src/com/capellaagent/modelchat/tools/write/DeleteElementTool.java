@@ -1,9 +1,12 @@
 package com.capellaagent.modelchat.tools.write;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.capellaagent.core.capella.CapellaModelService;
+import com.capellaagent.core.security.InputValidator;
 import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolCategory;
 import com.capellaagent.core.tools.ToolParameter;
@@ -12,21 +15,24 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.transaction.TransactionalEditingDomain;
 import org.eclipse.emf.transaction.RecordingCommand;
-
-// PLACEHOLDER imports for Capella metamodel
-// import org.polarsys.capella.core.data.capellacore.NamedElement;
-// import org.polarsys.capella.core.platform.sirius.ui.commands.CapellaDeleteCommand;
+import org.eclipse.sirius.business.api.session.Session;
 
 /**
  * Deletes a model element from the Capella model.
  * <p>
- * This is a destructive operation that requires explicit confirmation via the
- * {@code confirm} parameter set to {@code true}. The tool captures the deleted
- * element's details before removal and returns them in the response. The operation
- * is wrapped in a {@link RecordingCommand} for undo support.
+ * This is a destructive operation. The {@code confirm} parameter is always
+ * required and must be {@code true}. The human-in-the-loop system prompt
+ * ensures the LLM asks the user before calling this tool. The operation is
+ * wrapped in a {@link RecordingCommand} for undo support.
+ * <p>
+ * Before deletion, the tool captures the element's details (name, type,
+ * parent, child count, affected references) and returns them in the response
+ * for audit purposes.
  *
  * <h3>Tool Specification</h3>
  * <ul>
@@ -66,10 +72,14 @@ public class DeleteElementTool extends AbstractCapellaTool {
         String uuid = getRequiredString(parameters, "uuid");
         boolean confirm = getRequiredBoolean(parameters, "confirm");
 
-        if (uuid.isBlank()) {
-            return ToolResult.error("Parameter 'uuid' must not be empty");
+        // Validate UUID
+        try {
+            uuid = InputValidator.validateUuid(uuid);
+        } catch (IllegalArgumentException e) {
+            return ToolResult.error("Invalid UUID: " + e.getMessage());
         }
 
+        // Confirm parameter must always be true - this is a safety gate
         if (!confirm) {
             return ToolResult.error(
                     "Deletion requires 'confirm' to be true. "
@@ -77,12 +87,13 @@ public class DeleteElementTool extends AbstractCapellaTool {
         }
 
         try {
+            Session session = getActiveSession();
             EObject element = resolveElementByUuid(uuid);
             if (element == null) {
                 return ToolResult.error("Element not found with UUID: " + uuid);
             }
 
-            // Capture element details before deletion
+            // Capture element details before deletion for audit trail
             String elementName = getElementName(element);
             String elementType = element.eClass().getName();
             String elementDescription = getElementDescription(element);
@@ -100,29 +111,24 @@ public class DeleteElementTool extends AbstractCapellaTool {
 
             final EObject targetElement = element;
 
-            TransactionalEditingDomain domain = getEditingDomain();
+            TransactionalEditingDomain domain = getEditingDomain(session);
 
             domain.getCommandStack().execute(new RecordingCommand(domain,
                     "Delete " + elementType + " '" + elementName + "'") {
                 @Override
                 protected void doExecute() {
-                    // PLACEHOLDER: Use Capella's delete command for proper cleanup
-                    // CapellaDeleteCommand provides semantic cleanup beyond simple
-                    // EcoreUtil.delete(), handling diagram representations, traces, etc.
-                    //
-                    // Preferred approach:
-                    // CapellaDeleteCommand deleteCmd = new CapellaDeleteCommand(
-                    //     domain, Collections.singleton(targetElement), true, false, true);
-                    // if (deleteCmd.canExecute()) {
-                    //     deleteCmd.execute();
-                    // }
-                    //
-                    // Fallback approach using EcoreUtil:
+                    // Use EcoreUtil.delete with resolve=true to clean up cross-references
+                    // VERIFY: CapellaDeleteCommand would be preferred for full cleanup
+                    // including diagram representations, but it requires additional
+                    // UI-level dependencies not available in this bundle.
                     EcoreUtil.delete(targetElement, true);
                 }
             });
 
-            // Build response with deleted element details
+            // Invalidate UUID cache since we removed an element
+            getModelService().invalidateCache(session);
+
+            // Build response with deleted element details for audit
             JsonObject response = new JsonObject();
             response.addProperty("status", "deleted");
             response.addProperty("name", elementName);
@@ -167,25 +173,40 @@ public class DeleteElementTool extends AbstractCapellaTool {
 
     /**
      * Captures references from other elements that point to the element being deleted.
-     * This helps inform the user about potential side effects of the deletion.
+     * Uses the element's cross-references to identify elements that will be affected.
      *
      * @param element the element about to be deleted
      * @return a JsonArray of affected reference summaries
      */
     private JsonArray captureAffectedReferences(EObject element) {
         JsonArray affected = new JsonArray();
-        // PLACEHOLDER: Use ECrossReferenceAdapter to find incoming references
-        // ECrossReferenceAdapter adapter = ECrossReferenceAdapter.getCrossReferenceAdapter(element);
-        // if (adapter != null) {
-        //     for (Setting setting : adapter.getInverseReferences(element)) {
-        //         EObject referencing = setting.getEObject();
-        //         JsonObject refObj = new JsonObject();
-        //         refObj.addProperty("referencing_element", getElementName(referencing));
-        //         refObj.addProperty("referencing_uuid", getElementId(referencing));
-        //         refObj.addProperty("reference_type", setting.getEStructuralFeature().getName());
-        //         affected.add(refObj);
-        //     }
-        // }
+        int count = 0;
+
+        try {
+            // Use EcoreUtil.UsageCrossReferencer to find inverse references
+            Collection<EStructuralFeature.Setting> usages =
+                    EcoreUtil.UsageCrossReferencer.find(element, element.eResource());
+            if (usages != null) {
+                for (EStructuralFeature.Setting setting : usages) {
+                    if (count >= 20) break; // Limit to avoid oversized response
+                    EObject referencing = setting.getEObject();
+                    if (referencing != null && setting.getEStructuralFeature() instanceof EReference) {
+                        EReference ref = (EReference) setting.getEStructuralFeature();
+                        if (!ref.isContainment()) {
+                            JsonObject refObj = new JsonObject();
+                            refObj.addProperty("referencing_element", getElementName(referencing));
+                            refObj.addProperty("referencing_uuid", getElementId(referencing));
+                            refObj.addProperty("reference_type", ref.getName());
+                            affected.add(refObj);
+                            count++;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Cross-reference lookup may fail; return what we have
+        }
+
         return affected;
     }
 }

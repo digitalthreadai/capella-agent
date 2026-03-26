@@ -1,9 +1,12 @@
 package com.capellaagent.modelchat.tools.diagram;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.capellaagent.core.capella.CapellaModelService;
+import com.capellaagent.core.security.InputValidator;
 import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolCategory;
 import com.capellaagent.core.tools.ToolParameter;
@@ -13,25 +16,27 @@ import com.google.gson.JsonObject;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.transaction.TransactionalEditingDomain;
 import org.eclipse.emf.transaction.RecordingCommand;
-
-// PLACEHOLDER imports for Sirius Diagram API
-// import org.eclipse.sirius.business.api.dialect.DialectManager;
-// import org.eclipse.sirius.business.api.session.Session;
-// import org.eclipse.sirius.diagram.DDiagram;
-// import org.eclipse.sirius.diagram.DDiagramElement;
-// import org.eclipse.sirius.diagram.business.api.helper.display.DisplayServiceManager;
-// import org.eclipse.sirius.diagram.business.internal.helper.task.operations.CreateViewTask;
-// import org.eclipse.sirius.viewpoint.DRepresentation;
-// import org.eclipse.sirius.viewpoint.DRepresentationDescriptor;
-// import org.eclipse.sirius.diagram.tools.api.command.IDiagramCommandFactory;
-// import org.eclipse.sirius.diagram.tools.api.command.IDiagramCommandFactoryProvider;
+import org.eclipse.sirius.business.api.dialect.DialectManager;
+import org.eclipse.sirius.business.api.session.Session;
+import org.eclipse.sirius.diagram.DDiagram;
+import org.eclipse.sirius.diagram.DDiagramElement;
+import org.eclipse.sirius.viewpoint.DRepresentation;
+import org.eclipse.sirius.viewpoint.DRepresentationDescriptor;
 
 /**
  * Adds or removes a semantic element from an existing Sirius diagram.
  * <p>
- * When adding, the element is made visible on the diagram by creating a diagram
- * element (node or edge) for it. When removing, the diagram element is hidden
- * (removed from the diagram view) without deleting the underlying semantic element.
+ * For the "add" action, the tool refreshes the diagram via
+ * {@link DialectManager#refresh(DRepresentation, org.eclipse.core.runtime.IProgressMonitor)},
+ * which causes Sirius to synchronize the diagram with the model and add
+ * representations for any newly reachable semantic elements. This is the
+ * recommended approach for Capella diagrams since they use synchronized
+ * mappings defined in the odesign.
+ * <p>
+ * For the "remove" action, the tool finds the {@link DDiagramElement}
+ * representing the semantic element and removes it from the diagram. This
+ * hides the element from the diagram without deleting the underlying
+ * semantic model element.
  *
  * <h3>Tool Specification</h3>
  * <ul>
@@ -51,7 +56,8 @@ public class UpdateDiagramTool extends AbstractCapellaTool {
     private static final String TOOL_NAME = "update_diagram";
     private static final String DESCRIPTION =
             "Adds or removes a semantic element from a Sirius diagram. "
-            + "'add' makes the element visible; 'remove' hides it without deleting the element.";
+            + "'add' refreshes the diagram to include newly visible elements; "
+            + "'remove' hides the element without deleting it from the model.";
 
     private static final List<String> VALID_ACTIONS = List.of("add", "remove");
 
@@ -66,8 +72,10 @@ public class UpdateDiagramTool extends AbstractCapellaTool {
                 "UUID of the diagram to modify"));
         params.add(ToolParameter.requiredString("element_uuid",
                 "UUID of the semantic element to add or remove from the diagram"));
-        params.add(ToolParameter.requiredString("action",
-                "Action to perform: add (make element visible) or remove (hide element)"));
+        params.add(ToolParameter.requiredEnum("action",
+                "Action to perform: add (refresh diagram to include element) "
+                + "or remove (hide element from diagram)",
+                VALID_ACTIONS));
         return params;
     }
 
@@ -77,95 +85,78 @@ public class UpdateDiagramTool extends AbstractCapellaTool {
         String elementUuid = getRequiredString(parameters, "element_uuid");
         String action = getRequiredString(parameters, "action").toLowerCase();
 
-        if (diagramUuid.isBlank()) {
-            return ToolResult.error("Parameter 'diagram_uuid' must not be empty");
+        // Validate UUIDs
+        try {
+            diagramUuid = InputValidator.validateUuid(diagramUuid);
+            elementUuid = InputValidator.validateUuid(elementUuid);
+        } catch (IllegalArgumentException e) {
+            return ToolResult.error("Invalid UUID: " + e.getMessage());
         }
-        if (elementUuid.isBlank()) {
-            return ToolResult.error("Parameter 'element_uuid' must not be empty");
-        }
+
         if (!VALID_ACTIONS.contains(action)) {
             return ToolResult.error("Invalid action '" + action
                     + "'. Must be one of: " + String.join(", ", VALID_ACTIONS));
         }
 
         try {
-            // PLACEHOLDER: Resolve diagram by UUID
-            // Session session = getActiveSession();
-            // DRepresentationDescriptor descriptor = findDescriptorByUuid(session, diagramUuid);
-            // if (descriptor == null) {
-            //     return ToolResult.error("Diagram not found with UUID: " + diagramUuid);
-            // }
-            // DRepresentation representation = descriptor.getRepresentation();
-            // if (!(representation instanceof DDiagram)) {
-            //     return ToolResult.error("Representation is not a diagram");
-            // }
-            // DDiagram diagram = (DDiagram) representation;
+            Session session = getActiveSession();
 
+            // Resolve diagram by UUID from the session's representation descriptors
+            DDiagram diagram = findDiagramByUuid(session, diagramUuid);
+            if (diagram == null) {
+                return ToolResult.error("Diagram not found with UUID: " + diagramUuid);
+            }
+
+            // Resolve the semantic element
             EObject semanticElement = resolveElementByUuid(elementUuid);
             if (semanticElement == null) {
                 return ToolResult.error("Semantic element not found with UUID: " + elementUuid);
             }
 
-            final String diagramAction = action;
-            final EObject element = semanticElement;
-
-            TransactionalEditingDomain domain = getEditingDomain();
+            TransactionalEditingDomain domain = getEditingDomain(session);
             final boolean[] success = {false};
             final String[] resultMessage = {""};
+            final DDiagram targetDiagram = diagram;
+            final EObject element = semanticElement;
+            final String diagramAction = action;
 
             domain.getCommandStack().execute(new RecordingCommand(domain,
                     action + " element on diagram") {
                 @Override
                 protected void doExecute() {
                     if ("add".equals(diagramAction)) {
-                        // PLACEHOLDER: Add element to diagram
-                        //
-                        // Approach 1: Use Sirius DiagramCommandFactory
-                        // IDiagramCommandFactoryProvider provider =
-                        //     (IDiagramCommandFactoryProvider) diagram.eAdapterOfType(
-                        //         IDiagramCommandFactoryProvider.class);
-                        // IDiagramCommandFactory factory = provider.getCommandFactory(domain);
-                        //
-                        // Approach 2: Use DialectManager to create a view
-                        // The Sirius API for adding elements to diagrams typically
-                        // involves creating a DNode or DEdge that references the
-                        // semantic element. The exact API depends on the diagram
-                        // description (odesign) mappings.
-                        //
-                        // For Capella, the recommended approach is:
-                        // 1. Find the appropriate mapping for the element type
-                        // 2. Create a DNode with that mapping pointing to the semantic element
-                        // 3. Add the DNode to the diagram's owned diagram elements
-                        //
-                        // DDiagramElement diagramElement = createDiagramElement(diagram, element);
-                        // if (diagramElement != null) {
-                        //     success[0] = true;
-                        //     resultMessage[0] = "Element added to diagram";
-                        // }
-
-                        success[0] = addElementToDiagram(diagramUuid, element);
-                        resultMessage[0] = success[0] ? "Element added to diagram"
-                                : "Failed to add element to diagram";
-
-                    } else { // remove
-                        // PLACEHOLDER: Remove element from diagram (hide, not delete)
-                        //
-                        // Find the DDiagramElement for this semantic element:
-                        // for (DDiagramElement dde : diagram.getDiagramElements()) {
-                        //     if (dde.getTarget() == element) {
-                        //         // Remove from diagram (hides, does not delete semantic)
-                        //         EcoreUtil.remove(dde);
-                        //         success[0] = true;
-                        //         break;
-                        //     }
-                        // }
-                        // resultMessage[0] = success[0]
-                        //     ? "Element removed from diagram"
-                        //     : "Element was not found on this diagram";
-
-                        success[0] = removeElementFromDiagram(diagramUuid, element);
-                        resultMessage[0] = success[0] ? "Element removed from diagram"
-                                : "Element was not found on this diagram";
+                        // Refresh the diagram to synchronize with the model.
+                        // Sirius will automatically add diagram elements for semantic
+                        // elements that match the diagram's mappings.
+                        try {
+                            DialectManager.INSTANCE.refresh(targetDiagram, null);
+                            success[0] = true;
+                            resultMessage[0] = "Diagram refreshed. If the element has a valid "
+                                    + "mapping in the diagram description (odesign), it will now "
+                                    + "appear on the diagram.";
+                        } catch (Exception e) {
+                            resultMessage[0] = "Diagram refresh failed: " + e.getMessage();
+                        }
+                    } else {
+                        // Remove: find the DDiagramElement for this semantic element
+                        // and remove it from the diagram
+                        DDiagramElement found = null;
+                        for (DDiagramElement dde : targetDiagram.getDiagramElements()) {
+                            if (dde.getTarget() == element) {
+                                found = dde;
+                                break;
+                            }
+                        }
+                        if (found != null) {
+                            org.eclipse.emf.ecore.util.EcoreUtil.remove(found);
+                            success[0] = true;
+                            resultMessage[0] = "Element removed from diagram (hidden, "
+                                    + "not deleted from model)";
+                        } else {
+                            success[0] = false;
+                            resultMessage[0] = "Element was not found on this diagram. "
+                                    + "It may not have a visible representation.";
+                        }
                     }
                 }
             });
@@ -174,8 +165,9 @@ public class UpdateDiagramTool extends AbstractCapellaTool {
             response.addProperty("status", success[0] ? "success" : "not_found");
             response.addProperty("action", action);
             response.addProperty("diagram_uuid", diagramUuid);
+            response.addProperty("diagram_name", diagram.getName());
             response.addProperty("element_uuid", elementUuid);
-            response.addProperty("element_name", getElementName(element));
+            response.addProperty("element_name", getElementName(semanticElement));
             response.addProperty("message", resultMessage[0]);
 
             return success[0] ? ToolResult.success(response) : ToolResult.error(resultMessage[0]);
@@ -186,26 +178,40 @@ public class UpdateDiagramTool extends AbstractCapellaTool {
     }
 
     /**
-     * Adds a semantic element's representation to the target diagram.
+     * Finds a DDiagram by its UUID from the session's representation descriptors.
      *
-     * @param diagramUuid the UUID of the diagram
-     * @param element     the semantic element to add
-     * @return true if the element was successfully added
+     * @param session     the Sirius session
+     * @param diagramUuid the UUID of the diagram to find
+     * @return the DDiagram, or null if not found
      */
-    private boolean addElementToDiagram(String diagramUuid, EObject element) {
-        // PLACEHOLDER: Implement using Sirius DDiagram API
-        return false;
-    }
+    private DDiagram findDiagramByUuid(Session session, String diagramUuid) {
+        Collection<DRepresentationDescriptor> descriptors =
+                DialectManager.INSTANCE.getAllRepresentationDescriptors(session);
 
-    /**
-     * Removes a semantic element's representation from the target diagram.
-     *
-     * @param diagramUuid the UUID of the diagram
-     * @param element     the semantic element whose diagram representation should be removed
-     * @return true if the element was found and removed
-     */
-    private boolean removeElementFromDiagram(String diagramUuid, EObject element) {
-        // PLACEHOLDER: Implement using Sirius DDiagram API
-        return false;
+        for (DRepresentationDescriptor desc : descriptors) {
+            // Check both the descriptor UID and the representation UID
+            String uid = desc.getUid() != null ? desc.getUid().toString() : "";
+            if (diagramUuid.equals(uid)) {
+                DRepresentation rep = desc.getRepresentation();
+                if (rep instanceof DDiagram) {
+                    return (DDiagram) rep;
+                }
+            }
+
+            // Also try matching via the representation's own ID
+            try {
+                DRepresentation rep = desc.getRepresentation();
+                if (rep instanceof DDiagram) {
+                    String repId = getElementId(rep);
+                    if (diagramUuid.equals(repId)) {
+                        return (DDiagram) rep;
+                    }
+                }
+            } catch (Exception e) {
+                // Representation may not be loadable; continue
+            }
+        }
+
+        return null;
     }
 }
