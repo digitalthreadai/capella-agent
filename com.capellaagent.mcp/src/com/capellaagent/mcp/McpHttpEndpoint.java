@@ -49,7 +49,7 @@ public class McpHttpEndpoint {
         server.createContext("/tools/list", this::handleListTools);
         server.createContext("/tools/call", this::handleCallTool);
         server.createContext("/health", this::handleHealth);
-        server.setExecutor(null); // default executor
+        server.setExecutor(java.util.concurrent.Executors.newFixedThreadPool(4));
         server.start();
     }
 

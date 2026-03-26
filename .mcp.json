@@ -4,7 +4,7 @@
       "command": "java",
       "args": [
         "-cp",
-        "com.capellaagent.mcp/bin",
+        "com.capellaagent.mcp/target/classes:com.capellaagent.mcp/bin:lib/gson-2.10.1.jar",
         "com.capellaagent.mcp.bridge.McpServerBridge",
         "9847"
       ],
