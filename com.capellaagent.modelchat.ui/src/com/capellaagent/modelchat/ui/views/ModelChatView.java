@@ -30,8 +30,14 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.part.ViewPart;
 
+import com.capellaagent.core.config.AgentConfiguration;
+import com.capellaagent.core.llm.ILlmProvider;
+import com.capellaagent.core.llm.LlmProviderRegistry;
 import com.capellaagent.core.session.ConversationSession;
+import com.capellaagent.core.util.WorkspaceUtil;
 import com.capellaagent.modelchat.ui.adapters.ElementLinkAdapter;
+
+import org.eclipse.core.resources.IProject;
 
 /**
  * Eclipse ViewPart that provides the AI Model Chat interface.
@@ -56,7 +62,7 @@ public class ModelChatView extends ViewPart {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     // UI widgets
-    private ComboViewer providerCombo;
+    private Label providerInfoLabel;
     private ComboViewer projectCombo;
     private StyledText conversationText;
     private Text inputField;
@@ -123,28 +129,19 @@ public class ModelChatView extends ViewPart {
      */
     private void createToolbar(Composite parent) {
         Composite toolbar = new Composite(parent, SWT.NONE);
-        GridLayout toolbarLayout = new GridLayout(5, false);
+        GridLayout toolbarLayout = new GridLayout(4, false);
         toolbarLayout.marginWidth = 8;
         toolbarLayout.marginHeight = 4;
         toolbar.setLayout(toolbarLayout);
         toolbar.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-        // LLM Provider selector
+        // LLM Provider label (read-only, configured via Preferences)
         Label providerLabel = new Label(toolbar, SWT.NONE);
         providerLabel.setText("Provider:");
 
-        providerCombo = new ComboViewer(toolbar, SWT.READ_ONLY | SWT.DROP_DOWN);
-        providerCombo.setContentProvider(ArrayContentProvider.getInstance());
-        providerCombo.setLabelProvider(new LabelProvider());
-        providerCombo.getControl().setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
-
-        // PLACEHOLDER: Populate from LlmProviderRegistry
-        // List<String> providers = LlmProviderRegistry.getInstance().getProviderNames();
-        List<String> providers = List.of("Claude", "GPT-4", "Local LLM");
-        providerCombo.setInput(providers);
-        if (!providers.isEmpty()) {
-            providerCombo.setSelection(new StructuredSelection(providers.get(0)));
-        }
+        providerInfoLabel = new Label(toolbar, SWT.NONE);
+        providerInfoLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
+        updateProviderLabel();
 
         // Active project selector
         Label projectLabel = new Label(toolbar, SWT.NONE);
@@ -155,19 +152,42 @@ public class ModelChatView extends ViewPart {
         projectCombo.setLabelProvider(new LabelProvider());
         projectCombo.getControl().setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        // PLACEHOLDER: Populate from active Capella sessions
-        // List<String> projects = SessionManager.INSTANCE.getSessions().stream()
-        //     .map(s -> s.getSessionResource().getURI().lastSegment())
-        //     .toList();
-        List<String> projects = List.of("(No project open)");
-        projectCombo.setInput(projects);
-        if (!projects.isEmpty()) {
-            projectCombo.setSelection(new StructuredSelection(projects.get(0)));
+        // Populate from workspace Capella projects
+        refreshProjectList();
+    }
+
+    /**
+     * Updates the provider info label from current preferences.
+     */
+    private void updateProviderLabel() {
+        try {
+            ILlmProvider provider = LlmProviderRegistry.getInstance().getActiveProvider();
+            providerInfoLabel.setText(provider.getDisplayName());
+        } catch (Exception e) {
+            providerInfoLabel.setText("(not configured)");
+        }
+    }
+
+    /**
+     * Refreshes the project dropdown with current workspace Capella projects.
+     */
+    private void refreshProjectList() {
+        List<String> projectNames = new ArrayList<>();
+        try {
+            List<IProject> capellaProjects = WorkspaceUtil.getCapellaProjects();
+            for (IProject p : capellaProjects) {
+                projectNames.add(p.getName());
+            }
+        } catch (Exception e) {
+            // Fall through to empty list
         }
 
-        // Spacer
-        Label spacer = new Label(toolbar, SWT.NONE);
-        spacer.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        if (projectNames.isEmpty()) {
+            projectNames.add("(No Capella project found)");
+        }
+
+        projectCombo.setInput(projectNames);
+        projectCombo.setSelection(new StructuredSelection(projectNames.get(0)));
     }
 
     /**
@@ -444,10 +464,8 @@ public class ModelChatView extends ViewPart {
      * @return the provider name string
      */
     private String getSelectedProvider() {
-        if (providerCombo.getSelection() instanceof StructuredSelection sel && !sel.isEmpty()) {
-            return sel.getFirstElement().toString();
-        }
-        return "Claude"; // Default
+        // Provider is now configured via Preferences page, not the chat view combo
+        return AgentConfiguration.getInstance().getLlmProviderId();
     }
 
     /**

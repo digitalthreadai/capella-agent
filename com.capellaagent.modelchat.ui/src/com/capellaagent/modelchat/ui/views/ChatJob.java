@@ -8,19 +8,20 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
+import com.capellaagent.core.config.AgentConfiguration;
+import com.capellaagent.core.llm.ILlmProvider;
+import com.capellaagent.core.llm.LlmException;
 import com.capellaagent.core.llm.LlmMessage;
+import com.capellaagent.core.llm.LlmProviderRegistry;
+import com.capellaagent.core.llm.LlmRequestConfig;
 import com.capellaagent.core.llm.LlmResponse;
 import com.capellaagent.core.llm.LlmToolCall;
 import com.capellaagent.core.llm.LlmToolResult;
 import com.capellaagent.core.session.ConversationSession;
+import com.capellaagent.core.tools.IToolDescriptor;
 import com.capellaagent.core.tools.ToolRegistry;
 import com.capellaagent.core.tools.ToolResult;
 import com.capellaagent.modelchat.ui.ModelChatUiActivator;
-
-// PLACEHOLDER imports for LLM provider registry
-// import com.capellaagent.core.llm.LlmProvider;
-// import com.capellaagent.core.llm.LlmProviderRegistry;
-// import com.capellaagent.core.llm.ChatConfig;
 
 /**
  * Eclipse {@link Job} that handles the asynchronous LLM chat orchestration loop.
@@ -208,22 +209,36 @@ public class ChatJob extends Job {
      * @return the LLM response, or null if the provider could not be reached
      */
     private LlmResponse callLlmProvider(ConversationSession session, String providerName) {
-        // PLACEHOLDER: Replace with actual provider invocation
-        //
-        // LlmProvider provider = LlmProviderRegistry.getInstance().getProvider(providerName);
-        // if (provider == null) return null;
-        //
-        // List<ToolDefinition> toolDefs = ToolRegistry.getInstance()
-        //     .getToolDefinitions(List.of("model_read", "model_write", "diagram"));
-        //
-        // ChatConfig config = ChatConfig.builder()
-        //     .maxTokens(4096)
-        //     .temperature(0.1)
-        //     .systemPrompt(buildSystemPrompt())
-        //     .build();
-        //
-        // return provider.chat(session.getMessages(), toolDefs, config);
+        try {
+            // Get the active provider from registry (reads from AgentConfiguration)
+            ILlmProvider provider = LlmProviderRegistry.getInstance().getActiveProvider();
 
-        return null;
+            // Get available tool descriptors from the registry (all categories)
+            List<IToolDescriptor> tools = ToolRegistry.getInstance().getTools();
+
+            // Build request config from user preferences
+            AgentConfiguration config = AgentConfiguration.getInstance();
+            String systemPrompt = "You are an AI assistant for Eclipse Capella MBSE. "
+                    + "Help engineers query and modify their architecture models. "
+                    + "Use the provided tools to read model elements, create relationships, "
+                    + "and update diagrams. Always explain what you are doing.";
+
+            LlmRequestConfig requestConfig = new LlmRequestConfig(
+                    config.getLlmModelId().isEmpty() ? null : config.getLlmModelId(),
+                    config.getLlmTemperature(),
+                    config.getLlmMaxTokens(),
+                    systemPrompt
+            );
+
+            // Call the LLM
+            return provider.chat(session.getMessages(), tools, requestConfig);
+
+        } catch (LlmException e) {
+            onTextResponse.accept("LLM Error: " + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            onTextResponse.accept("Error connecting to LLM: " + e.getMessage());
+            return null;
+        }
     }
 }
