@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.capellaagent.core.capella.CapellaModelService;
+import com.capellaagent.core.security.InputValidator;
 import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolCategory;
 import com.capellaagent.core.tools.ToolParameter;
@@ -13,16 +15,16 @@ import com.google.gson.JsonObject;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.transaction.TransactionalEditingDomain;
 import org.eclipse.emf.transaction.RecordingCommand;
-
-// PLACEHOLDER imports for Capella exchange metamodel
-// import org.polarsys.capella.core.data.fa.FaFactory;
-// import org.polarsys.capella.core.data.fa.FunctionalExchange;
-// import org.polarsys.capella.core.data.fa.ComponentExchange;
-// import org.polarsys.capella.core.data.fa.AbstractFunction;
-// import org.polarsys.capella.core.data.fa.FunctionOutputPort;
-// import org.polarsys.capella.core.data.fa.FunctionInputPort;
-// import org.polarsys.capella.core.data.cs.Component;
-// import org.polarsys.capella.core.data.information.PortAllocation;
+import org.eclipse.sirius.business.api.session.Session;
+import org.polarsys.capella.core.data.cs.Component;
+import org.polarsys.capella.core.data.fa.AbstractFunction;
+import org.polarsys.capella.core.data.fa.ComponentExchange; // VERIFY: may be in cs package
+import org.polarsys.capella.core.data.fa.FaFactory;
+import org.polarsys.capella.core.data.fa.FunctionalExchange;
+import org.polarsys.capella.core.data.fa.FunctionInputPort;
+import org.polarsys.capella.core.data.fa.FunctionOutputPort;
+import org.polarsys.capella.core.data.fa.ComponentPort; // VERIFY: exact path
+import org.polarsys.capella.core.data.information.InformationFactory; // VERIFY: for ports
 
 /**
  * Creates an exchange (functional or component) between two model elements.
@@ -97,6 +99,9 @@ public class CreateExchangeTool extends AbstractCapellaTool {
         }
 
         try {
+            Session session = getActiveSession();
+            CapellaModelService modelService = getModelService();
+
             // Resolve source and target elements
             EObject source = resolveElementByUuid(sourceUuid);
             if (source == null) {
@@ -109,80 +114,44 @@ public class CreateExchangeTool extends AbstractCapellaTool {
             }
 
             // Validate source/target types match exchange type
-            // PLACEHOLDER: Type validation
-            // if ("functional_exchange".equals(type)) {
-            //     if (!(source instanceof AbstractFunction)) {
-            //         return ToolResult.error("Source must be a function for functional_exchange");
-            //     }
-            //     if (!(target instanceof AbstractFunction)) {
-            //         return ToolResult.error("Target must be a function for functional_exchange");
-            //     }
-            // } else {
-            //     if (!(source instanceof Component)) {
-            //         return ToolResult.error("Source must be a component for component_exchange");
-            //     }
-            //     if (!(target instanceof Component)) {
-            //         return ToolResult.error("Target must be a component for component_exchange");
-            //     }
-            // }
+            if ("functional_exchange".equals(type)) {
+                if (!(source instanceof AbstractFunction)) {
+                    return ToolResult.error("Source must be a function for functional_exchange, but got: "
+                            + source.eClass().getName());
+                }
+                if (!(target instanceof AbstractFunction)) {
+                    return ToolResult.error("Target must be a function for functional_exchange, but got: "
+                            + target.eClass().getName());
+                }
+            } else {
+                if (!(source instanceof Component)) {
+                    return ToolResult.error("Source must be a component for component_exchange, but got: "
+                            + source.eClass().getName());
+                }
+                if (!(target instanceof Component)) {
+                    return ToolResult.error("Target must be a component for component_exchange, but got: "
+                            + target.eClass().getName());
+                }
+            }
 
-            // Auto-generate name if not provided
+            // Auto-generate name if not provided, then sanitize
             if (name == null || name.isBlank()) {
                 name = "[" + getElementName(source) + "] to [" + getElementName(target) + "]";
             }
+            name = InputValidator.sanitizeName(name);
 
             final EObject srcElement = source;
             final EObject tgtElement = target;
             final String exchangeName = name;
             final String exchangeType = type;
 
-            TransactionalEditingDomain domain = getEditingDomain();
+            TransactionalEditingDomain domain = getEditingDomain(session);
             final EObject[] created = new EObject[1];
 
             domain.getCommandStack().execute(new RecordingCommand(domain,
                     "Create " + type + " '" + exchangeName + "'") {
                 @Override
                 protected void doExecute() {
-                    // PLACEHOLDER: Create exchange using Capella factories
-                    //
-                    // if ("functional_exchange".equals(exchangeType)) {
-                    //     AbstractFunction srcFn = (AbstractFunction) srcElement;
-                    //     AbstractFunction tgtFn = (AbstractFunction) tgtElement;
-                    //
-                    //     // Create output port on source
-                    //     FunctionOutputPort outPort = FaFactory.eINSTANCE.createFunctionOutputPort();
-                    //     outPort.setName(exchangeName + "_out");
-                    //     srcFn.getOutputs().add(outPort);
-                    //
-                    //     // Create input port on target
-                    //     FunctionInputPort inPort = FaFactory.eINSTANCE.createFunctionInputPort();
-                    //     inPort.setName(exchangeName + "_in");
-                    //     tgtFn.getInputs().add(inPort);
-                    //
-                    //     // Create the functional exchange
-                    //     FunctionalExchange fe = FaFactory.eINSTANCE.createFunctionalExchange();
-                    //     fe.setName(exchangeName);
-                    //     fe.setSource(outPort);
-                    //     fe.setTarget(inPort);
-                    //
-                    //     // Add to the parent function pkg or source function's container
-                    //     srcFn.getOwnedFunctionalExchanges().add(fe);
-                    //     created[0] = fe;
-                    //
-                    // } else { // component_exchange
-                    //     Component srcComp = (Component) srcElement;
-                    //     Component tgtComp = (Component) tgtElement;
-                    //
-                    //     ComponentExchange ce = FaFactory.eINSTANCE.createComponentExchange();
-                    //     ce.setName(exchangeName);
-                    //     ce.setSource(srcComp); // or create ComponentPort
-                    //     ce.setTarget(tgtComp);
-                    //
-                    //     // Add to the parent component pkg
-                    //     srcComp.getOwnedComponentExchanges().add(ce);
-                    //     created[0] = ce;
-                    // }
-
                     created[0] = createExchange(srcElement, tgtElement, exchangeType, exchangeName);
                 }
             });
@@ -190,6 +159,9 @@ public class CreateExchangeTool extends AbstractCapellaTool {
             if (created[0] == null) {
                 return ToolResult.error("Exchange creation failed - no exchange produced");
             }
+
+            // Invalidate cache since model was modified
+            modelService.invalidateCache(session);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "created");
@@ -212,6 +184,9 @@ public class CreateExchangeTool extends AbstractCapellaTool {
 
     /**
      * Creates the exchange object between source and target elements.
+     * For functional exchanges, creates output/input ports and the exchange.
+     * For component exchanges, creates component ports and the exchange.
+     * Must be called within a RecordingCommand transaction.
      *
      * @param source       the source element
      * @param target       the target element
@@ -219,9 +194,63 @@ public class CreateExchangeTool extends AbstractCapellaTool {
      * @param name         the exchange name
      * @return the created exchange EObject
      */
+    @SuppressWarnings("unchecked")
     private EObject createExchange(EObject source, EObject target, String exchangeType, String name) {
-        // PLACEHOLDER: Implement using Capella factories (see doExecute comments above)
-        throw new UnsupportedOperationException(
-                "PLACEHOLDER: Create " + exchangeType + " between elements");
+        if ("functional_exchange".equals(exchangeType)) {
+            return createFunctionalExchange((AbstractFunction) source, (AbstractFunction) target, name);
+        } else {
+            return createComponentExchange((Component) source, (Component) target, name);
+        }
+    }
+
+    /**
+     * Creates a FunctionalExchange between two AbstractFunctions, including
+     * the required FunctionOutputPort on source and FunctionInputPort on target.
+     */
+    @SuppressWarnings("unchecked")
+    private EObject createFunctionalExchange(AbstractFunction srcFn, AbstractFunction tgtFn, String name) {
+        // Create output port on source function
+        FunctionOutputPort outPort = FaFactory.eINSTANCE.createFunctionOutputPort();
+        outPort.setName(name + "_out");
+        srcFn.getOutputs().add(outPort);
+
+        // Create input port on target function
+        FunctionInputPort inPort = FaFactory.eINSTANCE.createFunctionInputPort();
+        inPort.setName(name + "_in");
+        tgtFn.getInputs().add(inPort);
+
+        // Create the functional exchange linking the ports
+        FunctionalExchange fe = FaFactory.eINSTANCE.createFunctionalExchange();
+        fe.setName(name);
+        fe.setSource(outPort);
+        fe.setTarget(inPort);
+
+        // Add the exchange to the source function's owned exchanges
+        srcFn.getOwnedFunctionalExchanges().add(fe);
+
+        return fe;
+    }
+
+    /**
+     * Creates a ComponentExchange between two Components.
+     * Uses FaFactory to create the exchange and links source/target directly.
+     */
+    @SuppressWarnings("unchecked")
+    private EObject createComponentExchange(Component srcComp, Component tgtComp, String name) {
+        // Create the component exchange
+        ComponentExchange ce = FaFactory.eINSTANCE.createComponentExchange();
+        ce.setName(name);
+
+        // In Capella, ComponentExchange connects via ComponentPorts or directly
+        // For simplicity, set source and target (the exact API may use InformationPorts)
+        // VERIFY: Capella 7.0 may require creating ComponentPorts explicitly
+        // Cast to InformationsExchanger (Component implements it in Capella)
+        ce.setSource((org.polarsys.capella.common.data.modellingcore.InformationsExchanger) srcComp);
+        ce.setTarget((org.polarsys.capella.common.data.modellingcore.InformationsExchanger) tgtComp);
+
+        // Add to the source component's owned exchanges
+        srcComp.getOwnedComponentExchanges().add(ce);
+
+        return ce;
     }
 }

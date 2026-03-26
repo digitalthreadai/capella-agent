@@ -1,11 +1,13 @@
 package com.capellaagent.modelchat.tools.read;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import com.capellaagent.core.capella.CapellaModelService;
 import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolCategory;
 import com.capellaagent.core.tools.ToolParameter;
@@ -14,9 +16,19 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.eclipse.emf.ecore.EObject;
-
-// PLACEHOLDER imports for Capella metamodel
-// import org.polarsys.capella.core.data.capellacore.NamedElement;
+import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.sirius.business.api.session.Session;
+import org.polarsys.capella.common.data.modellingcore.AbstractNamedElement;
+import org.polarsys.capella.core.data.cs.BlockArchitecture;
+import org.polarsys.capella.core.data.cs.Component;
+import org.polarsys.capella.core.data.ctx.SystemAnalysis;
+import org.polarsys.capella.core.data.fa.AbstractFunction;
+import org.polarsys.capella.core.data.fa.FunctionalExchange;
+import org.polarsys.capella.core.data.fa.ComponentExchange; // VERIFY: may be in cs package
+import org.polarsys.capella.core.data.interaction.AbstractCapability;
+import org.polarsys.capella.core.data.la.LogicalArchitecture;
+import org.polarsys.capella.core.data.oa.OperationalAnalysis;
+import org.polarsys.capella.core.data.pa.PhysicalArchitecture;
 
 /**
  * Searches for model elements by name pattern across the Capella model.
@@ -89,27 +101,10 @@ public class SearchElementsTool extends AbstractCapellaTool {
         }
 
         try {
-            // PLACEHOLDER: Search across the Capella model
-            // 1. If layer is specified, scope search to that BlockArchitecture
-            // 2. Otherwise, search all architectures
-            // 3. For each NamedElement, check if name matches the pattern
-            // 4. If elementType is specified, additionally filter by metamodel class
-            //
-            // Session session = getActiveSession();
-            // List<EObject> searchScope = determineScope(session, layer);
-            // for (EObject root : searchScope) {
-            //     TreeIterator<EObject> it = root.eAllContents();
-            //     while (it.hasNext()) {
-            //         EObject obj = it.next();
-            //         if (obj instanceof NamedElement ne) {
-            //             if (matchesType(obj, elementType) && pattern.matcher(ne.getName()).find()) {
-            //                 results.add(obj);
-            //             }
-            //         }
-            //     }
-            // }
+            CapellaModelService modelService = getModelService();
+            Session session = getActiveSession();
 
-            List<EObject> matches = performSearch(pattern, elementType, layer);
+            List<EObject> matches = performSearch(session, modelService, pattern, elementType, layer);
 
             JsonArray resultsArray = new JsonArray();
             int count = 0;
@@ -122,7 +117,7 @@ public class SearchElementsTool extends AbstractCapellaTool {
                 item.addProperty("uuid", getElementId(match));
                 item.addProperty("type", match.eClass().getName());
                 item.addProperty("description_preview", truncate(getElementDescription(match), 150));
-                item.addProperty("layer", detectLayer(match));
+                item.addProperty("layer", modelService.detectLayer(match));
                 resultsArray.add(item);
                 count++;
             }
@@ -143,33 +138,73 @@ public class SearchElementsTool extends AbstractCapellaTool {
 
     /**
      * Performs the search across the Capella model using the compiled pattern.
-     *
-     * @param pattern     the compiled search pattern
-     * @param elementType optional element type filter
-     * @param layer       optional architecture layer filter
-     * @return list of matching EObjects
+     * If a layer is specified, scopes search to that architecture only.
+     * Otherwise, searches all semantic resources.
      */
-    private List<EObject> performSearch(Pattern pattern, String elementType, String layer) {
-        // PLACEHOLDER: Implement actual model traversal and pattern matching
-        return new ArrayList<>();
+    private List<EObject> performSearch(Session session, CapellaModelService modelService,
+                                         Pattern pattern, String elementType, String layer) {
+        List<EObject> results = new ArrayList<>();
+        int maxCollect = MAX_SEARCH_RESULTS + 1; // Collect one extra to detect truncation
+
+        if (layer != null && !layer.isBlank()) {
+            // Search within a specific architecture layer
+            BlockArchitecture architecture = modelService.getArchitecture(session, layer.toLowerCase());
+            searchContents(architecture.eAllContents(), pattern, elementType, results, maxCollect);
+        } else {
+            // Search all semantic resources
+            for (Resource resource : session.getSemanticResources()) {
+                Iterator<EObject> allContents = resource.getAllContents();
+                searchContents(allContents, pattern, elementType, results, maxCollect);
+                if (results.size() >= maxCollect) break;
+            }
+        }
+
+        return results;
     }
 
     /**
-     * Detects which ARCADIA layer an element belongs to by walking up the containment hierarchy.
-     *
-     * @param element the model element
-     * @return the layer identifier (oa, sa, la, pa) or "unknown"
+     * Iterates through contents, matching names against the pattern and optional type filter.
      */
-    private String detectLayer(EObject element) {
-        // PLACEHOLDER: Walk up containment to find the BlockArchitecture ancestor
-        // EObject current = element;
-        // while (current != null) {
-        //     if (current instanceof OperationalAnalysis) return "oa";
-        //     if (current instanceof SystemAnalysis) return "sa";
-        //     if (current instanceof LogicalArchitecture) return "la";
-        //     if (current instanceof PhysicalArchitecture) return "pa";
-        //     current = current.eContainer();
-        // }
-        return "unknown";
+    private void searchContents(Iterator<EObject> contents, Pattern pattern,
+                                  String elementType, List<EObject> results, int maxCollect) {
+        while (contents.hasNext() && results.size() < maxCollect) {
+            EObject obj = contents.next();
+
+            // Must be a named element
+            if (!(obj instanceof AbstractNamedElement)) {
+                continue;
+            }
+
+            // Check type filter
+            if (elementType != null && !matchesType(obj, elementType.toLowerCase())) {
+                continue;
+            }
+
+            // Check name pattern
+            String name = getElementName(obj);
+            if (name != null && !name.isEmpty() && pattern.matcher(name).find()) {
+                results.add(obj);
+            }
+        }
+    }
+
+    /**
+     * Checks whether an EObject matches the requested element type filter.
+     */
+    private boolean matchesType(EObject obj, String elementType) {
+        switch (elementType) {
+            case "functions":
+                return obj instanceof AbstractFunction;
+            case "components":
+                return obj instanceof Component;
+            case "actors":
+                return obj instanceof Component && ((Component) obj).isActor();
+            case "exchanges":
+                return obj instanceof FunctionalExchange || obj instanceof ComponentExchange;
+            case "capabilities":
+                return obj instanceof AbstractCapability;
+            default:
+                return true; // No type filter
+        }
     }
 }

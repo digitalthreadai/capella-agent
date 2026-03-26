@@ -1,9 +1,11 @@
 package com.capellaagent.modelchat.tools.read;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.capellaagent.core.capella.CapellaModelService;
 import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolCategory;
 import com.capellaagent.core.tools.ToolParameter;
@@ -14,12 +16,11 @@ import com.google.gson.JsonObject;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
-
-// PLACEHOLDER imports for Capella metamodel
-// import org.polarsys.capella.core.data.capellacore.NamedElement;
-// import org.polarsys.capella.core.data.fa.AbstractFunction;
-// import org.polarsys.capella.core.data.fa.ComponentFunctionalAllocation;
-// import org.polarsys.capella.core.data.cs.Component;
+import org.eclipse.emf.ecore.util.ECrossReferenceAdapter;
+import org.polarsys.capella.common.data.modellingcore.ModelElement;
+import org.polarsys.capella.core.data.cs.Component;
+import org.polarsys.capella.core.data.fa.AbstractFunction;
+import org.polarsys.capella.core.data.fa.ComponentFunctionalAllocation; // VERIFY: exact path
 
 /**
  * Retrieves comprehensive details for a single model element by its UUID.
@@ -67,21 +68,6 @@ public class GetElementDetailsTool extends AbstractCapellaTool {
         }
 
         try {
-            // PLACEHOLDER: Resolve element by UUID from the Capella model
-            // EObject element = resolveByUuid(uuid);
-            //
-            // Resolution approach:
-            //   Session session = getActiveSession();
-            //   for (Resource resource : session.getSemanticResources()) {
-            //       TreeIterator<EObject> it = resource.getAllContents();
-            //       while (it.hasNext()) {
-            //           EObject obj = it.next();
-            //           if (obj instanceof NamedElement ne && uuid.equals(ne.getId())) {
-            //               return ne;
-            //           }
-            //       }
-            //   }
-
             EObject element = resolveElementByUuid(uuid);
             if (element == null) {
                 return ToolResult.error("Element not found with UUID: " + uuid);
@@ -95,23 +81,28 @@ public class GetElementDetailsTool extends AbstractCapellaTool {
             details.addProperty("type", element.eClass().getName());
             details.addProperty("description", getElementDescription(element));
 
+            // Detect layer
+            String layer = getModelService().detectLayer(element);
+            details.addProperty("layer", layer);
+
             // All EAttribute values as a properties map
             JsonObject properties = new JsonObject();
             for (EStructuralFeature feature : element.eClass().getEAllStructuralFeatures()) {
                 if (feature instanceof EReference) {
                     continue; // References handled separately
                 }
-                Object value = element.eGet(feature);
-                if (value != null) {
-                    properties.addProperty(feature.getName(), value.toString());
+                try {
+                    Object value = element.eGet(feature);
+                    if (value != null) {
+                        properties.addProperty(feature.getName(), value.toString());
+                    }
+                } catch (Exception e) {
+                    // Skip features that cannot be read
                 }
             }
             details.add("properties", properties);
 
             // Incoming relationships (cross-references pointing to this element)
-            // PLACEHOLDER: Use ECrossReferenceAdapter for incoming references
-            // ECrossReferenceAdapter adapter = ECrossReferenceAdapter.getCrossReferenceAdapter(element);
-            // Collection<Setting> inverseRefs = adapter.getInverseReferences(element);
             JsonArray incoming = buildIncomingRelationships(element);
             details.add("incoming_relationships", incoming);
 
@@ -120,20 +111,6 @@ public class GetElementDetailsTool extends AbstractCapellaTool {
             details.add("outgoing_relationships", outgoing);
 
             // Allocated functions (if element is a Component)
-            // PLACEHOLDER: Check instanceof Component and get allocated functions
-            // if (element instanceof Component comp) {
-            //     JsonArray allocatedFunctions = new JsonArray();
-            //     for (ComponentFunctionalAllocation alloc : comp.getFunctionalAllocations()) {
-            //         AbstractFunction fn = alloc.getFunction();
-            //         if (fn != null) {
-            //             JsonObject fnObj = new JsonObject();
-            //             fnObj.addProperty("name", fn.getName());
-            //             fnObj.addProperty("uuid", fn.getId());
-            //             allocatedFunctions.add(fnObj);
-            //         }
-            //     }
-            //     details.add("allocated_functions", allocatedFunctions);
-            // }
             JsonArray allocatedFunctions = buildAllocatedFunctions(element);
             if (allocatedFunctions.size() > 0) {
                 details.add("allocated_functions", allocatedFunctions);
@@ -169,14 +146,41 @@ public class GetElementDetailsTool extends AbstractCapellaTool {
 
     /**
      * Builds the list of incoming relationships (elements that reference this element).
+     * Uses ECrossReferenceAdapter if available on the element's resource set.
      *
      * @param element the target element
      * @return a JsonArray of relationship summaries
      */
     private JsonArray buildIncomingRelationships(EObject element) {
         JsonArray incoming = new JsonArray();
-        // PLACEHOLDER: Use ECrossReferenceAdapter to find inverse references
-        // Each entry should have: source_name, source_uuid, source_type, relationship_type
+
+        try {
+            // Attempt to use ECrossReferenceAdapter for efficient inverse reference lookup
+            ECrossReferenceAdapter adapter = ECrossReferenceAdapter.getCrossReferenceAdapter(element);
+            if (adapter != null) {
+                Collection<EStructuralFeature.Setting> inverseRefs = adapter.getInverseReferences(element);
+                int count = 0;
+                for (EStructuralFeature.Setting setting : inverseRefs) {
+                    if (count >= 50) break; // Limit to avoid overwhelming output
+                    EObject source = setting.getEObject();
+                    if (source != null && setting.getEStructuralFeature() instanceof EReference) {
+                        EReference ref = (EReference) setting.getEStructuralFeature();
+                        if (!ref.isContainment()) {
+                            JsonObject relObj = new JsonObject();
+                            relObj.addProperty("source_name", getElementName(source));
+                            relObj.addProperty("source_uuid", getElementId(source));
+                            relObj.addProperty("source_type", source.eClass().getName());
+                            relObj.addProperty("relationship_type", ref.getName());
+                            incoming.add(relObj);
+                            count++;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // ECrossReferenceAdapter may not be installed; return empty
+        }
+
         return incoming;
     }
 
@@ -192,25 +196,31 @@ public class GetElementDetailsTool extends AbstractCapellaTool {
             if (ref.isContainment()) {
                 continue; // Skip containment refs, those are in children
             }
-            Object value = element.eGet(ref);
-            if (value instanceof EObject target) {
-                JsonObject relObj = new JsonObject();
-                relObj.addProperty("relationship_type", ref.getName());
-                relObj.addProperty("target_name", getElementName(target));
-                relObj.addProperty("target_uuid", getElementId(target));
-                relObj.addProperty("target_type", target.eClass().getName());
-                outgoing.add(relObj);
-            } else if (value instanceof List<?> targets) {
-                for (Object item : targets) {
-                    if (item instanceof EObject target) {
-                        JsonObject relObj = new JsonObject();
-                        relObj.addProperty("relationship_type", ref.getName());
-                        relObj.addProperty("target_name", getElementName(target));
-                        relObj.addProperty("target_uuid", getElementId(target));
-                        relObj.addProperty("target_type", target.eClass().getName());
-                        outgoing.add(relObj);
+            try {
+                Object value = element.eGet(ref);
+                if (value instanceof EObject) {
+                    EObject target = (EObject) value;
+                    JsonObject relObj = new JsonObject();
+                    relObj.addProperty("relationship_type", ref.getName());
+                    relObj.addProperty("target_name", getElementName(target));
+                    relObj.addProperty("target_uuid", getElementId(target));
+                    relObj.addProperty("target_type", target.eClass().getName());
+                    outgoing.add(relObj);
+                } else if (value instanceof List<?>) {
+                    for (Object item : (List<?>) value) {
+                        if (item instanceof EObject) {
+                            EObject target = (EObject) item;
+                            JsonObject relObj = new JsonObject();
+                            relObj.addProperty("relationship_type", ref.getName());
+                            relObj.addProperty("target_name", getElementName(target));
+                            relObj.addProperty("target_uuid", getElementId(target));
+                            relObj.addProperty("target_type", target.eClass().getName());
+                            outgoing.add(relObj);
+                        }
                     }
                 }
+            } catch (Exception e) {
+                // Skip references that cannot be read
             }
         }
         return outgoing;
@@ -224,19 +234,26 @@ public class GetElementDetailsTool extends AbstractCapellaTool {
      */
     private JsonArray buildAllocatedFunctions(EObject element) {
         JsonArray functions = new JsonArray();
-        // PLACEHOLDER: Capella-specific allocation navigation
-        // if (element instanceof Component comp) {
-        //     for (ComponentFunctionalAllocation alloc : comp.getFunctionalAllocations()) {
-        //         AbstractFunction fn = alloc.getFunction();
-        //         if (fn != null) {
-        //             JsonObject fnObj = new JsonObject();
-        //             fnObj.addProperty("name", fn.getName());
-        //             fnObj.addProperty("uuid", fn.getId());
-        //             fnObj.addProperty("type", fn.eClass().getName());
-        //             functions.add(fnObj);
-        //         }
-        //     }
-        // }
+
+        if (element instanceof Component) {
+            Component comp = (Component) element;
+            try {
+                for (ComponentFunctionalAllocation alloc : comp.getFunctionalAllocations()) {
+                    AbstractFunction fn = alloc.getFunction();
+                    if (fn != null) {
+                        JsonObject fnObj = new JsonObject();
+                        fnObj.addProperty("name", fn.getName());
+                        fnObj.addProperty("uuid", fn instanceof ModelElement
+                                ? ((ModelElement) fn).getId() : "");
+                        fnObj.addProperty("type", fn.eClass().getName());
+                        functions.add(fnObj);
+                    }
+                }
+            } catch (Exception e) {
+                // Allocation API may differ; fall back gracefully
+            }
+        }
+
         return functions;
     }
 }

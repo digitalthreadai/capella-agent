@@ -38,7 +38,12 @@
       <url>https://download.eclipse.org/releases/2024-03</url>
       <layout>p2</layout>
     </repository>
-    <!-- Gson is now embedded in com.capellaagent.core/lib/ - no Orbit needed -->
+    <!-- Capella 7.0.1 p2 repository (generated from local installation) -->
+    <repository>
+      <id>capella-local</id>
+      <url>file:///C:/Apps/capella-7.0.1/p2repo</url>
+      <layout>p2</layout>
+    </repository>
   </repositories>
 
   <build>
@@ -74,9 +79,8 @@
               <arch>x86_64</arch>
             </environment>
           </environments>
-          <!-- Resolve dependencies from p2 repositories defined above -->
           <dependency-resolution>
-            <optionalDependencies>ignore</optionalDependencies>
+            <optionalDependencies>optional</optionalDependencies>
           </dependency-resolution>
         </configuration>
       </plugin>

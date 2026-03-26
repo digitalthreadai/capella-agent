@@ -11,9 +11,12 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.transaction.RecordingCommand;
 import org.eclipse.emf.transaction.TransactionalEditingDomain;
+import org.eclipse.sirius.business.api.session.Session;
 
+import com.capellaagent.core.capella.CapellaModelService;
 import com.capellaagent.core.security.AuditLogger;
 import com.capellaagent.core.security.SecurityService;
+import org.polarsys.capella.common.data.modellingcore.ModelElement;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -105,10 +108,7 @@ public abstract class AbstractCapellaTool implements IToolDescriptor, IToolExecu
         JsonArray required = new JsonArray();
 
         for (ToolParameter param : params) {
-            JsonObject prop = new JsonObject();
-            prop.addProperty("type", param.getType());
-            prop.addProperty("description", param.getDescription());
-            properties.add(param.getName(), prop);
+            properties.add(param.getName(), param.toJsonSchema());
 
             if (param.isRequired()) {
                 required.add(param.getName());
@@ -168,6 +168,11 @@ public abstract class AbstractCapellaTool implements IToolDescriptor, IToolExecu
     @Override
     public JsonObject execute(JsonObject arguments) {
         try {
+            // Enforce write mode for MODEL_WRITE category tools
+            if (ToolCategory.MODEL_WRITE.equals(getCategory())) {
+                requireWriteMode();
+            }
+
             AuditLogger.getInstance().logToolExecution(
                     getName(), arguments.toString(), true, "started");
 
@@ -324,41 +329,57 @@ public abstract class AbstractCapellaTool implements IToolDescriptor, IToolExecu
     // ========================================================================
 
     /**
-     * Gets the active Sirius session from the workspace.
-     * <p>
-     * PLACEHOLDER: The exact API call depends on the Capella/Sirius version.
+     * Returns the CapellaModelService singleton for convenience.
+     *
+     * @return the model service instance
      */
-    protected Object getActiveSession() throws ToolExecutionException {
-        // PLACEHOLDER: Actual implementation depends on Capella/Sirius version.
-        // Session session = CapellaSessionUtil.getActiveSession();
-        // if (session == null) throw ...;
-        // return session;
-        throw new ToolExecutionException(ToolExecutionException.ERR_EXECUTION,
-                "getActiveSession() not yet connected to Capella runtime. "
-                + "Override in concrete tool or configure CapellaSessionUtil.");
+    protected CapellaModelService getModelService() {
+        return CapellaModelService.getInstance();
+    }
+
+    /**
+     * Gets the active Sirius session from the workspace.
+     * Delegates to {@link CapellaModelService#getSession(String)}.
+     *
+     * @return the active Sirius Session
+     * @throws ToolExecutionException if no session is available
+     */
+    protected Session getActiveSession() throws ToolExecutionException {
+        try {
+            return CapellaModelService.getInstance().getSession(null);
+        } catch (IllegalStateException e) {
+            throw new ToolExecutionException(ToolExecutionException.ERR_EXECUTION,
+                    e.getMessage());
+        }
     }
 
     /**
      * Gets the transactional editing domain from a Sirius session.
-     * <p>
-     * PLACEHOLDER: The exact API call depends on the Capella/Sirius version.
      *
-     * @param session the Sirius session (typed as Object for compile-time safety)
+     * @param session the Sirius session
+     * @return the transactional editing domain
+     * @throws ToolExecutionException if the domain is not available
      */
     protected TransactionalEditingDomain getEditingDomain(Object session)
             throws ToolExecutionException {
-        // PLACEHOLDER: return ((Session) session).getTransactionalEditingDomain();
-        throw new ToolExecutionException(ToolExecutionException.ERR_EXECUTION,
-                "getEditingDomain(session) not yet connected to Capella runtime.");
+        if (!(session instanceof Session)) {
+            throw new ToolExecutionException(ToolExecutionException.ERR_EXECUTION,
+                    "Expected a Sirius Session but got: "
+                    + (session == null ? "null" : session.getClass().getName()));
+        }
+        TransactionalEditingDomain domain = ((Session) session).getTransactionalEditingDomain();
+        if (domain == null) {
+            throw new ToolExecutionException(ToolExecutionException.ERR_EXECUTION,
+                    "No transactional editing domain available for the session.");
+        }
+        return domain;
     }
 
     /**
      * Gets the transactional editing domain from the active session (no-arg convenience).
-     * <p>
-     * PLACEHOLDER: Calls getActiveSession() then getEditingDomain(session).
      */
     protected TransactionalEditingDomain getEditingDomain() throws ToolExecutionException {
-        Object session = getActiveSession();
+        Session session = getActiveSession();
         return getEditingDomain(session);
     }
 
@@ -427,21 +448,27 @@ public abstract class AbstractCapellaTool implements IToolDescriptor, IToolExecu
     }
 
     /**
-     * Gets a unique identifier for an EMF element (URI fragment or resource ID).
+     * Gets a unique identifier for an EMF element.
+     * <p>
+     * For Capella ModelElements, returns {@link ModelElement#getId()}.
+     * Falls back to the URI fragment for other EObjects.
      *
      * @param element the EMF element
      * @return the ID string, or empty string if unavailable
      */
     protected String getElementId(EObject element) {
         if (element == null) return "";
-        // Try URI fragment first
+        // For Capella elements, use the Capella ID
+        if (element instanceof ModelElement) {
+            String id = ((ModelElement) element).getId();
+            if (id != null && !id.isEmpty()) {
+                return id;
+            }
+        }
+        // Fallback: URI fragment
         if (element.eResource() != null) {
             return element.eResource().getURIFragment(element);
         }
-        // PLACEHOLDER: For Capella elements, try getId() or getSid()
-        // if (element instanceof CapellaElement) {
-        //     return ((CapellaElement) element).getId();
-        // }
         return "";
     }
 
@@ -460,22 +487,19 @@ public abstract class AbstractCapellaTool implements IToolDescriptor, IToolExecu
 
     /**
      * Resolves a model element by its UUID within the active session.
-     * <p>
-     * PLACEHOLDER: The actual implementation searches all resources in the
-     * active Sirius session for an element matching the given UUID.
+     * Delegates to {@link CapellaModelService#resolveElement(String, Session)}.
      *
      * @param uuid the element UUID
      * @return the resolved EObject, or null if not found
      */
     protected EObject resolveElementByUuid(String uuid) {
-        // PLACEHOLDER: Actual implementation:
-        // Session session = getActiveSession();
-        // for (Resource r : session.getSemanticResources()) {
-        //     EObject obj = r.getEObject(uuid);
-        //     if (obj != null) return obj;
-        // }
-        LOG.warning("resolveElementByUuid() is a PLACEHOLDER. UUID: " + uuid);
-        return null;
+        try {
+            Session session = getActiveSession();
+            return CapellaModelService.getInstance().resolveElement(uuid, session);
+        } catch (ToolExecutionException e) {
+            LOG.warning("Could not resolve element by UUID '" + uuid + "': " + e.getMessage());
+            return null;
+        }
     }
 
     /**

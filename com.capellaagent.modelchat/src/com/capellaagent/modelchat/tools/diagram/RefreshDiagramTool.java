@@ -1,25 +1,25 @@
 package com.capellaagent.modelchat.tools.diagram;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.capellaagent.core.capella.CapellaModelService;
 import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolCategory;
 import com.capellaagent.core.tools.ToolParameter;
 import com.capellaagent.core.tools.ToolResult;
 import com.google.gson.JsonObject;
 
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.emf.transaction.TransactionalEditingDomain;
 import org.eclipse.emf.transaction.RecordingCommand;
-
-// PLACEHOLDER imports for Sirius Diagram API
-// import org.eclipse.sirius.business.api.dialect.DialectManager;
-// import org.eclipse.sirius.business.api.session.Session;
-// import org.eclipse.sirius.diagram.DDiagram;
-// import org.eclipse.sirius.viewpoint.DRepresentation;
-// import org.eclipse.sirius.viewpoint.DRepresentationDescriptor;
-// import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.sirius.business.api.dialect.DialectManager;
+import org.eclipse.sirius.business.api.session.Session;
+import org.eclipse.sirius.diagram.DDiagram;
+import org.eclipse.sirius.viewpoint.DRepresentation;
+import org.eclipse.sirius.viewpoint.DRepresentationDescriptor;
 
 /**
  * Forces a refresh/synchronization of a Sirius diagram with the underlying model.
@@ -67,66 +67,69 @@ public class RefreshDiagramTool extends AbstractCapellaTool {
         }
 
         try {
-            // PLACEHOLDER: Resolve diagram and refresh using Sirius DialectManager
-            //
-            // Session session = getActiveSession();
-            //
-            // // Find the representation descriptor by UUID
-            // DRepresentationDescriptor descriptor = null;
-            // for (DRepresentationDescriptor desc :
-            //         DialectManager.INSTANCE.getAllRepresentationDescriptors(session)) {
-            //     if (diagramUuid.equals(desc.getUid().toString())) {
-            //         descriptor = desc;
-            //         break;
-            //     }
-            // }
-            //
-            // if (descriptor == null) {
-            //     return ToolResult.error("Diagram not found with UUID: " + diagramUuid);
-            // }
-            //
-            // DRepresentation representation = descriptor.getRepresentation();
-            // if (!(representation instanceof DDiagram)) {
-            //     return ToolResult.error("Representation is not a diagram");
-            // }
-            //
-            // String diagramName = descriptor.getName();
-            // String diagramType = descriptor.getDescription().getName();
-            // int elementCountBefore = ((DDiagram) representation).getDiagramElements().size();
+            Session session = getActiveSession();
 
-            final String[] diagramInfo = new String[3]; // name, type, elementCount
+            // Find the representation descriptor by UUID
+            DRepresentationDescriptor descriptor = null;
+            Collection<DRepresentationDescriptor> allDescriptors =
+                    DialectManager.INSTANCE.getAllRepresentationDescriptors(session);
+
+            for (DRepresentationDescriptor desc : allDescriptors) {
+                String uid = desc.getUid() != null ? desc.getUid().toString() : "";
+                if (diagramUuid.equals(uid)) {
+                    descriptor = desc;
+                    break;
+                }
+            }
+
+            if (descriptor == null) {
+                return ToolResult.error("Diagram not found with UUID: " + diagramUuid);
+            }
+
+            DRepresentation representation = descriptor.getRepresentation();
+            if (representation == null) {
+                return ToolResult.error("Could not load the diagram representation for UUID: " + diagramUuid);
+            }
+
+            if (!(representation instanceof DDiagram)) {
+                return ToolResult.error("Representation is not a diagram (type: "
+                        + representation.eClass().getName() + ")");
+            }
+
+            final String diagramName = descriptor.getName();
+            final String diagramType = descriptor.getDescription() != null
+                    ? descriptor.getDescription().getName() : "unknown";
+            final DDiagram diagram = (DDiagram) representation;
+            final int elementCountBefore = diagram.getDiagramElements().size();
+
+            // Perform the refresh within a transaction
+            // Use Display.syncExec if we are not on the UI thread
+            final int[] elementCountAfter = new int[1];
             final boolean[] success = {false};
 
-            TransactionalEditingDomain domain = getEditingDomain();
+            TransactionalEditingDomain domain = getEditingDomain(session);
 
             domain.getCommandStack().execute(new RecordingCommand(domain,
-                    "Refresh diagram") {
+                    "Refresh diagram '" + diagramName + "'") {
                 @Override
                 protected void doExecute() {
-                    // PLACEHOLDER: Perform the refresh
-                    //
-                    // DialectManager.INSTANCE.refresh(representation, new NullProgressMonitor());
-                    //
-                    // diagramInfo[0] = diagramName;
-                    // diagramInfo[1] = diagramType;
-                    // diagramInfo[2] = String.valueOf(
-                    //         ((DDiagram) representation).getDiagramElements().size());
-                    // success[0] = true;
-
-                    success[0] = performDiagramRefresh(diagramUuid, diagramInfo);
+                    DialectManager.INSTANCE.refresh(representation, new NullProgressMonitor());
+                    elementCountAfter[0] = diagram.getDiagramElements().size();
+                    success[0] = true;
                 }
             });
 
             if (!success[0]) {
-                return ToolResult.error("Diagram not found or refresh failed for UUID: " + diagramUuid);
+                return ToolResult.error("Diagram refresh failed for UUID: " + diagramUuid);
             }
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "refreshed");
             response.addProperty("diagram_uuid", diagramUuid);
-            response.addProperty("diagram_name", diagramInfo[0] != null ? diagramInfo[0] : "unknown");
-            response.addProperty("diagram_type", diagramInfo[1] != null ? diagramInfo[1] : "unknown");
-            response.addProperty("element_count", diagramInfo[2] != null ? diagramInfo[2] : "0");
+            response.addProperty("diagram_name", diagramName);
+            response.addProperty("diagram_type", diagramType);
+            response.addProperty("element_count_before", elementCountBefore);
+            response.addProperty("element_count_after", elementCountAfter[0]);
             response.addProperty("message", "Diagram refreshed and synchronized with model");
 
             return ToolResult.success(response);
@@ -134,17 +137,5 @@ public class RefreshDiagramTool extends AbstractCapellaTool {
         } catch (Exception e) {
             return ToolResult.error("Failed to refresh diagram: " + e.getMessage());
         }
-    }
-
-    /**
-     * Performs the actual diagram refresh using the Sirius DialectManager.
-     *
-     * @param diagramUuid the UUID of the diagram to refresh
-     * @param diagramInfo output array to populate with [name, type, elementCount]
-     * @return true if the refresh was successful
-     */
-    private boolean performDiagramRefresh(String diagramUuid, String[] diagramInfo) {
-        // PLACEHOLDER: Implement using Sirius DialectManager.INSTANCE.refresh()
-        return false;
     }
 }

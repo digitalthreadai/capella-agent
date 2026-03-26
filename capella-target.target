@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?pde version="3.8"?>
+<target name="Capella Agent Target" sequenceNumber="2">
+  <locations>
+    <!-- Capella 7.0.1 installation as a Profile-based target -->
+    <location path="C:/Apps/capella-7.0.1/capella" type="Profile"/>
+  </locations>
+</target>

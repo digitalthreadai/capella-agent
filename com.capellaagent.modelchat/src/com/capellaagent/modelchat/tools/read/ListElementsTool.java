@@ -1,9 +1,11 @@
 package com.capellaagent.modelchat.tools.read;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.capellaagent.core.capella.CapellaModelService;
 import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolCategory;
 import com.capellaagent.core.tools.ToolParameter;
@@ -11,14 +13,16 @@ import com.capellaagent.core.tools.ToolResult;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-// PLACEHOLDER imports - exact packages depend on Capella version
-// import org.polarsys.capella.core.data.oa.OaPackage;
-// import org.polarsys.capella.core.data.ctx.CtxPackage;
-// import org.polarsys.capella.core.data.la.LaPackage;
-// import org.polarsys.capella.core.data.pa.PaPackage;
-// import org.polarsys.capella.core.model.helpers.BlockArchitectureExt;
-
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.sirius.business.api.session.Session;
+import org.polarsys.capella.common.data.modellingcore.AbstractNamedElement;
+import org.polarsys.capella.common.data.modellingcore.ModelElement;
+import org.polarsys.capella.core.data.cs.BlockArchitecture;
+import org.polarsys.capella.core.data.cs.Component;
+import org.polarsys.capella.core.data.fa.AbstractFunction;
+import org.polarsys.capella.core.data.fa.FunctionalExchange;
+import org.polarsys.capella.core.data.fa.ComponentExchange; // VERIFY: may be in cs package
+import org.polarsys.capella.core.data.interaction.AbstractCapability;
 
 /**
  * Lists elements within a specific ARCADIA architecture layer.
@@ -91,40 +95,11 @@ public class ListElementsTool extends AbstractCapellaTool {
         maxResults = Math.max(1, Math.min(maxResults, 500));
 
         try {
-            // PLACEHOLDER: Capella EMF navigation
-            // The actual implementation navigates the Capella model using EMF:
-            //
-            // 1. Get the active Capella session:
-            //    Session session = SessionManager.INSTANCE.getSessions().iterator().next();
-            //    Resource semanticResource = session.getSemanticResources().iterator().next();
-            //
-            // 2. Navigate to the correct architecture layer:
-            //    Project project = (Project) semanticResource.getContents().get(0);
-            //    SystemEngineering se = ProjectExt.getSystemEngineering(project);
-            //    BlockArchitecture architecture = switch (layer) {
-            //        case "oa" -> BlockArchitectureExt.getOperationalAnalysis(se);
-            //        case "sa" -> BlockArchitectureExt.getSystemAnalysis(se);
-            //        case "la" -> BlockArchitectureExt.getLogicalArchitecture(se);
-            //        case "pa" -> BlockArchitectureExt.getPhysicalArchitecture(se);
-            //    };
-            //
-            // 3. Collect elements by type using EcoreUtil.getAllContents():
-            //    TreeIterator<EObject> allContents = architecture.eAllContents();
-            //    while (allContents.hasNext()) {
-            //        EObject obj = allContents.next();
-            //        if (matchesType(obj, elementType)) {
-            //            results.add(toJsonSummary(obj));
-            //        }
-            //    }
-            //
-            // 4. Type matching uses instanceof checks against Capella metamodel classes:
-            //    - "functions"    -> AbstractFunction (OperationalActivity, SystemFunction, etc.)
-            //    - "components"   -> Component (Entity, SystemComponent, LogicalComponent, etc.)
-            //    - "actors"       -> Component where isActor() == true
-            //    - "exchanges"    -> AbstractExchange (FunctionalExchange, ComponentExchange)
-            //    - "capabilities" -> AbstractCapability
+            CapellaModelService modelService = getModelService();
+            Session session = getActiveSession();
+            BlockArchitecture architecture = modelService.getArchitecture(session, layer);
 
-            List<EObject> elements = queryElements(layer, elementType, maxResults);
+            List<EObject> elements = queryElements(architecture, elementType, maxResults);
 
             JsonArray resultsArray = new JsonArray();
             int count = 0;
@@ -151,21 +126,51 @@ public class ListElementsTool extends AbstractCapellaTool {
     }
 
     /**
-     * Queries elements from the Capella model for the given layer and type.
+     * Queries elements from the Capella model for the given architecture and type.
      *
-     * @param layer       the ARCADIA layer identifier
-     * @param elementType the type filter
-     * @param maxResults  the maximum number of elements to collect
+     * @param architecture the BlockArchitecture to traverse
+     * @param elementType  the type filter
+     * @param maxResults   the maximum number of elements to collect
      * @return the list of matching EObjects
      */
-    private List<EObject> queryElements(String layer, String elementType, int maxResults) {
-        // PLACEHOLDER: Replace with actual Capella EMF navigation
-        // This method should:
-        // 1. Get the BlockArchitecture for the specified layer
-        // 2. Iterate all contents with eAllContents()
-        // 3. Filter by elementType using metamodel class checks
-        // 4. Collect up to maxResults matching elements
-        return new ArrayList<>();
+    private List<EObject> queryElements(BlockArchitecture architecture, String elementType, int maxResults) {
+        List<EObject> results = new ArrayList<>();
+
+        Iterator<EObject> allContents = architecture.eAllContents();
+        while (allContents.hasNext() && results.size() < maxResults + 1) {
+            EObject obj = allContents.next();
+            if (matchesType(obj, elementType)) {
+                results.add(obj);
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Checks whether an EObject matches the requested element type filter.
+     *
+     * @param obj         the EObject to check
+     * @param elementType the type filter string
+     * @return true if the element matches the filter
+     */
+    private boolean matchesType(EObject obj, String elementType) {
+        switch (elementType) {
+            case "functions":
+                return obj instanceof AbstractFunction;
+            case "components":
+                return obj instanceof Component;
+            case "actors":
+                return obj instanceof Component && ((Component) obj).isActor();
+            case "exchanges":
+                return obj instanceof FunctionalExchange || obj instanceof ComponentExchange;
+            case "capabilities":
+                return obj instanceof AbstractCapability;
+            case "all":
+                return obj instanceof AbstractNamedElement;
+            default:
+                return false;
+        }
     }
 
     /**
@@ -176,17 +181,6 @@ public class ListElementsTool extends AbstractCapellaTool {
      */
     private JsonObject buildElementSummary(EObject element) {
         JsonObject summary = new JsonObject();
-
-        // PLACEHOLDER: Extract element properties using Capella metamodel accessors
-        // NamedElement named = (NamedElement) element;
-        // summary.addProperty("name", named.getName());
-        // summary.addProperty("uuid", named.getId());
-        // summary.addProperty("type", element.eClass().getName());
-        // String desc = named.getDescription();
-        // if (desc != null && desc.length() > 200) {
-        //     desc = desc.substring(0, 200) + "...";
-        // }
-        // summary.addProperty("description_preview", desc != null ? desc : "");
 
         summary.addProperty("name", getElementName(element));
         summary.addProperty("uuid", getElementId(element));

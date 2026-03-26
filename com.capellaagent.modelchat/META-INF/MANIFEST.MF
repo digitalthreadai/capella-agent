@@ -10,9 +10,12 @@ Bundle-ActivationPolicy: lazy
 Require-Bundle: com.capellaagent.core;bundle-version="1.0.0",
  org.eclipse.core.runtime;bundle-version="3.26.0",
  org.eclipse.emf.transaction;bundle-version="1.9.0",
- org.eclipse.sirius;bundle-version="7.0.0";resolution:=optional,
+ org.eclipse.sirius;bundle-version="7.0.0",
  org.eclipse.emf.ecore;bundle-version="2.29.0",
- org.eclipse.core.resources;bundle-version="3.18.0"
+ org.eclipse.core.resources;bundle-version="3.18.0",
+ org.polarsys.capella.core.data.gen;bundle-version="7.0.0",
+ org.polarsys.capella.common.data.core.gen;bundle-version="7.0.0",
+ org.eclipse.sirius.diagram.model;bundle-version="7.0.0"
 Export-Package: com.capellaagent.modelchat,
  com.capellaagent.modelchat.tools.read,
  com.capellaagent.modelchat.tools.write,

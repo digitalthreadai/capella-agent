@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.capellaagent.core.capella.CapellaModelService;
 import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolCategory;
 import com.capellaagent.core.tools.ToolParameter;
@@ -13,14 +14,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.eclipse.emf.ecore.EObject;
-
-// PLACEHOLDER imports for Sirius and Capella diagram API
-// import org.eclipse.sirius.business.api.dialect.DialectManager;
-// import org.eclipse.sirius.business.api.session.Session;
-// import org.eclipse.sirius.business.api.session.SessionManager;
-// import org.eclipse.sirius.viewpoint.DRepresentationDescriptor;
-// import org.eclipse.sirius.diagram.DDiagram;
-// import org.eclipse.sirius.diagram.DDiagramElement;
+import org.eclipse.sirius.business.api.dialect.DialectManager;
+import org.eclipse.sirius.business.api.session.Session;
+import org.eclipse.sirius.diagram.DDiagram;
+import org.eclipse.sirius.viewpoint.DRepresentation;
+import org.eclipse.sirius.viewpoint.DRepresentationDescriptor;
 
 /**
  * Lists all diagrams (Sirius representations) in the active Capella project.
@@ -36,7 +34,7 @@ import org.eclipse.emf.ecore.EObject;
  *     <ul>
  *       <li>{@code layer} (string, optional) - Filter by layer: oa, sa, la, pa</li>
  *       <li>{@code diagram_type} (string, optional) - Filter by diagram type
- *           (e.g., "[SDFB]", "[SAB]", "[LAB]", "[PAB]", "[OCB]", "[OAB]", etc.)</li>
+ *           (e.g., "SDFB", "SAB", "LAB", "PAB", "OCB", "OAB", etc.)</li>
  *     </ul>
  *   </li>
  * </ul>
@@ -69,59 +67,57 @@ public class ListDiagramsTool extends AbstractCapellaTool {
         String diagramType = getOptionalString(parameters, "diagram_type", null);
 
         try {
-            // PLACEHOLDER: Sirius DialectManager API to retrieve representations
-            //
-            // Session session = getActiveSession();
-            // Collection<DRepresentationDescriptor> allDescriptors =
-            //     DialectManager.INSTANCE.getAllRepresentationDescriptors(session);
-            //
-            // For each descriptor:
-            //   String name = descriptor.getName();
-            //   String uid = descriptor.getUid().toString();
-            //   String descriptionName = descriptor.getDescription().getName();
-            //   // The description name typically contains the diagram type like
-            //   // "[SAB] System Architecture Blank" or "[SDFB] System Data Flow Blank"
-            //
-            //   // To get element count, load the full representation:
-            //   DRepresentation rep = descriptor.getRepresentation();
-            //   if (rep instanceof DDiagram diagram) {
-            //       int elementCount = diagram.getDiagramElements().size();
-            //   }
-            //
-            //   // To filter by layer, check the target semantic element's architecture:
-            //   EObject target = descriptor.getTarget();
-            //   String elementLayer = detectLayer(target);
+            CapellaModelService modelService = getModelService();
+            Session session = getActiveSession();
+
+            Collection<DRepresentationDescriptor> allDescriptors =
+                    DialectManager.INSTANCE.getAllRepresentationDescriptors(session);
 
             JsonArray diagramsArray = new JsonArray();
             int totalCount = 0;
 
-            // PLACEHOLDER: Iterate through Sirius representations
-            // Collection<DRepresentationDescriptor> descriptors = getAllDescriptors();
-            // for (DRepresentationDescriptor desc : descriptors) {
-            //     String descLayer = detectLayer(desc.getTarget());
-            //     String descType = extractDiagramType(desc.getDescription().getName());
-            //
-            //     // Apply filters
-            //     if (layer != null && !layer.equalsIgnoreCase(descLayer)) continue;
-            //     if (diagramType != null && !diagramType.equalsIgnoreCase(descType)) continue;
-            //
-            //     JsonObject diagramObj = new JsonObject();
-            //     diagramObj.addProperty("name", desc.getName());
-            //     diagramObj.addProperty("uuid", desc.getUid().toString());
-            //     diagramObj.addProperty("type", desc.getDescription().getName());
-            //     diagramObj.addProperty("layer", descLayer);
-            //
-            //     // Element count requires loading the representation
-            //     DRepresentation rep = desc.getRepresentation();
-            //     if (rep instanceof DDiagram dd) {
-            //         diagramObj.addProperty("element_count", dd.getDiagramElements().size());
-            //     }
-            //
-            //     diagramObj.addProperty("target_name", getElementName(desc.getTarget()));
-            //     diagramObj.addProperty("target_uuid", getElementId(desc.getTarget()));
-            //     diagramsArray.add(diagramObj);
-            //     totalCount++;
-            // }
+            for (DRepresentationDescriptor desc : allDescriptors) {
+                // Determine the layer of the diagram target
+                EObject target = desc.getTarget();
+                String descLayer = target != null ? modelService.detectLayer(target) : "unknown";
+
+                // Extract diagram type from the description name
+                String descName = desc.getDescription() != null
+                        ? desc.getDescription().getName() : "";
+                String descType = extractDiagramType(descName);
+
+                // Apply filters
+                if (layer != null && !layer.equalsIgnoreCase(descLayer)) continue;
+                if (diagramType != null && !diagramType.equalsIgnoreCase(descType)) continue;
+
+                JsonObject diagramObj = new JsonObject();
+                diagramObj.addProperty("name", desc.getName());
+                diagramObj.addProperty("uuid", desc.getUid() != null
+                        ? desc.getUid().toString() : "");
+                diagramObj.addProperty("type", descName);
+                diagramObj.addProperty("type_abbreviation", descType);
+                diagramObj.addProperty("layer", descLayer);
+
+                // Element count requires loading the representation
+                try {
+                    DRepresentation rep = desc.getRepresentation();
+                    if (rep instanceof DDiagram) {
+                        DDiagram dd = (DDiagram) rep;
+                        diagramObj.addProperty("element_count", dd.getDiagramElements().size());
+                    }
+                } catch (Exception e) {
+                    // Representation may not be loaded; skip element count
+                    diagramObj.addProperty("element_count", -1);
+                }
+
+                if (target != null) {
+                    diagramObj.addProperty("target_name", getElementName(target));
+                    diagramObj.addProperty("target_uuid", getElementId(target));
+                }
+
+                diagramsArray.add(diagramObj);
+                totalCount++;
+            }
 
             JsonObject response = new JsonObject();
             response.addProperty("count", totalCount);
@@ -148,7 +144,6 @@ public class ListDiagramsTool extends AbstractCapellaTool {
      * @param descriptionName the full description name
      * @return the type abbreviation, or the full name if no brackets found
      */
-    @SuppressWarnings("unused")
     private String extractDiagramType(String descriptionName) {
         if (descriptionName != null && descriptionName.startsWith("[")) {
             int closeIdx = descriptionName.indexOf(']');

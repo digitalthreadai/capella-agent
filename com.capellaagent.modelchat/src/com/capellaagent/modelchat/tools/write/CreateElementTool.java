@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.capellaagent.core.capella.CapellaModelService;
+import com.capellaagent.core.security.InputValidator;
 import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolCategory;
 import com.capellaagent.core.tools.ToolParameter;
@@ -13,20 +15,25 @@ import com.google.gson.JsonObject;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.transaction.TransactionalEditingDomain;
 import org.eclipse.emf.transaction.RecordingCommand;
-
-// PLACEHOLDER imports for Capella metamodel factories
-// import org.polarsys.capella.core.data.oa.OaFactory;
-// import org.polarsys.capella.core.data.oa.OperationalActivity;
-// import org.polarsys.capella.core.data.oa.Entity;
-// import org.polarsys.capella.core.data.ctx.CtxFactory;
-// import org.polarsys.capella.core.data.ctx.SystemFunction;
-// import org.polarsys.capella.core.data.ctx.SystemComponent;
-// import org.polarsys.capella.core.data.la.LaFactory;
-// import org.polarsys.capella.core.data.la.LogicalFunction;
-// import org.polarsys.capella.core.data.la.LogicalComponent;
-// import org.polarsys.capella.core.data.pa.PaFactory;
-// import org.polarsys.capella.core.data.pa.PhysicalFunction;
-// import org.polarsys.capella.core.data.pa.PhysicalComponent;
+import org.eclipse.sirius.business.api.session.Session;
+import org.polarsys.capella.core.data.cs.BlockArchitecture;
+import org.polarsys.capella.core.data.ctx.CtxFactory;
+import org.polarsys.capella.core.data.ctx.SystemAnalysis;
+import org.polarsys.capella.core.data.ctx.SystemComponent;
+import org.polarsys.capella.core.data.ctx.SystemFunction;
+import org.polarsys.capella.core.data.la.LaFactory;
+import org.polarsys.capella.core.data.la.LogicalArchitecture;
+import org.polarsys.capella.core.data.la.LogicalComponent;
+import org.polarsys.capella.core.data.la.LogicalFunction;
+import org.polarsys.capella.core.data.oa.Entity;
+import org.polarsys.capella.core.data.oa.OaFactory;
+import org.polarsys.capella.core.data.oa.OperationalActivity;
+import org.polarsys.capella.core.data.oa.OperationalAnalysis;
+import org.polarsys.capella.core.data.pa.PaFactory;
+import org.polarsys.capella.core.data.pa.PhysicalArchitecture;
+import org.polarsys.capella.core.data.pa.PhysicalComponent;
+import org.polarsys.capella.core.data.pa.PhysicalFunction;
+import org.polarsys.capella.common.data.modellingcore.AbstractNamedElement;
 
 /**
  * Creates a new model element in the specified ARCADIA architecture layer.
@@ -85,9 +92,9 @@ public class CreateElementTool extends AbstractCapellaTool {
     protected ToolResult executeInternal(Map<String, Object> parameters) {
         String layer = getRequiredString(parameters, "layer").toLowerCase();
         String type = getRequiredString(parameters, "type").toLowerCase();
-        String name = getRequiredString(parameters, "name");
+        String rawName = getRequiredString(parameters, "name");
         String parentUuid = getOptionalString(parameters, "parent_uuid", null);
-        String description = getOptionalString(parameters, "description", null);
+        String rawDescription = getOptionalString(parameters, "description", null);
 
         // Validate layer
         if (!VALID_LAYERS.contains(layer)) {
@@ -101,11 +108,20 @@ public class CreateElementTool extends AbstractCapellaTool {
                     + "'. Must be one of: " + String.join(", ", VALID_TYPES));
         }
 
-        if (name.isBlank()) {
-            return ToolResult.error("Parameter 'name' must not be empty");
+        // Sanitize inputs
+        String name;
+        String description;
+        try {
+            name = InputValidator.sanitizeName(rawName);
+            description = rawDescription != null ? InputValidator.sanitizeDescription(rawDescription) : null;
+        } catch (IllegalArgumentException e) {
+            return ToolResult.error("Input validation failed: " + e.getMessage());
         }
 
         try {
+            CapellaModelService modelService = getModelService();
+            Session session = getActiveSession();
+
             // Resolve parent container if specified
             EObject parentContainer = null;
             if (parentUuid != null && !parentUuid.isBlank()) {
@@ -115,98 +131,26 @@ public class CreateElementTool extends AbstractCapellaTool {
                 }
             }
 
-            // PLACEHOLDER: Get the default container if no parent specified
-            // if (parentContainer == null) {
-            //     Session session = getActiveSession();
-            //     BlockArchitecture arch = getArchitecture(session, layer);
-            //     parentContainer = switch (type) {
-            //         case "function" -> BlockArchitectureExt.getFunctionPkg(arch);
-            //         case "component", "actor" -> BlockArchitectureExt.getComponentPkg(arch);
-            //         default -> throw new IllegalArgumentException("Unknown type: " + type);
-            //     };
-            // }
+            // Get the default container if no parent specified
+            if (parentContainer == null) {
+                BlockArchitecture arch = modelService.getArchitecture(session, layer);
+                parentContainer = getDefaultContainer(arch, layer, type);
+            }
 
-            final EObject container = parentContainer != null ? parentContainer : getDefaultContainer(layer, type);
+            final EObject container = parentContainer;
             final String elementName = name;
             final String elementDescription = description;
             final String elementType = type;
             final String elementLayer = layer;
 
             // Execute creation within a RecordingCommand for undo support
-            TransactionalEditingDomain domain = getEditingDomain();
+            TransactionalEditingDomain domain = getEditingDomain(session);
             final EObject[] created = new EObject[1];
 
             domain.getCommandStack().execute(new RecordingCommand(domain,
                     "Create " + type + " '" + name + "'") {
                 @Override
                 protected void doExecute() {
-                    // PLACEHOLDER: Create element using Capella factories
-                    //
-                    // EObject newElement = switch (elementLayer + ":" + elementType) {
-                    //     case "oa:function" -> {
-                    //         OperationalActivity activity = OaFactory.eINSTANCE.createOperationalActivity();
-                    //         activity.setName(elementName);
-                    //         if (elementDescription != null) activity.setDescription(elementDescription);
-                    //         ((OperationalActivityPkg) container).getOwnedOperationalActivities().add(activity);
-                    //         yield activity;
-                    //     }
-                    //     case "oa:component", "oa:actor" -> {
-                    //         Entity entity = OaFactory.eINSTANCE.createEntity();
-                    //         entity.setName(elementName);
-                    //         entity.setActor("actor".equals(elementType));
-                    //         if (elementDescription != null) entity.setDescription(elementDescription);
-                    //         ((EntityPkg) container).getOwnedEntities().add(entity);
-                    //         yield entity;
-                    //     }
-                    //     case "sa:function" -> {
-                    //         SystemFunction fn = CtxFactory.eINSTANCE.createSystemFunction();
-                    //         fn.setName(elementName);
-                    //         if (elementDescription != null) fn.setDescription(elementDescription);
-                    //         ((SystemFunctionPkg) container).getOwnedSystemFunctions().add(fn);
-                    //         yield fn;
-                    //     }
-                    //     case "sa:component", "sa:actor" -> {
-                    //         SystemComponent comp = CtxFactory.eINSTANCE.createSystemComponent();
-                    //         comp.setName(elementName);
-                    //         comp.setActor("actor".equals(elementType));
-                    //         if (elementDescription != null) comp.setDescription(elementDescription);
-                    //         ((SystemComponentPkg) container).getOwnedSystemComponents().add(comp);
-                    //         yield comp;
-                    //     }
-                    //     case "la:function" -> {
-                    //         LogicalFunction fn = LaFactory.eINSTANCE.createLogicalFunction();
-                    //         fn.setName(elementName);
-                    //         if (elementDescription != null) fn.setDescription(elementDescription);
-                    //         ((LogicalFunctionPkg) container).getOwnedLogicalFunctions().add(fn);
-                    //         yield fn;
-                    //     }
-                    //     case "la:component", "la:actor" -> {
-                    //         LogicalComponent comp = LaFactory.eINSTANCE.createLogicalComponent();
-                    //         comp.setName(elementName);
-                    //         comp.setActor("actor".equals(elementType));
-                    //         if (elementDescription != null) comp.setDescription(elementDescription);
-                    //         ((LogicalComponentPkg) container).getOwnedLogicalComponents().add(comp);
-                    //         yield comp;
-                    //     }
-                    //     case "pa:function" -> {
-                    //         PhysicalFunction fn = PaFactory.eINSTANCE.createPhysicalFunction();
-                    //         fn.setName(elementName);
-                    //         if (elementDescription != null) fn.setDescription(elementDescription);
-                    //         ((PhysicalFunctionPkg) container).getOwnedPhysicalFunctions().add(fn);
-                    //         yield fn;
-                    //     }
-                    //     case "pa:component", "pa:actor" -> {
-                    //         PhysicalComponent comp = PaFactory.eINSTANCE.createPhysicalComponent();
-                    //         comp.setName(elementName);
-                    //         comp.setActor("actor".equals(elementType));
-                    //         if (elementDescription != null) comp.setDescription(elementDescription);
-                    //         ((PhysicalComponentPkg) container).getOwnedPhysicalComponents().add(comp);
-                    //         yield comp;
-                    //     }
-                    //     default -> throw new IllegalStateException("Unsupported: " + elementLayer + ":" + elementType);
-                    // };
-                    // created[0] = newElement;
-
                     created[0] = createCapellaElement(container, elementLayer, elementType,
                             elementName, elementDescription);
                 }
@@ -215,6 +159,9 @@ public class CreateElementTool extends AbstractCapellaTool {
             if (created[0] == null) {
                 return ToolResult.error("Element creation failed - no element produced");
             }
+
+            // Invalidate UUID cache since we added a new element
+            modelService.invalidateCache(session);
 
             // Build response with created element details
             JsonObject response = new JsonObject();
@@ -234,33 +181,162 @@ public class CreateElementTool extends AbstractCapellaTool {
     }
 
     /**
-     * Gets the default container package for the given layer and element type.
+     * Gets the default container package for the given architecture, layer, and element type.
+     * Functions go into the function package; components/actors go into the component package.
      *
+     * @param arch  the BlockArchitecture
      * @param layer the ARCADIA layer
      * @param type  the element type
      * @return the default container EObject
      */
-    private EObject getDefaultContainer(String layer, String type) {
-        // PLACEHOLDER: Navigate to the correct default package
-        // This should resolve the FunctionPkg or ComponentPkg for the given layer
-        throw new UnsupportedOperationException(
-                "PLACEHOLDER: Resolve default container for " + layer + ":" + type);
+    private EObject getDefaultContainer(BlockArchitecture arch, String layer, String type) {
+        // Navigate to the correct function or component package based on layer
+        switch (layer) {
+            case "oa": {
+                OperationalAnalysis oa = (OperationalAnalysis) arch;
+                if ("function".equals(type)) {
+                    return oa.getOwnedFunctionPkg();
+                } else {
+                    return oa.getOwnedEntityPkg();
+                }
+            }
+            case "sa": {
+                SystemAnalysis sa = (SystemAnalysis) arch;
+                if ("function".equals(type)) {
+                    return sa.getOwnedFunctionPkg();
+                } else {
+                    return sa.getOwnedSystemComponentPkg();
+                }
+            }
+            case "la": {
+                LogicalArchitecture la = (LogicalArchitecture) arch;
+                if ("function".equals(type)) {
+                    return la.getOwnedFunctionPkg();
+                } else {
+                    return la.getOwnedLogicalComponentPkg();
+                }
+            }
+            case "pa": {
+                PhysicalArchitecture pa = (PhysicalArchitecture) arch;
+                if ("function".equals(type)) {
+                    return pa.getOwnedFunctionPkg();
+                } else {
+                    return pa.getOwnedPhysicalComponentPkg();
+                }
+            }
+            default:
+                throw new IllegalArgumentException(
+                        "Cannot resolve default container for layer: " + layer);
+        }
     }
 
     /**
      * Creates a Capella element using the appropriate factory for the layer and type.
+     * Must be called within a RecordingCommand transaction.
      *
      * @param container   the parent container
      * @param layer       the ARCADIA layer
      * @param type        the element type
-     * @param name        the element name
-     * @param description optional description
+     * @param name        the element name (already sanitized)
+     * @param description optional description (already sanitized)
      * @return the created EObject
      */
+    @SuppressWarnings("unchecked")
     private EObject createCapellaElement(EObject container, String layer, String type,
                                           String name, String description) {
-        // PLACEHOLDER: Implement using Capella EMF factories (see doExecute comments above)
-        throw new UnsupportedOperationException(
-                "PLACEHOLDER: Create " + type + " in " + layer + " layer");
+        String key = layer + ":" + type;
+
+        switch (key) {
+            case "oa:function": {
+                OperationalActivity activity = OaFactory.eINSTANCE.createOperationalActivity();
+                activity.setName(name);
+                if (description != null) activity.setDescription(description);
+                // Add to the container's owned activities
+                addToContainer(container, "getOwnedOperationalActivities", activity);
+                return activity;
+            }
+            case "oa:component":
+            case "oa:actor": {
+                Entity entity = OaFactory.eINSTANCE.createEntity();
+                entity.setName(name);
+                entity.setActor("actor".equals(type));
+                if (description != null) entity.setDescription(description);
+                addToContainer(container, "getOwnedEntities", entity);
+                return entity;
+            }
+            case "sa:function": {
+                SystemFunction fn = CtxFactory.eINSTANCE.createSystemFunction();
+                fn.setName(name);
+                if (description != null) fn.setDescription(description);
+                addToContainer(container, "getOwnedSystemFunctions", fn);
+                return fn;
+            }
+            case "sa:component":
+            case "sa:actor": {
+                SystemComponent comp = CtxFactory.eINSTANCE.createSystemComponent();
+                comp.setName(name);
+                comp.setActor("actor".equals(type));
+                if (description != null) comp.setDescription(description);
+                addToContainer(container, "getOwnedSystemComponents", comp);
+                return comp;
+            }
+            case "la:function": {
+                LogicalFunction fn = LaFactory.eINSTANCE.createLogicalFunction();
+                fn.setName(name);
+                if (description != null) fn.setDescription(description);
+                addToContainer(container, "getOwnedLogicalFunctions", fn);
+                return fn;
+            }
+            case "la:component":
+            case "la:actor": {
+                LogicalComponent comp = LaFactory.eINSTANCE.createLogicalComponent();
+                comp.setName(name);
+                comp.setActor("actor".equals(type));
+                if (description != null) comp.setDescription(description);
+                addToContainer(container, "getOwnedLogicalComponents", comp);
+                return comp;
+            }
+            case "pa:function": {
+                PhysicalFunction fn = PaFactory.eINSTANCE.createPhysicalFunction();
+                fn.setName(name);
+                if (description != null) fn.setDescription(description);
+                addToContainer(container, "getOwnedPhysicalFunctions", fn);
+                return fn;
+            }
+            case "pa:component":
+            case "pa:actor": {
+                PhysicalComponent comp = PaFactory.eINSTANCE.createPhysicalComponent();
+                comp.setName(name);
+                comp.setActor("actor".equals(type));
+                if (description != null) comp.setDescription(description);
+                addToContainer(container, "getOwnedPhysicalComponents", comp);
+                return comp;
+            }
+            default:
+                throw new IllegalStateException("Unsupported layer:type combination: " + key);
+        }
+    }
+
+    /**
+     * Adds an element to a container using reflection to call the appropriate getter method.
+     * This handles the various package types (FunctionPkg, ComponentPkg, EntityPkg, etc.)
+     * which each have different list accessor names.
+     *
+     * @param container  the parent container
+     * @param listGetter the name of the getter method that returns the owned elements list
+     * @param element    the element to add
+     */
+    @SuppressWarnings("unchecked")
+    private void addToContainer(EObject container, String listGetter, EObject element) {
+        try {
+            java.lang.reflect.Method method = container.getClass().getMethod(listGetter);
+            Object result = method.invoke(container);
+            if (result instanceof List) {
+                ((List<EObject>) result).add(element);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to add element to container via " + listGetter + ": " + e.getMessage(), e);
+        }
     }
 }

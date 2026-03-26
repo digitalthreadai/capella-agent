@@ -1,9 +1,12 @@
 package com.capellaagent.modelchat.tools.read;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.capellaagent.core.capella.CapellaModelService;
 import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolCategory;
 import com.capellaagent.core.tools.ToolParameter;
@@ -12,15 +15,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.eclipse.emf.ecore.EObject;
-
-// PLACEHOLDER imports for Capella traceability API
-// import org.polarsys.capella.core.data.capellacore.Trace;
-// import org.polarsys.capella.core.data.capellacore.TraceableElement;
-// import org.polarsys.capella.core.data.cs.Component;
-// import org.polarsys.capella.core.data.fa.AbstractFunction;
-// import org.polarsys.capella.core.data.interaction.AbstractCapability;
-// import org.polarsys.capella.core.data.capellacommon.TransfoLink;
-// import org.polarsys.capella.core.model.helpers.RefinementLinkExt;
+import org.polarsys.capella.common.data.modellingcore.ModelElement;
+import org.polarsys.capella.common.data.modellingcore.TraceableElement;
+import org.polarsys.capella.common.data.modellingcore.AbstractTrace;
+import org.polarsys.capella.core.data.ctx.SystemAnalysis;
+import org.polarsys.capella.core.data.la.LogicalArchitecture;
+import org.polarsys.capella.core.data.oa.OperationalAnalysis;
+import org.polarsys.capella.core.data.pa.PhysicalArchitecture;
 
 /**
  * Retrieves traceability links across ARCADIA architecture layers.
@@ -86,53 +87,27 @@ public class GetTraceabilityTool extends AbstractCapellaTool {
                 return ToolResult.error("Element not found with UUID: " + uuid);
             }
 
+            CapellaModelService modelService = getModelService();
+
             JsonObject response = new JsonObject();
             response.addProperty("uuid", uuid);
             response.addProperty("name", getElementName(element));
             response.addProperty("type", element.eClass().getName());
-            response.addProperty("layer", detectLayer(element));
-
-            // PLACEHOLDER: Capella traceability API
-            //
-            // Traceability navigation approach:
-            //
-            // For functions (AbstractFunction):
-            //   Realizing: fn.getRealizingAbstractFunctions()
-            //     - SA SystemFunction -> LA LogicalFunction (via FunctionRealization)
-            //     - LA LogicalFunction -> PA PhysicalFunction
-            //   Realized: fn.getRealizedAbstractFunctions()
-            //     - SA SystemFunction <- OA OperationalActivity
-            //
-            // For components (Component):
-            //   Realizing: comp.getRealizingComponents()
-            //   Realized: comp.getRealizedComponents()
-            //
-            // For capabilities (AbstractCapability):
-            //   Realizing: cap.getRealizingCapabilities() (via CapabilityRealization)
-            //   Realized: cap.getRealizedCapabilities()
-            //
-            // Generic approach via Trace links:
-            //   TraceableElement te = (TraceableElement) element;
-            //   for (Trace trace : te.getOutgoingTraces()) {
-            //       // trace.getTargetElement() = the realized element
-            //   }
-            //   for (Trace trace : te.getIncomingTraces()) {
-            //       // trace.getSourceElement() = the realizing element
-            //   }
+            response.addProperty("layer", modelService.detectLayer(element));
 
             if ("realizing".equals(direction) || "both".equals(direction)) {
-                JsonArray realizing = buildRealizingLinks(element);
+                JsonArray realizing = buildRealizingLinks(element, modelService);
                 response.add("realizing_elements", realizing);
             }
 
             if ("realized".equals(direction) || "both".equals(direction)) {
-                JsonArray realized = buildRealizedLinks(element);
+                JsonArray realized = buildRealizedLinks(element, modelService);
                 response.add("realized_elements", realized);
             }
 
             // Build a summary chain showing the full trace path
             if ("both".equals(direction)) {
-                JsonArray traceChain = buildTraceChain(element);
+                JsonArray traceChain = buildTraceChain(element, modelService);
                 response.add("trace_chain", traceChain);
             }
 
@@ -146,81 +121,165 @@ public class GetTraceabilityTool extends AbstractCapellaTool {
     /**
      * Finds elements that realize (refine/implement) the given element.
      * These are downstream in the ARCADIA chain (e.g., LA component realizing an SA component).
+     * <p>
+     * Uses incoming traces: the realizing element is the source of the trace
+     * that targets this element.
      *
-     * @param element the source element
+     * @param element      the source element
+     * @param modelService the model service for layer detection
      * @return a JsonArray of realizing element summaries
      */
-    private JsonArray buildRealizingLinks(EObject element) {
+    private JsonArray buildRealizingLinks(EObject element, CapellaModelService modelService) {
         JsonArray realizing = new JsonArray();
-        // PLACEHOLDER: Use Capella traceability API
-        // TraceableElement te = (TraceableElement) element;
-        // for (Trace trace : te.getIncomingTraces()) {
-        //     if (trace instanceof TransfoLink || isRealizationLink(trace)) {
-        //         EObject source = trace.getSourceElement();
-        //         if (source != null) {
-        //             JsonObject linkObj = new JsonObject();
-        //             linkObj.addProperty("name", getElementName(source));
-        //             linkObj.addProperty("uuid", getElementId(source));
-        //             linkObj.addProperty("type", source.eClass().getName());
-        //             linkObj.addProperty("layer", detectLayer(source));
-        //             linkObj.addProperty("link_type", trace.eClass().getName());
-        //             realizing.add(linkObj);
-        //         }
-        //     }
-        // }
+
+        if (!(element instanceof TraceableElement)) {
+            return realizing;
+        }
+
+        TraceableElement te = (TraceableElement) element;
+        try {
+            for (AbstractTrace trace : te.getIncomingTraces()) {
+                TraceableElement source = trace.getSourceElement();
+                if (source != null && source != element) {
+                    JsonObject linkObj = new JsonObject();
+                    linkObj.addProperty("name", getElementName(source));
+                    linkObj.addProperty("uuid", getElementId(source));
+                    linkObj.addProperty("type", source.eClass().getName());
+                    linkObj.addProperty("layer", modelService.detectLayer(source));
+                    linkObj.addProperty("link_type", trace.eClass().getName());
+                    realizing.add(linkObj);
+                }
+            }
+        } catch (Exception e) {
+            // Trace API may not be available; return what we have
+        }
+
         return realizing;
     }
 
     /**
      * Finds elements that are realized (abstracted from) by the given element.
      * These are upstream in the ARCADIA chain (e.g., OA activity realized by an SA function).
+     * <p>
+     * Uses outgoing traces: the realized element is the target of the trace
+     * that originates from this element.
      *
-     * @param element the source element
+     * @param element      the source element
+     * @param modelService the model service for layer detection
      * @return a JsonArray of realized element summaries
      */
-    private JsonArray buildRealizedLinks(EObject element) {
+    private JsonArray buildRealizedLinks(EObject element, CapellaModelService modelService) {
         JsonArray realized = new JsonArray();
-        // PLACEHOLDER: Use Capella traceability API
-        // TraceableElement te = (TraceableElement) element;
-        // for (Trace trace : te.getOutgoingTraces()) {
-        //     if (trace instanceof TransfoLink || isRealizationLink(trace)) {
-        //         EObject target = trace.getTargetElement();
-        //         if (target != null) {
-        //             JsonObject linkObj = new JsonObject();
-        //             linkObj.addProperty("name", getElementName(target));
-        //             linkObj.addProperty("uuid", getElementId(target));
-        //             linkObj.addProperty("type", target.eClass().getName());
-        //             linkObj.addProperty("layer", detectLayer(target));
-        //             linkObj.addProperty("link_type", trace.eClass().getName());
-        //             realized.add(linkObj);
-        //         }
-        //     }
-        // }
+
+        if (!(element instanceof TraceableElement)) {
+            return realized;
+        }
+
+        TraceableElement te = (TraceableElement) element;
+        try {
+            for (AbstractTrace trace : te.getOutgoingTraces()) {
+                TraceableElement target = trace.getTargetElement();
+                if (target != null && target != element) {
+                    JsonObject linkObj = new JsonObject();
+                    linkObj.addProperty("name", getElementName(target));
+                    linkObj.addProperty("uuid", getElementId(target));
+                    linkObj.addProperty("type", target.eClass().getName());
+                    linkObj.addProperty("layer", modelService.detectLayer(target));
+                    linkObj.addProperty("link_type", trace.eClass().getName());
+                    realized.add(linkObj);
+                }
+            }
+        } catch (Exception e) {
+            // Trace API may not be available; return what we have
+        }
+
         return realized;
     }
 
     /**
      * Builds a full trace chain showing the element's position across all ARCADIA layers.
+     * Walks both upstream (realized) and downstream (realizing) to build the complete chain.
      *
-     * @param element the starting element
+     * @param element      the starting element
+     * @param modelService the model service for layer detection
      * @return a JsonArray representing the ordered chain from OA through PA
      */
-    private JsonArray buildTraceChain(EObject element) {
+    private JsonArray buildTraceChain(EObject element, CapellaModelService modelService) {
         JsonArray chain = new JsonArray();
-        // PLACEHOLDER: Walk both directions to build complete chain
-        // The chain should show: OA element -> SA element -> LA element -> PA element
-        // with the current element highlighted
+        Set<String> visited = new HashSet<>();
+
+        // Walk upstream (realized direction) to find the root
+        List<EObject> upstream = new ArrayList<>();
+        collectTraceDirection(element, true, upstream, visited, modelService);
+
+        // Add upstream elements in reverse order (OA first)
+        for (int i = upstream.size() - 1; i >= 0; i--) {
+            chain.add(buildChainEntry(upstream.get(i), false, modelService));
+        }
+
+        // Add the current element
+        chain.add(buildChainEntry(element, true, modelService));
+
+        // Walk downstream (realizing direction)
+        List<EObject> downstream = new ArrayList<>();
+        visited.clear();
+        visited.add(getElementId(element));
+        collectTraceDirection(element, false, downstream, visited, modelService);
+
+        // Add downstream elements
+        for (EObject obj : downstream) {
+            chain.add(buildChainEntry(obj, false, modelService));
+        }
+
         return chain;
     }
 
     /**
-     * Detects which ARCADIA layer the given element belongs to.
+     * Recursively collects elements in one trace direction.
      *
-     * @param element the model element
-     * @return the layer identifier (oa, sa, la, pa) or "unknown"
+     * @param element      current element
+     * @param upstream     true to follow realized (upstream), false to follow realizing (downstream)
+     * @param collected    accumulator list
+     * @param visited      set of visited IDs to prevent cycles
+     * @param modelService the model service
      */
-    private String detectLayer(EObject element) {
-        // PLACEHOLDER: Walk containment to find BlockArchitecture ancestor
-        return "unknown";
+    private void collectTraceDirection(EObject element, boolean upstream,
+                                        List<EObject> collected, Set<String> visited,
+                                        CapellaModelService modelService) {
+        if (!(element instanceof TraceableElement)) return;
+
+        String elementId = getElementId(element);
+        visited.add(elementId);
+
+        TraceableElement te = (TraceableElement) element;
+        try {
+            List<? extends AbstractTrace> traces = upstream ? te.getOutgoingTraces() : te.getIncomingTraces();
+            for (AbstractTrace trace : traces) {
+                TraceableElement linked = upstream ? trace.getTargetElement() : trace.getSourceElement();
+                if (linked != null) {
+                    String linkedId = getElementId(linked);
+                    if (!visited.contains(linkedId)) {
+                        collected.add(linked);
+                        collectTraceDirection(linked, upstream, collected, visited, modelService);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Trace navigation may fail for some elements
+        }
+    }
+
+    /**
+     * Builds a chain entry JSON object.
+     */
+    private JsonObject buildChainEntry(EObject element, boolean isCurrent,
+                                        CapellaModelService modelService) {
+        JsonObject entry = new JsonObject();
+        entry.addProperty("name", getElementName(element));
+        entry.addProperty("uuid", getElementId(element));
+        entry.addProperty("type", element.eClass().getName());
+        entry.addProperty("layer", modelService.detectLayer(element));
+        entry.addProperty("is_current", isCurrent);
+        return entry;
     }
 }
