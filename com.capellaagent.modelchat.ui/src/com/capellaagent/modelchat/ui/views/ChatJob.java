@@ -96,7 +96,9 @@ public class ChatJob extends Job {
 
             // Get available tools from the registry
             ToolRegistry toolRegistry = ToolRegistry.getInstance();
-            List<String> toolCategories = List.of("model_read", "model_write", "diagram");
+            List<String> toolCategories = List.of(
+                    "model_read", "model_write", "diagram",
+                    "analysis", "export", "transition");
 
             // PLACEHOLDER: Build tool definitions for the LLM
             // List<ToolDefinition> toolDefs = toolRegistry.getToolDefinitions(toolCategories);
@@ -230,7 +232,15 @@ public class ChatJob extends Job {
                 || toolName.equals("allocate_function")
                 || toolName.equals("create_capability")
                 || toolName.equals("create_exchange")
-                || toolName.equals("update_diagram");
+                || toolName.equals("update_diagram")
+                || toolName.equals("create_interface")
+                || toolName.equals("create_functional_chain")
+                || toolName.equals("create_physical_link")
+                || toolName.equals("batch_rename")
+                || toolName.equals("create_diagram")
+                || toolName.equals("transition_oa_to_sa")
+                || toolName.equals("transition_sa_to_la")
+                || toolName.equals("transition_la_to_pa");
     }
 
     /**
@@ -251,7 +261,8 @@ public class ChatJob extends Job {
 
             // Get ONLY model-relevant tools (exclude Teamcenter + Simulation to save tokens)
             List<IToolDescriptor> tools = ToolRegistry.getInstance()
-                    .getTools("model_read", "model_write", "diagram");
+                    .getTools("model_read", "model_write", "diagram",
+                              "analysis", "export", "transition");
 
             // Debug: log tool count
             java.util.logging.Logger.getLogger("ChatJob").info(

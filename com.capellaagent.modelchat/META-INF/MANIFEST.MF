@@ -19,4 +19,7 @@ Require-Bundle: com.capellaagent.core;bundle-version="1.0.0",
 Export-Package: com.capellaagent.modelchat,
  com.capellaagent.modelchat.tools.read,
  com.capellaagent.modelchat.tools.write,
- com.capellaagent.modelchat.tools.diagram
+ com.capellaagent.modelchat.tools.diagram,
+ com.capellaagent.modelchat.tools.analysis,
+ com.capellaagent.modelchat.tools.export_,
+ com.capellaagent.modelchat.tools.transition

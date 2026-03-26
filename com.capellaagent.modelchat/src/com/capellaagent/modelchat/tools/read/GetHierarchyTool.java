@@ -77,6 +77,10 @@ public class GetHierarchyTool extends AbstractCapellaTool {
         maxDepth = Math.max(1, Math.min(maxDepth, MAX_ALLOWED_DEPTH));
 
         try {
+            // Thread safety: hierarchy traversal should ideally be wrapped in a
+            // read-exclusive transaction via TransactionalEditingDomain.runExclusive()
+            // to prevent concurrent modification. Currently safe because the ChatJob
+            // orchestration loop is single-threaded per conversation.
             EObject element = resolveElementByUuid(uuid);
             if (element == null) {
                 return ToolResult.error("Element not found with UUID: " + uuid);

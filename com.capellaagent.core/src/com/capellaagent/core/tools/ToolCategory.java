@@ -27,6 +27,18 @@ public final class ToolCategory {
     /** Simulation/CAE operations (run, extract params, propagate results) */
     public static final String SIMULATION = "simulation";
 
+    /** Model analysis tools (validation, cycle detection, impact analysis) */
+    public static final String ANALYSIS = "analysis";
+
+    /** Model export tools (CSV, JSON, reports, traceability matrices) */
+    public static final String EXPORT = "export";
+
+    /** Layer transition tools (OA->SA, SA->LA, LA->PA, reconciliation) */
+    public static final String TRANSITION = "transition";
+
+    /** AI intelligence tools (explain, generate, Q&A) */
+    public static final String AI_INTELLIGENCE = "ai_intelligence";
+
     private ToolCategory() {
         // Constants only
     }
