@@ -249,35 +249,25 @@ public class ChatJob extends Job {
             // Get the active provider from registry (reads from AgentConfiguration)
             ILlmProvider provider = LlmProviderRegistry.getInstance().getActiveProvider();
 
-            // Get available tool descriptors from the registry (all categories)
-            List<IToolDescriptor> tools = ToolRegistry.getInstance().getTools();
+            // Get ONLY model-relevant tools (exclude Teamcenter + Simulation to save tokens)
+            List<IToolDescriptor> tools = ToolRegistry.getInstance()
+                    .getTools("model_read", "model_write", "diagram");
 
-            // Debug: log how many tools are available (helps diagnose tool registration issues)
+            // Debug: log tool count
             java.util.logging.Logger.getLogger("ChatJob").info(
-                    "LLM call with " + tools.size() + " tools registered, provider: "
+                    "LLM call with " + tools.size() + " model tools, provider: "
                     + provider.getDisplayName());
             if (tools.isEmpty()) {
-                onTextResponse.accept("[Warning: No tools registered. The modelchat bundle may not be activated. "
+                onTextResponse.accept("[Warning: No tools registered. "
                         + "Please close and reopen the AI Model Chat view.]");
             }
 
-            // Build request config from user preferences
+            // Build request config — concise system prompt to minimize token usage
             AgentConfiguration config = AgentConfiguration.getInstance();
-            String systemPrompt = "You are an AI assistant for Eclipse Capella MBSE. "
-                    + "Help engineers query and modify their architecture models. "
-                    + "Use the provided tools to read model elements, create relationships, "
-                    + "and update diagrams. Always explain what you are doing.\n\n"
-                    + "IMPORTANT SAFETY RULES FOR WRITE OPERATIONS:\n"
-                    + "- For any write operation (creating, updating, or deleting model elements), "
-                    + "you MUST first describe exactly what you plan to do and ask the user for "
-                    + "explicit confirmation BEFORE calling the tool.\n"
-                    + "- Never call create_element, update_element, delete_element, "
-                    + "allocate_function, create_capability, create_exchange, or update_diagram "
-                    + "without the user's prior approval in the conversation.\n"
-                    + "- When the user confirms, proceed with the tool call.\n"
-                    + "- After a write operation, summarize what was changed.\n"
-                    + "- For delete_element, always set confirm=true (the user already confirmed "
-                    + "via the conversation).";
+            String systemPrompt = "You are a Capella MBSE assistant with tool access. "
+                    + "ALWAYS use the provided tools to query and modify the model. "
+                    + "Never guess model content — call tools to get real data.\n"
+                    + "For write operations: describe what you will do and ask user to confirm before calling the tool.";
 
             LlmRequestConfig requestConfig = new LlmRequestConfig(
                     config.getLlmModelId().isEmpty() ? null : config.getLlmModelId(),
