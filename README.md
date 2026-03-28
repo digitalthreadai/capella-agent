@@ -30,7 +30,7 @@ Systems engineers working in Capella spend significant time on repetitive model 
 |  +--------v----------------------v-----------------------v---------+ |
 |  |                    Core Platform (core + core.ui)               | |
 |  |  LLM Providers  |  Tool Framework  |  Event Bus  |  Security   | |
-|  |  (9 providers:  |  (registry,      |  (pub/sub   |  (access    | |
+|  |  (10 providers: |  (registry,      |  (pub/sub   |  (access    | |
 |  |   Claude, OpenAI|   descriptors)   |   events)   |   + audit)  | |
 |  |   Groq, etc.)  |                   |             |             | |
 |  +---------+-------------------+-------------------+---------------+ |
@@ -74,21 +74,22 @@ Capella Agent ships with **84 tools** across **9 categories**. For the complete 
 |---|---|
 | Runtime | Java 17+, Eclipse Capella 7.0, OSGi/Equinox |
 | Modeling | EMF, Sirius, Capella metamodel (Arcadia) |
-| LLM communication | `java.net.http.HttpClient`, Gson (9 providers) |
+| LLM communication | `java.net.http.HttpClient`, Gson (10 providers) |
 | MCP integration | Model Context Protocol (JSON-RPC 2.0 over stdio) |
 | Build | Maven 3.9+ with Eclipse Tycho |
 | Security | Eclipse Equinox Secure Storage |
 | Simulation | MATLAB Engine API for Java |
 | PLM | Teamcenter Active Workspace REST API |
 
-## LLM Providers (9)
+## LLM Providers (10)
 
-Capella Agent ships with nine LLM providers. Six extend the `OpenAiCompatibleProvider` abstract base class, making it possible to add a new OpenAI-compatible provider in roughly 15 lines of code.
+Capella Agent ships with ten LLM providers. Seven extend the `OpenAiCompatibleProvider` abstract base class, making it possible to add a new OpenAI-compatible provider in roughly 15 lines of code.
 
 | Provider | Provider ID | Notes |
 |---|---|---|
 | Anthropic Claude | `anthropic` | Default provider; recommended for full 84-tool support |
 | OpenAI | `openai` | GPT-4o and other models |
+| GitHub Models | `github` | Free with GitHub PAT; higher token limits than Groq (endpoint: `https://models.inference.ai.dev/chat/completions`) |
 | Groq | `groq` | Fast inference (see token limits note in [SITECONFIGURATIONS.md](SITECONFIGURATIONS.md)) |
 | DeepSeek | `deepseek` | DeepSeek models |
 | Mistral | `mistral` | Mistral AI models |
@@ -146,8 +147,9 @@ capella-agent/
 |       |-- llm/                     ILlmProvider, LlmProviderRegistry, message types
 |       |   +-- providers/           ClaudeProvider, OpenAiProvider, OllamaProvider,
 |       |                            OpenAiCompatibleProvider (abstract base),
-|       |                            GroqProvider, DeepSeekProvider, MistralProvider,
-|       |                            OpenRouterProvider, GeminiProvider, CustomEndpointProvider
+|       |                            GitHubModelsProvider, GroqProvider, DeepSeekProvider,
+|       |                            MistralProvider, OpenRouterProvider, GeminiProvider,
+|       |                            CustomEndpointProvider
 |       |-- tools/                   AbstractCapellaTool, ToolRegistry, IToolDescriptor
 |       |-- bus/                     AgentMessageBus, event types
 |       |-- security/                AccessMode, SecurityService, AuditLogger

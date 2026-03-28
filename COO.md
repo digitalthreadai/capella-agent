@@ -62,7 +62,7 @@ in one conversational flow.
 
 1. **Native, not remote.** Agents run inside the Eclipse process with direct
    EMF access. No REST server, no separate Python process, no file export.
-2. **Provider-agnostic LLM layer.** Swap between Claude, OpenAI, Groq,
+2. **Provider-agnostic LLM layer.** Swap between Claude, OpenAI, GitHub Models, Groq,
    DeepSeek, Mistral, OpenRouter, Gemini, Ollama, or a custom endpoint
    without changing tool code. Corporate users can run fully local with Ollama.
 3. **Safety first.** Default mode is READ_ONLY. Write operations require
@@ -80,7 +80,7 @@ in one conversational flow.
 
 | Solution | Approach | AI / NL | Tools | In-Capella | PLM | CAE | Limitations |
 |----------|----------|---------|-------|------------|-----|-----|-------------|
-| **Capella Agent** | OSGi plugin ecosystem | Yes (9 LLM providers) | **84** | Native | Teamcenter | MATLAB/Simulink | Capella 7.0 only |
+| **Capella Agent** | OSGi plugin ecosystem | Yes (10 LLM providers) | **84** | Native | Teamcenter | MATLAB/Simulink | Capella 7.0 only |
 | Python4Capella | Python scripting for Capella | No | 0 | Via bridge | No | No | Requires Python knowledge; no conversational interface |
 | capellambse / mcp-capella | Headless Python library | Partial (MCP) | ~50 | No (external) | No | No | Runs outside Eclipse; no live diagrams or Sirius integration |
 | Teamcenter Rich Client | Desktop PLM client | No | 0 | No | Native Tc | No | No MBSE awareness; no model manipulation |
@@ -177,7 +177,7 @@ The shared infrastructure layer. Every other plugin depends on this.
 | Package | Responsibility | Key Classes |
 |---------|---------------|-------------|
 | `core.llm` | LLM abstraction and messaging | `ILlmProvider`, `LlmProviderRegistry`, `LlmMessage`, `LlmResponse`, `LlmToolCall`, `LlmToolResult`, `LlmRequestConfig`, `LlmException` |
-| `core.llm.providers` | Concrete LLM implementations | `ClaudeProvider`, `OpenAiProvider`, `OllamaProvider`, `OpenAiCompatibleProvider` (abstract base), `GroqProvider`, `DeepSeekProvider`, `MistralProvider`, `OpenRouterProvider`, `GeminiProvider`, `CustomEndpointProvider` |
+| `core.llm.providers` | Concrete LLM implementations | `ClaudeProvider`, `OpenAiProvider`, `OllamaProvider`, `OpenAiCompatibleProvider` (abstract base), `GitHubModelsProvider`, `GroqProvider`, `DeepSeekProvider`, `MistralProvider`, `OpenRouterProvider`, `GeminiProvider`, `CustomEndpointProvider` |
 | `core.tools` | Tool registry and base classes | `IToolDescriptor`, `IToolExecutor`, `ToolRegistry`, `ToolRegistration`, `ToolSchemaBuilder`, `AbstractCapellaTool`, `ToolExecutionException`, `ToolCategory`, `ToolParameter`, `ToolResult` |
 | `core.bus` | Cross-agent event communication | `IAgentMessageBus`, `AgentMessageBus`, `AgentEvent`, `ModelChangedEvent`, `TcItemImportedEvent`, `SimulationResultEvent` |
 | `core.security` | Access control and audit logging | `SecurityService`, `AccessMode`, `AuditLogger` |
@@ -546,7 +546,7 @@ handle.
 | **UI** | SWT / Eclipse Workbench | Chat views, dashboard, preference pages |
 | **JSON** | Google Gson 2.10 | Tool argument/result serialization, LLM API payloads |
 | **HTTP** | `java.net.http.HttpClient` (JDK) | LLM API calls, Teamcenter REST calls |
-| **LLM -- Cloud** | Anthropic Claude API, OpenAI API, Groq, DeepSeek, Mistral, OpenRouter, Google Gemini | Cloud-hosted inference (9 providers total) |
+| **LLM -- Cloud** | Anthropic Claude API, OpenAI API, GitHub Models, Groq, DeepSeek, Mistral, OpenRouter, Google Gemini | Cloud-hosted inference (10 providers total) |
 | **LLM -- Local** | Ollama, Custom Endpoint | Air-gapped / on-premises inference |
 | **MCP** | Model Context Protocol (JSON-RPC 2.0 over stdio) | Claude Code integration via bridge subprocess + HTTP endpoint |
 | **Security** | Eclipse Equinox Secure Storage | API key storage (never plaintext on disk) |

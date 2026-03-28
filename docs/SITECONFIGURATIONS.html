@@ -1022,6 +1022,7 @@ td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-size: 12px; col
       <div class="provider-tabs" role="tablist">
         <button class="provider-tab active" role="tab" data-provider="claude" onclick="switchProvider('claude', this)">Claude (Recommended)</button>
         <button class="provider-tab" role="tab" data-provider="openai" onclick="switchProvider('openai', this)">OpenAI</button>
+        <button class="provider-tab" role="tab" data-provider="github" onclick="switchProvider('github', this)">GitHub Models (Free)</button>
         <button class="provider-tab" role="tab" data-provider="groq" onclick="switchProvider('groq', this)">Groq</button>
         <button class="provider-tab" role="tab" data-provider="ollama" onclick="switchProvider('ollama', this)">Ollama (Local)</button>
       </div>
@@ -1063,6 +1064,29 @@ td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-size: 12px; col
         <div class="callout callout-info">
           <span class="callout-icon">&#9432;</span>
           <span>For Azure OpenAI deployments, set the endpoint override in the advanced settings to your Azure resource URL.</span>
+        </div>
+      </div>
+
+      <!-- GitHub Models Panel -->
+      <div class="provider-panel" id="provider-github">
+        <div class="card">
+          <div class="card-title">
+            <span class="icon" style="background:rgba(74,222,128,0.15);color:var(--green);">&#9670;</span>
+            GitHub Models (Free)
+          </div>
+          <p>Free access to top models using your GitHub account. Higher token limits than Groq, making it ideal for the full 84-tool surface.</p>
+        </div>
+        <ol class="substeps">
+          <li>Go to <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">github.com/settings/tokens</a></li>
+          <li>Generate a new token (classic) &mdash; no special scopes needed</li>
+          <li>In Capella, go to <strong>Preferences</strong> &gt; <strong>Capella Agent</strong> &gt; <strong>LLM Provider</strong></li>
+          <li>Select <strong>GitHub Models (Free)</strong> from the provider dropdown</li>
+          <li>Paste your <code>ghp_...</code> token as the API key</li>
+          <li>Default model: <code>gpt-4o</code>. Other options: <code>gpt-4o-mini</code> (faster), <code>o3-mini</code>, <code>Meta-Llama-3.1-405B-Instruct</code>, <code>Mistral-Large-2411</code></li>
+        </ol>
+        <div class="callout callout-info">
+          <span class="callout-icon">&#9432;</span>
+          <span>GitHub Models is free with higher token limits than Groq, making it a great choice for trying Capella Agent without a paid API key. Endpoint: <code>https://models.inference.ai.dev/chat/completions</code></span>
         </div>
       </div>
 
@@ -1243,7 +1267,7 @@ td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-size: 12px; col
 
       <div class="callout callout-info" style="margin-top:1rem;">
         <span class="callout-icon">&#9432;</span>
-        <span>Set <code>CAPELLA_MCP_PORT</code> before launching Capella to use a different port. Update the port in <code>.mcp.json</code> to match. The 9 LLM providers (Groq, DeepSeek, Mistral, etc.) are for the in-Eclipse chat only &mdash; Claude Code uses its own LLM.</span>
+        <span>Set <code>CAPELLA_MCP_PORT</code> before launching Capella to use a different port. Update the port in <code>.mcp.json</code> to match. The 10 LLM providers (GitHub Models, Groq, DeepSeek, Mistral, etc.) are for the in-Eclipse chat only &mdash; Claude Code uses its own LLM.</span>
       </div>
     </div>
   </section>

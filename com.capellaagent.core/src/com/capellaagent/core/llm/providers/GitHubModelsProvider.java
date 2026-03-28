@@ -37,7 +37,7 @@ public class GitHubModelsProvider extends OpenAiCompatibleProvider {
 
     @Override
     protected String getDefaultApiUrl() {
-        return "https://models.inference.ai.dev/chat/completions";
+        return "https://models.github.ai/inference/chat/completions";
     }
 
     @Override

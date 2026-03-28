@@ -112,12 +112,12 @@ After restart, the Capella Agent views and preference pages are available from t
 
 ## 4. LLM Provider Configuration
 
-Capella Agent supports nine LLM providers: **Anthropic Claude**, **OpenAI**, **Groq**, **DeepSeek**, **Mistral**, **OpenRouter**, **Google Gemini**, **Ollama**, and **Custom Endpoint**. You must configure at least one provider before using any agent.
+Capella Agent supports ten LLM providers: **Anthropic Claude**, **OpenAI**, **GitHub Models**, **Groq**, **DeepSeek**, **Mistral**, **OpenRouter**, **Google Gemini**, **Ollama**, and **Custom Endpoint**. You must configure at least one provider before using any agent.
 
 ### 4.1 Configure via Preferences UI
 
 1. Open **Window > Preferences > Capella Agent > LLM Provider**.
-2. Select a provider from the dropdown (Anthropic Claude, OpenAI, Groq, DeepSeek, Mistral, OpenRouter, Gemini, Ollama, or Custom Endpoint).
+2. Select a provider from the dropdown (Anthropic Claude, OpenAI, GitHub Models, Groq, DeepSeek, Mistral, OpenRouter, Gemini, Ollama, or Custom Endpoint).
 3. Enter your API key. The key is stored in Eclipse Equinox Secure Storage (encrypted, never in plain text).
 4. Set model parameters:
    - **Model name** -- The model identifier (for example, `claude-sonnet-4-20250514` for Anthropic, `gpt-4o` for OpenAI, or `llama3` for Ollama). Leave blank to use the provider default.
@@ -131,7 +131,7 @@ You can override preferences with environment variables. Set these before launch
 
 | Variable | Description | Default |
 |---|---|---|
-| `CAPELLA_AGENT_LLM_PROVIDER` | Active LLM provider ID (`anthropic`, `openai`, `groq`, `deepseek`, `mistral`, `openrouter`, `gemini`, `ollama`, `custom`) | `anthropic` |
+| `CAPELLA_AGENT_LLM_PROVIDER` | Active LLM provider ID (`anthropic`, `openai`, `github`, `groq`, `deepseek`, `mistral`, `openrouter`, `gemini`, `ollama`, `custom`) | `anthropic` |
 | `CAPELLA_AGENT_LLM_API_KEY` | API key for the selected provider | *(none)* |
 | `CAPELLA_AGENT_LLM_MODEL` | Model name | `claude-sonnet-4-20250514` |
 | `CAPELLA_AGENT_LLM_TEMPERATURE` | Sampling temperature (`0.0`--`2.0`) | `0.3` |
@@ -153,6 +153,16 @@ You can override preferences with environment variables. Set these before launch
 - Requires an API key from [platform.openai.com](https://platform.openai.com/).
 - Provider ID: `openai`.
 - Configure a model name such as `gpt-4o` or `gpt-4o-mini`.
+
+**GitHub Models (Free)**
+- Requires a GitHub Personal Access Token from [github.com/settings/tokens](https://github.com/settings/tokens).
+- Generate a new token (classic). No special scopes are needed.
+- Provider ID: `github`.
+- Extends `OpenAiCompatibleProvider`. API endpoint: `https://models.inference.ai.dev/chat/completions`.
+- Default model: `gpt-4o`.
+- Available models: `gpt-4o` (default), `gpt-4o-mini` (faster), `o3-mini`, `Meta-Llama-3.1-405B-Instruct`, `Mistral-Large-2411`.
+- Free tier with higher token limits than Groq, making it a good option for testing with 84 tools.
+- In Capella: **Window > Preferences > Capella Agent > LLM Provider**, select **GitHub Models (Free)**, and paste your `ghp_...` token as the API key.
 
 **Groq**
 - Requires an API key from [console.groq.com](https://console.groq.com/).

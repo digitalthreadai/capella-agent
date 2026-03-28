@@ -8,10 +8,15 @@ import com.capellaagent.core.tools.AbstractCapellaTool;
 import com.capellaagent.core.tools.ToolRegistry;
 // -- AI intelligence tools --
 import com.capellaagent.modelchat.tools.ai.AutoAllocateTool;
+import com.capellaagent.modelchat.tools.ai.GenerateTestCasesTool;
 import com.capellaagent.modelchat.tools.ai.GenerateTestScenariosTool;
 import com.capellaagent.modelchat.tools.ai.ModelQAndATool;
+import com.capellaagent.modelchat.tools.ai.OptimizeAllocationTool;
+import com.capellaagent.modelchat.tools.ai.PredictImpactTool;
 import com.capellaagent.modelchat.tools.ai.ReviewArchitectureTool;
 import com.capellaagent.modelchat.tools.ai.SuggestInterfacesTool;
+import com.capellaagent.modelchat.tools.ai.SummarizeModelTool;
+import com.capellaagent.modelchat.tools.ai.ValidateNamingTool;
 // -- Analysis tools --
 import com.capellaagent.modelchat.tools.analysis.AllocationCompletenessTool;
 import com.capellaagent.modelchat.tools.analysis.ArchitectureComplexityTool;
@@ -19,22 +24,31 @@ import com.capellaagent.modelchat.tools.analysis.DetectCyclesTool;
 import com.capellaagent.modelchat.tools.analysis.FindUnusedElementsTool;
 import com.capellaagent.modelchat.tools.analysis.GenerateSafetyReportTool;
 import com.capellaagent.modelchat.tools.analysis.IdentifySingletonsTool;
+import com.capellaagent.modelchat.tools.analysis.SecurityAnalysisTool;
+import com.capellaagent.modelchat.tools.analysis.WeightAnalysisTool;
 import com.capellaagent.modelchat.tools.analysis.ImpactAnalysisTool;
 import com.capellaagent.modelchat.tools.analysis.InterfaceConsistencyTool;
 import com.capellaagent.modelchat.tools.analysis.ModelStatisticsTool;
 import com.capellaagent.modelchat.tools.analysis.ReachabilityAnalysisTool;
 import com.capellaagent.modelchat.tools.analysis.RunCapellaValidationTool;
 import com.capellaagent.modelchat.tools.analysis.SuggestImprovementsTool;
+import com.capellaagent.modelchat.tools.analysis.CompareModelsTool;
+import com.capellaagent.modelchat.tools.analysis.FindDuplicatesTool;
+import com.capellaagent.modelchat.tools.analysis.CoverageReportTool;
 // -- Diagram tools --
 import com.capellaagent.modelchat.tools.diagram.AutoLayoutDiagramTool;
 import com.capellaagent.modelchat.tools.diagram.CloneDiagramTool;
 import com.capellaagent.modelchat.tools.diagram.CreateDiagramTool;
 import com.capellaagent.modelchat.tools.diagram.DeleteDiagramTool;
 import com.capellaagent.modelchat.tools.diagram.ExportDiagramImageTool;
+import com.capellaagent.modelchat.tools.diagram.GenerateDiagramTool;
 import com.capellaagent.modelchat.tools.diagram.ListDiagramElementsTool;
 import com.capellaagent.modelchat.tools.diagram.RefreshDiagramTool;
 import com.capellaagent.modelchat.tools.diagram.ShowElementInDiagramTool;
 import com.capellaagent.modelchat.tools.diagram.UpdateDiagramTool;
+import com.capellaagent.modelchat.tools.diagram.AddToDiagramTool;
+import com.capellaagent.modelchat.tools.diagram.RemoveFromDiagramTool;
+import com.capellaagent.modelchat.tools.diagram.HighlightElementTool;
 // -- Export tools --
 import com.capellaagent.modelchat.tools.export_.ExportAllocationMatrixCsvTool;
 import com.capellaagent.modelchat.tools.export_.ExportDiagramCatalogTool;
@@ -43,7 +57,11 @@ import com.capellaagent.modelchat.tools.export_.ExportToJsonTool;
 import com.capellaagent.modelchat.tools.export_.ExportTraceabilityMatrixTool;
 import com.capellaagent.modelchat.tools.export_.GenerateDiffReportTool;
 import com.capellaagent.modelchat.tools.export_.GenerateIcdReportTool;
+import com.capellaagent.modelchat.tools.export_.GenerateDocumentTool;
 import com.capellaagent.modelchat.tools.export_.GenerateModelReportTool;
+import com.capellaagent.modelchat.tools.export_.ExportToReqIfTool;
+import com.capellaagent.modelchat.tools.export_.ExportToSysMLv2Tool;
+import com.capellaagent.modelchat.tools.export_.ExportDiagramSvgTool;
 // -- Read tools --
 import com.capellaagent.modelchat.tools.read.CheckTraceabilityCoverageTool;
 import com.capellaagent.modelchat.tools.read.ExplainElementTool;
@@ -66,14 +84,23 @@ import com.capellaagent.modelchat.tools.read.GetTraceabilityTool;
 import com.capellaagent.modelchat.tools.read.ListDiagramsTool;
 import com.capellaagent.modelchat.tools.read.ListElementsTool;
 import com.capellaagent.modelchat.tools.read.ListRequirementsTool;
+import com.capellaagent.modelchat.tools.read.SearchByPatternTool;
 import com.capellaagent.modelchat.tools.read.SearchElementsTool;
+import com.capellaagent.modelchat.tools.read.GetVersionHistoryTool;
 import com.capellaagent.modelchat.tools.read.ValidateModelTool;
+import com.capellaagent.modelchat.tools.read.GetModesCapturedTimeTool;
+import com.capellaagent.modelchat.tools.read.GetFunctionPortsTool;
+import com.capellaagent.modelchat.tools.read.GetComponentPortsTool;
+import com.capellaagent.modelchat.tools.read.GetCommunicationLinksTool;
+import com.capellaagent.modelchat.tools.read.GetRequirementRelationsTool;
 // -- Transition tools --
 import com.capellaagent.modelchat.tools.transition.ReconcileLayersTool;
 import com.capellaagent.modelchat.tools.transition.TransitionLaToPaTool;
 import com.capellaagent.modelchat.tools.transition.TransitionOaToSaTool;
+import com.capellaagent.modelchat.tools.transition.AutoTransitionAllTool;
 import com.capellaagent.modelchat.tools.transition.TransitionPaToEpbsTool;
 import com.capellaagent.modelchat.tools.transition.TransitionSaToLaTool;
+import com.capellaagent.modelchat.tools.transition.TransitionFunctionsTool;
 // -- Write tools --
 import com.capellaagent.modelchat.tools.write.AllocateFunctionTool;
 import com.capellaagent.modelchat.tools.write.BatchRenameTool;
@@ -95,7 +122,13 @@ import com.capellaagent.modelchat.tools.write.CreateStateMachineTool;
 import com.capellaagent.modelchat.tools.write.DeleteElementTool;
 import com.capellaagent.modelchat.tools.write.MoveElementTool;
 import com.capellaagent.modelchat.tools.write.SetPropertyValueTool;
+import com.capellaagent.modelchat.tools.write.ApplyPatternTool;
+import com.capellaagent.modelchat.tools.write.MergeElementsTool;
 import com.capellaagent.modelchat.tools.write.UpdateElementTool;
+import com.capellaagent.modelchat.tools.write.CreateModeTool;
+import com.capellaagent.modelchat.tools.write.CreateConstraintTool;
+import com.capellaagent.modelchat.tools.write.SetDescriptionTool;
+import com.capellaagent.modelchat.tools.write.ReorderElementsTool;
 
 /**
  * Registers all Model Chat tools with the core {@link ToolRegistry}.
@@ -147,9 +180,16 @@ public class ModelChatToolRegistrar {
         registerTool(registry, new GetExchangeItemsTool());
         registerTool(registry, new GetPropertyValuesTool());
         registerTool(registry, new GetConstraintsTool());
+        registerTool(registry, new GetModesCapturedTimeTool());
+        registerTool(registry, new GetFunctionPortsTool());
+        registerTool(registry, new GetComponentPortsTool());
+        registerTool(registry, new GetCommunicationLinksTool());
+        registerTool(registry, new GetRequirementRelationsTool());
         // P3 read tools
         registerTool(registry, new GetConfigurationItemsTool());
         registerTool(registry, new GetDeploymentMappingTool());
+        registerTool(registry, new GetVersionHistoryTool());
+        registerTool(registry, new SearchByPatternTool());
 
         // -- Write tools (category: model_write) --
         registerTool(registry, new CreateElementTool());
@@ -174,6 +214,13 @@ public class ModelChatToolRegistrar {
         registerTool(registry, new CreatePortTool());
         registerTool(registry, new CreateInvolvementTool());
         registerTool(registry, new CreateGeneralizationTool());
+        registerTool(registry, new CreateModeTool());
+        registerTool(registry, new CreateConstraintTool());
+        registerTool(registry, new SetDescriptionTool());
+        registerTool(registry, new ReorderElementsTool());
+        // P3 write tools
+        registerTool(registry, new MergeElementsTool());
+        registerTool(registry, new ApplyPatternTool());
 
         // -- Diagram tools (category: diagram) --
         registerTool(registry, new UpdateDiagramTool());
@@ -184,9 +231,13 @@ public class ModelChatToolRegistrar {
         // P2 diagram tools
         registerTool(registry, new ListDiagramElementsTool());
         registerTool(registry, new CloneDiagramTool());
+        registerTool(registry, new AddToDiagramTool());
+        registerTool(registry, new RemoveFromDiagramTool());
+        registerTool(registry, new HighlightElementTool());
         // P3 diagram tools
         registerTool(registry, new AutoLayoutDiagramTool());
         registerTool(registry, new DeleteDiagramTool());
+        registerTool(registry, new GenerateDiagramTool());
 
         // -- Analysis tools (category: analysis) --
         registerTool(registry, new CheckTraceabilityCoverageTool());
@@ -203,8 +254,13 @@ public class ModelChatToolRegistrar {
         registerTool(registry, new ArchitectureComplexityTool());
         registerTool(registry, new IdentifySingletonsTool());
         registerTool(registry, new SuggestImprovementsTool());
+        registerTool(registry, new CompareModelsTool());
+        registerTool(registry, new FindDuplicatesTool());
+        registerTool(registry, new CoverageReportTool());
         // P3 analysis tools
         registerTool(registry, new GenerateSafetyReportTool());
+        registerTool(registry, new SecurityAnalysisTool());
+        registerTool(registry, new WeightAnalysisTool());
 
         // -- Export tools (category: export) --
         registerTool(registry, new ExportToCsvTool());
@@ -214,17 +270,23 @@ public class ModelChatToolRegistrar {
         registerTool(registry, new ExportTraceabilityMatrixTool());
         // P2 export tools
         registerTool(registry, new ExportAllocationMatrixCsvTool());
+        registerTool(registry, new ExportToReqIfTool());
+        registerTool(registry, new ExportDiagramSvgTool());
         // P3 export tools
         registerTool(registry, new ExportDiagramCatalogTool());
         registerTool(registry, new GenerateDiffReportTool());
+        registerTool(registry, new ExportToSysMLv2Tool());
+        registerTool(registry, new GenerateDocumentTool());
 
         // -- Transition tools (category: transition) --
         registerTool(registry, new TransitionOaToSaTool());
         registerTool(registry, new TransitionSaToLaTool());
         registerTool(registry, new TransitionLaToPaTool());
         registerTool(registry, new ReconcileLayersTool());
+        registerTool(registry, new TransitionFunctionsTool());
         // P3 transition tools
         registerTool(registry, new TransitionPaToEpbsTool());
+        registerTool(registry, new AutoTransitionAllTool());
 
         // -- AI Intelligence tools (category: ai_intelligence) --
         registerTool(registry, new ReviewArchitectureTool());
@@ -232,6 +294,12 @@ public class ModelChatToolRegistrar {
         registerTool(registry, new AutoAllocateTool());
         registerTool(registry, new GenerateTestScenariosTool());
         registerTool(registry, new ModelQAndATool());
+        registerTool(registry, new SummarizeModelTool());
+        registerTool(registry, new ValidateNamingTool());
+        // P3 AI tools
+        registerTool(registry, new PredictImpactTool());
+        registerTool(registry, new GenerateTestCasesTool());
+        registerTool(registry, new OptimizeAllocationTool());
     }
 
     /**
