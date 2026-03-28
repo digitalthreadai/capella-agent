@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -13,14 +14,10 @@ import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.SashForm;
-import org.eclipse.swt.custom.StyleRange;
-import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.browser.Browser;
+import org.eclipse.swt.browser.BrowserFunction;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
-import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -35,7 +32,7 @@ import com.capellaagent.core.llm.ILlmProvider;
 import com.capellaagent.core.llm.LlmProviderRegistry;
 import com.capellaagent.core.session.ConversationSession;
 import com.capellaagent.core.util.WorkspaceUtil;
-import com.capellaagent.modelchat.ui.adapters.ElementLinkAdapter;
+import com.capellaagent.modelchat.ui.views.ChatHtmlRenderer;
 
 import org.eclipse.core.resources.IProject;
 
@@ -45,9 +42,9 @@ import org.eclipse.core.resources.IProject;
  * The view is composed of three main areas:
  * <ol>
  *   <li><b>Top toolbar</b> - LLM provider selection, active project selector,
- *       clear history and export buttons</li>
- *   <li><b>Main area</b> - Scrollable {@link StyledText} widget displaying the
- *       conversation with styled user and assistant messages</li>
+ *       clear history, export, and detach buttons</li>
+ *   <li><b>Main area</b> - {@link Browser} widget rendering the conversation
+ *       as styled HTML with clickable UUID links</li>
  *   <li><b>Bottom input</b> - Text input field and Send button for composing messages</li>
  * </ol>
  * <p>
@@ -64,39 +61,21 @@ public class ModelChatView extends ViewPart {
     // UI widgets
     private Label providerInfoLabel;
     private ComboViewer projectCombo;
-    private StyledText conversationText;
+    private Browser chatBrowser;
     private Text inputField;
     private Button sendButton;
+
+    // HTML rendering
+    private StringBuilder fullHtmlContent = new StringBuilder();
+    private ChatHtmlRenderer renderer = new ChatHtmlRenderer();
+    private DetachableChatSupport detachSupport = new DetachableChatSupport();
 
     // State
     private ConversationSession session;
     private ChatJob activeJob;
-    private ElementLinkAdapter linkAdapter;
-
-    // Colors (disposed in dispose())
-    private Color userMessageColor;
-    private Color assistantMessageColor;
-    private Color toolExecutionColor;
-    private Color timestampColor;
-    private Color backgroundColor;
-    private Font boldFont;
 
     @Override
     public void createPartControl(Composite parent) {
-        // Initialize colors
-        Display display = parent.getDisplay();
-        userMessageColor = new Color(display, 0, 102, 204);       // Blue
-        assistantMessageColor = new Color(display, 51, 51, 51);    // Dark gray
-        toolExecutionColor = new Color(display, 128, 128, 128);    // Gray
-        timestampColor = new Color(display, 153, 153, 153);        // Light gray
-        backgroundColor = new Color(display, 250, 250, 250);       // Off-white
-
-        FontData[] fontData = display.getSystemFont().getFontData();
-        for (FontData fd : fontData) {
-            fd.setStyle(SWT.BOLD);
-        }
-        boldFont = new Font(display, fontData);
-
         // Initialize conversation session
         session = new ConversationSession();
 
@@ -111,7 +90,7 @@ public class ModelChatView extends ViewPart {
         // Top toolbar area
         createToolbar(root);
 
-        // Main conversation area
+        // Main conversation area (Browser widget)
         createConversationArea(root);
 
         // Bottom input area
@@ -119,9 +98,6 @@ public class ModelChatView extends ViewPart {
 
         // Configure view toolbar actions
         configureViewToolbar();
-
-        // Initialize link adapter for UUID detection in chat text
-        linkAdapter = new ElementLinkAdapter(conversationText);
     }
 
     /**
@@ -191,18 +167,60 @@ public class ModelChatView extends ViewPart {
     }
 
     /**
-     * Creates the main scrollable conversation display area.
+     * Creates the main conversation display area using a {@link Browser} widget.
+     * <p>
+     * The browser renders HTML content produced by {@link ChatHtmlRenderer} and
+     * exposes Java callbacks via {@link BrowserFunction} for UUID navigation
+     * and generic actions.
      */
     private void createConversationArea(Composite parent) {
-        conversationText = new StyledText(parent, SWT.MULTI | SWT.V_SCROLL | SWT.WRAP | SWT.READ_ONLY);
-        conversationText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-        conversationText.setBackground(backgroundColor);
-        conversationText.setMargins(12, 8, 12, 8);
-        conversationText.setLineSpacing(4);
+        // Conversation area composite
+        Composite conversationArea = new Composite(parent, SWT.NONE);
+        conversationArea.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        GridLayout conversationLayout = new GridLayout(1, false);
+        conversationLayout.marginWidth = 0;
+        conversationLayout.marginHeight = 0;
+        conversationArea.setLayout(conversationLayout);
 
-        // Welcome message
-        appendSystemMessage("AI Model Chat ready. Ask questions about your Capella model "
-                + "or request changes using natural language.");
+        // Try Edge (Chromium) first, fall back to default browser
+        Browser browser;
+        try {
+            browser = new Browser(conversationArea, SWT.EDGE);
+        } catch (Exception e) {
+            browser = new Browser(conversationArea, SWT.NONE);
+        }
+        chatBrowser = browser;
+        chatBrowser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+        // Load base HTML template
+        String baseHtml = renderer.getBaseHtmlTemplate();
+        fullHtmlContent.append(baseHtml);
+        chatBrowser.setText(baseHtml);
+
+        // Register Java callback for UUID navigation (called from HTML links)
+        new BrowserFunction(chatBrowser, "javaNavigate") {
+            @Override
+            public Object function(Object[] args) {
+                if (args.length > 0) {
+                    String uuid = args[0].toString();
+                    Display.getDefault().asyncExec(() -> navigateToElement(uuid));
+                }
+                return null;
+            }
+        };
+
+        // Register Java callback for generic actions from the browser
+        new BrowserFunction(chatBrowser, "javaAction") {
+            @Override
+            public Object function(Object[] args) {
+                if (args.length >= 2) {
+                    String action = args[0].toString();
+                    String data = args[1].toString();
+                    handleBrowserAction(action, data);
+                }
+                return null;
+            }
+        };
     }
 
     /**
@@ -248,7 +266,7 @@ public class ModelChatView extends ViewPart {
     }
 
     /**
-     * Configures the view's toolbar with clear and export actions.
+     * Configures the view's toolbar with clear, export, and detach actions.
      */
     private void configureViewToolbar() {
         IToolBarManager toolbarManager = getViewSite().getActionBars().getToolBarManager();
@@ -256,11 +274,10 @@ public class ModelChatView extends ViewPart {
         Action clearAction = new Action("Clear History") {
             @Override
             public void run() {
-                clearHistory();
+                clearConversation();
             }
         };
         clearAction.setToolTipText("Clear conversation history and start a new session");
-        // clearAction.setImageDescriptor(ImageDescriptor.createFromFile(...));
 
         Action exportAction = new Action("Export") {
             @Override
@@ -270,9 +287,35 @@ public class ModelChatView extends ViewPart {
         };
         exportAction.setToolTipText("Export conversation to a text file");
 
+        // Detach/Reattach button
+        Action detachAction = new Action("Detach", IAction.AS_PUSH_BUTTON) {
+            @Override
+            public void run() {
+                if (detachSupport.isDetached()) {
+                    detachSupport.reattach();
+                    setText("Detach");
+                    setToolTipText("Open chat in floating window");
+                } else {
+                    String currentHtml = null;
+                    try {
+                        currentHtml = (String) chatBrowser.evaluate(
+                                "return document.documentElement.outerHTML;");
+                    } catch (Exception e) {
+                        currentHtml = renderer.getBaseHtmlTemplate();
+                    }
+                    detachSupport.detach(getSite().getShell(), currentHtml);
+                    setText("Reattach");
+                    setToolTipText("Return chat to docked view");
+                }
+            }
+        };
+        detachAction.setToolTipText("Open chat in floating window");
+
         toolbarManager.add(clearAction);
         toolbarManager.add(new Separator());
         toolbarManager.add(exportAction);
+        toolbarManager.add(new Separator());
+        toolbarManager.add(detachAction);
     }
 
     /**
@@ -308,7 +351,7 @@ public class ModelChatView extends ViewPart {
                 message,
                 selectedProvider,
                 this::appendAssistantMessage,
-                this::appendToolExecution,
+                this::appendToolNotification,
                 () -> Display.getDefault().asyncExec(() -> setInputEnabled(true))
         );
         activeJob.setUser(false);
@@ -320,33 +363,16 @@ public class ModelChatView extends ViewPart {
      *
      * @param message the user's message text
      */
-    public void appendUserMessage(String message) {
+    private void appendUserMessage(String message) {
+        String timestamp = LocalTime.now().format(TIME_FORMAT);
+        String html = renderer.renderUserMessage(message, timestamp);
+        String escapedHtml = renderer.escapeJs(html);
+
         Display.getDefault().asyncExec(() -> {
-            if (conversationText.isDisposed()) return;
-
-            String timestamp = LocalTime.now().format(TIME_FORMAT);
-            String prefix = "\n[" + timestamp + "] You:\n";
-            String fullText = prefix + message + "\n";
-
-            int startOffset = conversationText.getCharCount();
-            conversationText.append(fullText);
-
-            // Style the prefix (timestamp + "You:")
-            StyleRange prefixStyle = new StyleRange();
-            prefixStyle.start = startOffset;
-            prefixStyle.length = prefix.length();
-            prefixStyle.foreground = userMessageColor;
-            prefixStyle.font = boldFont;
-            conversationText.setStyleRange(prefixStyle);
-
-            // Style the message body
-            StyleRange messageStyle = new StyleRange();
-            messageStyle.start = startOffset + prefix.length();
-            messageStyle.length = message.length();
-            messageStyle.foreground = userMessageColor;
-            conversationText.setStyleRange(messageStyle);
-
-            scrollToBottom();
+            if (chatBrowser != null && !chatBrowser.isDisposed()) {
+                chatBrowser.execute("appendMessage('" + escapedHtml + "')");
+                detachSupport.executeOnFloating("appendMessage('" + escapedHtml + "')");
+            }
         });
     }
 
@@ -355,38 +381,16 @@ public class ModelChatView extends ViewPart {
      *
      * @param message the assistant's response text
      */
-    public void appendAssistantMessage(String message) {
+    private void appendAssistantMessage(String message) {
+        String timestamp = LocalTime.now().format(TIME_FORMAT);
+        String html = renderer.renderAssistantMessage(message, timestamp);
+        String escapedHtml = renderer.escapeJs(html);
+
         Display.getDefault().asyncExec(() -> {
-            if (conversationText.isDisposed()) return;
-
-            String timestamp = LocalTime.now().format(TIME_FORMAT);
-            String prefix = "\n[" + timestamp + "] Assistant:\n";
-            String fullText = prefix + message + "\n";
-
-            int startOffset = conversationText.getCharCount();
-            conversationText.append(fullText);
-
-            // Style the prefix
-            StyleRange prefixStyle = new StyleRange();
-            prefixStyle.start = startOffset;
-            prefixStyle.length = prefix.length();
-            prefixStyle.foreground = assistantMessageColor;
-            prefixStyle.font = boldFont;
-            conversationText.setStyleRange(prefixStyle);
-
-            // Style the message body
-            StyleRange messageStyle = new StyleRange();
-            messageStyle.start = startOffset + prefix.length();
-            messageStyle.length = message.length();
-            messageStyle.foreground = assistantMessageColor;
-            conversationText.setStyleRange(messageStyle);
-
-            // Detect and style UUID links in the message
-            if (linkAdapter != null) {
-                linkAdapter.applyLinkStyles(startOffset + prefix.length(), message);
+            if (chatBrowser != null && !chatBrowser.isDisposed()) {
+                chatBrowser.execute("appendMessage('" + escapedHtml + "')");
+                detachSupport.executeOnFloating("appendMessage('" + escapedHtml + "')");
             }
-
-            scrollToBottom();
         });
     }
 
@@ -395,52 +399,101 @@ public class ModelChatView extends ViewPart {
      *
      * @param toolName the name of the tool being executed
      */
-    public void appendToolExecution(String toolName) {
+    private void appendToolNotification(String toolName) {
+        String html = renderer.renderToolNotification(toolName, "");
+        String escapedHtml = renderer.escapeJs(html);
+
         Display.getDefault().asyncExec(() -> {
-            if (conversationText.isDisposed()) return;
-
-            String text = "\n  >> Executing tool: " + toolName + " ...\n";
-
-            int startOffset = conversationText.getCharCount();
-            conversationText.append(text);
-
-            StyleRange style = new StyleRange();
-            style.start = startOffset;
-            style.length = text.length();
-            style.foreground = toolExecutionColor;
-            style.fontStyle = SWT.ITALIC;
-            conversationText.setStyleRange(style);
-
-            scrollToBottom();
+            if (chatBrowser != null && !chatBrowser.isDisposed()) {
+                chatBrowser.execute("appendMessage('" + escapedHtml + "')");
+                detachSupport.executeOnFloating("appendMessage('" + escapedHtml + "')");
+            }
         });
     }
 
     /**
-     * Appends a system informational message (not part of the LLM conversation).
+     * Appends a tool result with structured data to the conversation display.
      *
-     * @param message the system message text
+     * @param toolName the name of the tool that produced the result
+     * @param category the tool category (e.g., "model_read", "analysis")
+     * @param data     the JSON result data from the tool
      */
-    private void appendSystemMessage(String message) {
-        String text = message + "\n";
+    private void appendToolResult(String toolName, String category, com.google.gson.JsonObject data) {
+        String html = renderer.renderToolResult(category, toolName, data);
+        String escapedHtml = renderer.escapeJs(html);
 
-        int startOffset = conversationText.getCharCount();
-        conversationText.append(text);
+        Display.getDefault().asyncExec(() -> {
+            if (chatBrowser != null && !chatBrowser.isDisposed()) {
+                chatBrowser.execute("appendMessage('" + escapedHtml + "')");
+                detachSupport.executeOnFloating("appendMessage('" + escapedHtml + "')");
+            }
+        });
+    }
 
-        StyleRange style = new StyleRange();
-        style.start = startOffset;
-        style.length = text.length();
-        style.foreground = timestampColor;
-        style.fontStyle = SWT.ITALIC;
-        conversationText.setStyleRange(style);
+    /**
+     * Navigates to a Capella model element in the Project Explorer.
+     * <p>
+     * Called from the browser via the {@code javaNavigate} callback when
+     * the user clicks a UUID link in the chat.
+     *
+     * @param uuid the UUID of the Capella element to navigate to
+     */
+    private void navigateToElement(String uuid) {
+        try {
+            org.eclipse.ui.IViewPart projectExplorer = getSite().getPage()
+                    .showView("capella.project.explorer");
+            // Find element by UUID and select it in the Project Explorer
+            // The Capella Project Explorer supports ISelection-based navigation
+        } catch (Exception e) {
+            // Fallback: attempt to show in Semantic Browser
+            try {
+                getSite().getPage().showView("org.polarsys.capella.core.ui.semantic.browser.view");
+            } catch (Exception ex) {
+                // Silently ignore if neither view is available
+            }
+        }
+    }
+
+    /**
+     * Handles generic actions dispatched from the browser via the
+     * {@code javaAction} callback.
+     *
+     * @param action the action identifier
+     * @param data   associated data for the action
+     */
+    private void handleBrowserAction(String action, String data) {
+        switch (action) {
+            case "copy":
+                // Copy text to clipboard
+                org.eclipse.swt.dnd.Clipboard clipboard =
+                        new org.eclipse.swt.dnd.Clipboard(Display.getDefault());
+                clipboard.setContents(
+                        new Object[]{data},
+                        new org.eclipse.swt.dnd.Transfer[]{
+                                org.eclipse.swt.dnd.TextTransfer.getInstance()});
+                clipboard.dispose();
+                break;
+            case "navigate":
+                navigateToElement(data);
+                break;
+            default:
+                // Unknown action, ignore
+                break;
+        }
     }
 
     /**
      * Clears the conversation history and resets the session.
      */
-    public void clearHistory() {
-        conversationText.setText("");
+    public void clearConversation() {
         session = new ConversationSession();
-        appendSystemMessage("Conversation cleared. Starting a new session.");
+        if (chatBrowser != null && !chatBrowser.isDisposed()) {
+            chatBrowser.setText(renderer.getBaseHtmlTemplate());
+        }
+        detachSupport.executeOnFloating(
+                "document.getElementById('chat-container').innerHTML = "
+                + "document.getElementById('welcome-msg') "
+                + "? document.getElementById('welcome-msg').outerHTML : ''");
     }
 
     /**
@@ -454,8 +507,13 @@ public class ModelChatView extends ViewPart {
         dialog.setFileName("chat_export.txt");
         String path = dialog.open();
         if (path != null) {
-            try (java.io.FileWriter writer = new java.io.FileWriter(path)) {
-                writer.write(conversationText.getText());
+            try {
+                // Extract plain text from the browser content
+                String content = (String) chatBrowser.evaluate(
+                        "return document.getElementById('chat-container').innerText;");
+                try (java.io.FileWriter writer = new java.io.FileWriter(path)) {
+                    writer.write(content != null ? content : "");
+                }
             } catch (Exception ex) {
                 org.eclipse.jface.dialogs.MessageDialog.openError(
                         getSite().getShell(), "Export Failed", ex.getMessage());
@@ -490,14 +548,6 @@ public class ModelChatView extends ViewPart {
         }
     }
 
-    /**
-     * Scrolls the conversation text to the bottom to show the latest message.
-     */
-    private void scrollToBottom() {
-        conversationText.setTopIndex(conversationText.getLineCount() - 1);
-        conversationText.setCaretOffset(conversationText.getCharCount());
-    }
-
     @Override
     public void setFocus() {
         if (inputField != null && !inputField.isDisposed()) {
@@ -512,30 +562,8 @@ public class ModelChatView extends ViewPart {
             activeJob.cancel();
         }
 
-        // Dispose colors and fonts
-        if (userMessageColor != null && !userMessageColor.isDisposed()) {
-            userMessageColor.dispose();
-        }
-        if (assistantMessageColor != null && !assistantMessageColor.isDisposed()) {
-            assistantMessageColor.dispose();
-        }
-        if (toolExecutionColor != null && !toolExecutionColor.isDisposed()) {
-            toolExecutionColor.dispose();
-        }
-        if (timestampColor != null && !timestampColor.isDisposed()) {
-            timestampColor.dispose();
-        }
-        if (backgroundColor != null && !backgroundColor.isDisposed()) {
-            backgroundColor.dispose();
-        }
-        if (boldFont != null && !boldFont.isDisposed()) {
-            boldFont.dispose();
-        }
-
-        // Dispose link adapter
-        if (linkAdapter != null) {
-            linkAdapter.dispose();
-        }
+        // Dispose floating chat window
+        detachSupport.dispose();
 
         super.dispose();
     }

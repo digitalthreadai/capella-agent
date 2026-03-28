@@ -27,7 +27,7 @@ public class ClearHistoryHandler extends AbstractHandler {
     public Object execute(ExecutionEvent event) throws ExecutionException {
         ModelChatView chatView = getModelChatView(event);
         if (chatView != null) {
-            chatView.clearHistory();
+            chatView.clearConversation();
         }
         return null;
     }

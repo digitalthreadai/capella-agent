@@ -56,7 +56,7 @@ public class ChatJob extends Job {
     /** Max messages to send to LLM (sliding window). 8 = ~4 user/assistant turns. */
     private static final int MAX_HISTORY_MESSAGES = 8;
     /** Max characters per tool result stored in session history. */
-    private static final int MAX_TOOL_RESULT_CHARS = 1200;
+    private static final int MAX_TOOL_RESULT_CHARS = 8000;
 
     private final ConversationSession session;
     private final String userMessage;
@@ -64,9 +64,18 @@ public class ChatJob extends Job {
     private final Consumer<String> onTextResponse;
     private final Consumer<String> onToolExecution;
     private final Runnable onComplete;
+    private final ToolResultCallback onToolResult;
 
     /**
-     * Constructs a new ChatJob.
+     * Callback interface for receiving full (untruncated) tool results for UI display.
+     */
+    @FunctionalInterface
+    public interface ToolResultCallback {
+        void onResult(String toolName, String category, com.google.gson.JsonObject fullResult);
+    }
+
+    /**
+     * Constructs a new ChatJob (backward-compatible, no tool result callback).
      *
      * @param session         the conversation session maintaining message history
      * @param userMessage     the new user message to process
@@ -78,6 +87,23 @@ public class ChatJob extends Job {
     public ChatJob(ConversationSession session, String userMessage, String providerName,
                    Consumer<String> onTextResponse, Consumer<String> onToolExecution,
                    Runnable onComplete) {
+        this(session, userMessage, providerName, onTextResponse, onToolExecution, onComplete, null);
+    }
+
+    /**
+     * Constructs a new ChatJob with tool result callback.
+     *
+     * @param session         the conversation session maintaining message history
+     * @param userMessage     the new user message to process
+     * @param providerName    the name of the LLM provider to use
+     * @param onTextResponse  callback invoked with the assistant's text response
+     * @param onToolExecution callback invoked when a tool execution starts (receives tool name)
+     * @param onComplete      callback invoked when the job finishes (success or failure)
+     * @param onToolResult    callback invoked with full untruncated tool results for UI display
+     */
+    public ChatJob(ConversationSession session, String userMessage, String providerName,
+                   Consumer<String> onTextResponse, Consumer<String> onToolExecution,
+                   Runnable onComplete, ToolResultCallback onToolResult) {
         super(JOB_NAME);
         this.session = session;
         this.userMessage = userMessage;
@@ -85,6 +111,7 @@ public class ChatJob extends Job {
         this.onTextResponse = onTextResponse;
         this.onToolExecution = onToolExecution;
         this.onComplete = onComplete;
+        this.onToolResult = onToolResult;
     }
 
     @Override
@@ -159,16 +186,20 @@ public class ChatJob extends Job {
                                     "Tool execution failed: " + e.getMessage());
                         }
 
-                        // Add tool result to session (truncate large results to save tokens)
+                        // Execute tool result handling: display full, store compact
                         com.google.gson.JsonObject resultObj = toolResult.toJson();
+
+                        // DISPLAY: Send FULL result to UI (no truncation)
+                        if (onToolResult != null) {
+                            String category = "MODEL_READ"; // Default; tools self-report category via result JSON
+                            onToolResult.onResult(toolCall.getName(), category, resultObj);
+                        }
+
+                        // HISTORY: Store compact version for LLM context (saves tokens)
                         String resultStr = resultObj.toString();
                         if (resultStr.length() > MAX_TOOL_RESULT_CHARS) {
-                            // Replace with truncated version
-                            com.google.gson.JsonObject truncated = new com.google.gson.JsonObject();
-                            truncated.addProperty("truncated", true);
-                            truncated.addProperty("preview", resultStr.substring(0, MAX_TOOL_RESULT_CHARS));
-                            truncated.addProperty("total_chars", resultStr.length());
-                            session.addToolResult(toolCallId, truncated);
+                            com.google.gson.JsonObject compact = createCompactSummary(toolCall.getName(), resultObj);
+                            session.addToolResult(toolCallId, compact);
                         } else {
                             session.addToolResult(toolCallId, resultObj);
                         }
@@ -212,6 +243,55 @@ public class ChatJob extends Job {
             }
             monitor.done();
         }
+    }
+
+    /**
+     * Creates a compact summary of a tool result for LLM context history.
+     * Extracts key metrics and a preview to keep token usage low while
+     * preserving enough context for the LLM to reason about results.
+     *
+     * @param toolName   the name of the tool that produced the result
+     * @param fullResult the full JSON result from the tool
+     * @return a compact JSON summary
+     */
+    private com.google.gson.JsonObject createCompactSummary(String toolName, com.google.gson.JsonObject fullResult) {
+        com.google.gson.JsonObject summary = new com.google.gson.JsonObject();
+        summary.addProperty("summarized", true);
+        summary.addProperty("tool", toolName);
+
+        // Extract key metrics from the result
+        if (fullResult.has("count")) {
+            summary.addProperty("count", fullResult.get("count").getAsInt());
+        }
+        if (fullResult.has("element_type")) {
+            summary.addProperty("element_type", fullResult.get("element_type").getAsString());
+        }
+        if (fullResult.has("layer")) {
+            summary.addProperty("layer", fullResult.get("layer").getAsString());
+        }
+        if (fullResult.has("elements") && fullResult.get("elements").isJsonArray()) {
+            int count = fullResult.getAsJsonArray("elements").size();
+            summary.addProperty("elements_count", count);
+            // Include first 3 element names as preview
+            com.google.gson.JsonArray preview = new com.google.gson.JsonArray();
+            com.google.gson.JsonArray elements = fullResult.getAsJsonArray("elements");
+            for (int i = 0; i < Math.min(3, elements.size()); i++) {
+                if (elements.get(i).isJsonObject() && elements.get(i).getAsJsonObject().has("name")) {
+                    preview.add(elements.get(i).getAsJsonObject().get("name").getAsString());
+                }
+            }
+            summary.add("preview_names", preview);
+        }
+        if (fullResult.has("status")) {
+            summary.addProperty("status", fullResult.get("status").getAsString());
+        }
+        if (fullResult.has("message")) {
+            String msg = fullResult.get("message").getAsString();
+            summary.addProperty("message", msg.length() > 200 ? msg.substring(0, 200) + "..." : msg);
+        }
+
+        summary.addProperty("note", "Full results displayed in chat UI. Call tool again if you need the data.");
+        return summary;
     }
 
     /**
