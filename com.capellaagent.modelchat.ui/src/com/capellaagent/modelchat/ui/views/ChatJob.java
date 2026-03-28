@@ -53,6 +53,10 @@ public class ChatJob extends Job {
     private static final String JOB_NAME = "AI Model Chat";
     private static final int MAX_TOOL_ITERATIONS = 20;
     private static final int MAX_WRITE_TOOLS_PER_TURN = 5;
+    /** Max messages to send to LLM (sliding window). 8 = ~4 user/assistant turns. */
+    private static final int MAX_HISTORY_MESSAGES = 8;
+    /** Max characters per tool result stored in session history. */
+    private static final int MAX_TOOL_RESULT_CHARS = 1200;
 
     private final ConversationSession session;
     private final String userMessage;
@@ -177,8 +181,19 @@ public class ChatJob extends Job {
                                     "Tool execution failed: " + e.getMessage());
                         }
 
-                        // Add tool result to session
-                        session.addToolResult(toolCallId, toolResult.toJson());
+                        // Add tool result to session (truncate large results to save tokens)
+                        com.google.gson.JsonObject resultObj = toolResult.toJson();
+                        String resultStr = resultObj.toString();
+                        if (resultStr.length() > MAX_TOOL_RESULT_CHARS) {
+                            // Replace with truncated version
+                            com.google.gson.JsonObject truncated = new com.google.gson.JsonObject();
+                            truncated.addProperty("truncated", true);
+                            truncated.addProperty("preview", resultStr.substring(0, MAX_TOOL_RESULT_CHARS));
+                            truncated.addProperty("total_chars", resultStr.length());
+                            session.addToolResult(toolCallId, truncated);
+                        } else {
+                            session.addToolResult(toolCallId, resultObj);
+                        }
                     }
                 }
 
@@ -288,7 +303,15 @@ public class ChatJob extends Job {
                     systemPrompt
             );
 
-            return provider.chat(session.getMessages(), tools, requestConfig);
+            // Sliding window: only send last N messages to stay within token limits
+            List<LlmMessage> allMessages = session.getMessages();
+            List<LlmMessage> windowedMessages = slidingWindow(allMessages, MAX_HISTORY_MESSAGES);
+
+            java.util.logging.Logger.getLogger("ChatJob").info(
+                    "Sending " + windowedMessages.size() + "/" + allMessages.size()
+                    + " messages (sliding window)");
+
+            return provider.chat(windowedMessages, tools, requestConfig);
 
         } catch (LlmException e) {
             onTextResponse.accept("LLM Error: " + e.getMessage());
@@ -425,5 +448,23 @@ public class ChatJob extends Job {
             if (query.contains(kw)) return true;
         }
         return false;
+    }
+
+    /**
+     * Returns a sliding window of the most recent messages, keeping the total
+     * under the specified limit. Always keeps the first message (if it's a system
+     * prompt) and the last N messages.
+     *
+     * @param messages all messages in the conversation
+     * @param maxMessages maximum number of messages to return
+     * @return windowed message list
+     */
+    private List<LlmMessage> slidingWindow(List<LlmMessage> messages, int maxMessages) {
+        if (messages.size() <= maxMessages) {
+            return messages;
+        }
+        // Keep the last maxMessages messages
+        int start = messages.size() - maxMessages;
+        return new ArrayList<>(messages.subList(start, messages.size()));
     }
 }
