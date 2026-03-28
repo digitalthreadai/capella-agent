@@ -311,10 +311,23 @@ public class ModelChatView extends ViewPart {
         };
         detachAction.setToolTipText("Open chat in floating window");
 
+        // Theme toggle button
+        Action themeAction = new Action("Theme", IAction.AS_PUSH_BUTTON) {
+            @Override
+            public void run() {
+                if (chatBrowser != null && !chatBrowser.isDisposed()) {
+                    chatBrowser.execute("toggleTheme()");
+                    detachSupport.executeOnFloating("toggleTheme()");
+                }
+            }
+        };
+        themeAction.setToolTipText("Toggle light/dark theme");
+
         toolbarManager.add(clearAction);
         toolbarManager.add(new Separator());
         toolbarManager.add(exportAction);
         toolbarManager.add(new Separator());
+        toolbarManager.add(themeAction);
         toolbarManager.add(detachAction);
     }
 
@@ -352,7 +365,17 @@ public class ModelChatView extends ViewPart {
                 selectedProvider,
                 this::appendAssistantMessage,
                 this::appendToolNotification,
-                () -> Display.getDefault().asyncExec(() -> setInputEnabled(true))
+                () -> Display.getDefault().asyncExec(() -> setInputEnabled(true)),
+                (toolName, category, fullResult) -> {
+                    String html = renderer.renderToolResult(category, toolName, fullResult);
+                    String escapedHtml = renderer.escapeJs(html);
+                    Display.getDefault().asyncExec(() -> {
+                        if (chatBrowser != null && !chatBrowser.isDisposed()) {
+                            chatBrowser.execute("appendMessage('" + escapedHtml + "')");
+                            detachSupport.executeOnFloating("appendMessage('" + escapedHtml + "')");
+                        }
+                    });
+                }
         );
         activeJob.setUser(false);
         activeJob.schedule();

@@ -916,7 +916,48 @@ public class ChatHtmlRenderer {
             // Details/summary
             + "details { margin:4px 0; }\n"
             + "summary { cursor:pointer; color:#89b4fa; font-size:12px; }\n"
-            + "summary:hover { color:#b4d0fb; }\n";
+            + "summary:hover { color:#b4d0fb; }\n"
+
+            // Light theme overrides (default active for Capella's white UI)
+            + "body.light { background:#ffffff; color:#1e1e2e; }\n"
+            + "body.light #chat-container { background:#ffffff; }\n"
+            + "body.light #welcome-msg { color:#6c6c80; }\n"
+            + "body.light #welcome-msg h3 { color:#1e1e2e; }\n"
+            + "body.light #welcome-msg .hint { color:#9090a0; }\n"
+            + "body.light .message { background:#f5f5f8; border-left:3px solid #d0d0d8; }\n"
+            + "body.light .msg-user { border-left-color:#2563eb; }\n"
+            + "body.light .msg-assistant { border-left-color:#16a34a; }\n"
+            + "body.light .msg-tool { color:#6c6c80; background:#fafafa; border-left-color:#b0b0b8; }\n"
+            + "body.light .msg-role { color:#1e1e2e; }\n"
+            + "body.light .msg-time { color:#9090a0; }\n"
+            + "body.light .msg-body { color:#333340; }\n"
+            + "body.light .msg-body h3, body.light .msg-body h4 { color:#1e1e2e; }\n"
+            + "body.light .msg-body code { background:#e8e8f0; color:#d63384; }\n"
+            + "body.light .code-block { background:#f0f0f5; color:#1e1e2e; border:1px solid #d0d0d8; }\n"
+            + "body.light .data-table th { background:#e8e8f0; color:#1e1e2e; border-bottom:2px solid #c0c0c8; }\n"
+            + "body.light .data-table td { border-bottom:1px solid #e0e0e8; color:#333340; }\n"
+            + "body.light .data-table tbody tr:hover { background:#f0f0f8; }\n"
+            + "body.light .table-scroll { border:1px solid #d0d0d8; }\n"
+            + "body.light .table-filter { background:#ffffff; color:#1e1e2e; border:1px solid #c0c0c8; }\n"
+            + "body.light .table-filter:focus { border-color:#2563eb; }\n"
+            + "body.light .tool-result { border:1px solid #d0d0d8; }\n"
+            + "body.light .result-header { background:#f0f0f5; border-bottom:1px solid #d0d0d8; color:#1e1e2e; }\n"
+            + "body.light .result-header:hover { background:#e8e8f0; }\n"
+            + "body.light .element-link { color:#2563eb; border-bottom-color:#2563eb; }\n"
+            + "body.light .element-link:hover { color:#1d4ed8; }\n"
+            + "body.light .element-card { background:#f5f5f8; border:1px solid #d0d0d8; }\n"
+            + "body.light .element-card dt { color:#6c6c80; }\n"
+            + "body.light .element-card dd { color:#1e1e2e; }\n"
+            + "body.light .severity-error { color:#dc2626; }\n"
+            + "body.light .severity-warning { color:#d97706; }\n"
+            + "body.light .severity-info { color:#2563eb; }\n"
+            + "body.light .write-success { border-left-color:#16a34a; }\n"
+            + "body.light .write-error { border-left-color:#dc2626; }\n"
+            + "body.light ::-webkit-scrollbar-track { background:#f0f0f5; }\n"
+            + "body.light ::-webkit-scrollbar-thumb { background:#c0c0c8; }\n"
+            + "body.light ::-webkit-scrollbar-thumb:hover { background:#a0a0a8; }\n"
+            + "body.light .copied-tooltip { background:#16a34a; color:#ffffff; }\n"
+            + "body.light summary { color:#2563eb; }\n";
     }
 
     // ------------------------------------------------------------------
@@ -1005,6 +1046,19 @@ public class ChatHtmlRenderer {
             + "function scrollToBottom() {\n"
             + "  var c = document.getElementById('chat-container');\n"
             + "  c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' });\n"
-            + "}\n";
+            + "}\n"
+
+            + "function toggleTheme() {\n"
+            + "  document.body.classList.toggle('light');\n"
+            + "  var isLight = document.body.classList.contains('light');\n"
+            + "  try { localStorage.setItem('capella-agent-theme', isLight ? 'light' : 'dark'); } catch(e) {}\n"
+            + "}\n"
+
+            // Auto-apply light theme on load (default for Capella's white UI)
+            + "(function() {\n"
+            + "  var saved = 'light';\n"
+            + "  try { saved = localStorage.getItem('capella-agent-theme') || 'light'; } catch(e) {}\n"
+            + "  if (saved === 'light') document.body.classList.add('light');\n"
+            + "})();\n";
     }
 }
