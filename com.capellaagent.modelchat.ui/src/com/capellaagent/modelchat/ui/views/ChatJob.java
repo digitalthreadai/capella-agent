@@ -95,27 +95,11 @@ public class ChatJob extends Job {
             // Add user message to the session
             session.addUserMessage(userMessage);
 
-            // PLACEHOLDER: Get the LLM provider from registry
-            // LlmProvider provider = LlmProviderRegistry.getInstance().getProvider(providerName);
-            // if (provider == null) {
-            //     onTextResponse.accept("Error: LLM provider '" + providerName + "' not found.");
-            //     return Status.OK_STATUS;
-            // }
-
             // Get available tools from the registry
             ToolRegistry toolRegistry = ToolRegistry.getInstance();
             List<String> toolCategories = List.of(
                     "model_read", "model_write", "diagram",
                     "analysis", "export", "transition");
-
-            // PLACEHOLDER: Build tool definitions for the LLM
-            // List<ToolDefinition> toolDefs = toolRegistry.getToolDefinitions(toolCategories);
-
-            // Build chat configuration
-            // ChatConfig config = ChatConfig.builder()
-            //     .maxTokens(4096)
-            //     .temperature(0.1)
-            //     .build();
 
             // Orchestration loop
             boolean done = false;
@@ -125,12 +109,6 @@ public class ChatJob extends Job {
             while (!done && !monitor.isCanceled() && iterations < MAX_TOOL_ITERATIONS) {
                 iterations++;
 
-                // PLACEHOLDER: Send messages + tools to the LLM provider
-                // LlmResponse response = provider.chat(
-                //     session.getMessages(),
-                //     toolDefs,
-                //     config
-                // );
                 LlmResponse response = callLlmProvider(session, providerName);
 
                 if (response == null) {
@@ -142,7 +120,7 @@ public class ChatJob extends Job {
                 // Handle tool calls
                 if (response.hasToolCalls()) {
                     // Add the assistant message with tool calls to session
-                    // PLACEHOLDER: session.addAssistantMessageWithToolCalls(response);
+                    session.addAssistantToolCalls(response.getToolCalls());
 
                     for (LlmToolCall toolCall : response.getToolCalls()) {
                         if (monitor.isCanceled()) {
@@ -265,9 +243,8 @@ public class ChatJob extends Job {
     /**
      * Calls the LLM provider with the current session messages and tool definitions.
      * <p>
-     * PLACEHOLDER: This method wraps the actual LLM provider invocation. The real
-     * implementation should retrieve the provider from the registry and call its
-     * chat method with the session messages and tool definitions.
+     * Calls the LLM provider with the current session messages and available tools,
+     * using a sliding window to stay within token limits.
      *
      * @param session      the conversation session
      * @param providerName the name of the LLM provider

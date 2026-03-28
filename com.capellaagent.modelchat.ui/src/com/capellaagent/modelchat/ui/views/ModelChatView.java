@@ -447,15 +447,20 @@ public class ModelChatView extends ViewPart {
      * Exports the current conversation text to a file.
      */
     private void exportConversation() {
-        // PLACEHOLDER: Implement file save dialog and export
-        // FileDialog dialog = new FileDialog(getSite().getShell(), SWT.SAVE);
-        // dialog.setFilterExtensions(new String[]{"*.txt", "*.md", "*.*"});
-        // dialog.setFilterNames(new String[]{"Text Files", "Markdown Files", "All Files"});
-        // dialog.setFileName("model-chat-export.txt");
-        // String path = dialog.open();
-        // if (path != null) {
-        //     Files.writeString(Path.of(path), conversationText.getText());
-        // }
+        org.eclipse.swt.widgets.FileDialog dialog =
+                new org.eclipse.swt.widgets.FileDialog(getSite().getShell(), SWT.SAVE);
+        dialog.setFilterExtensions(new String[]{"*.txt", "*.md", "*.*"});
+        dialog.setFilterNames(new String[]{"Text Files", "Markdown Files", "All Files"});
+        dialog.setFileName("chat_export.txt");
+        String path = dialog.open();
+        if (path != null) {
+            try (java.io.FileWriter writer = new java.io.FileWriter(path)) {
+                writer.write(conversationText.getText());
+            } catch (Exception ex) {
+                org.eclipse.jface.dialogs.MessageDialog.openError(
+                        getSite().getShell(), "Export Failed", ex.getMessage());
+            }
+        }
     }
 
     /**

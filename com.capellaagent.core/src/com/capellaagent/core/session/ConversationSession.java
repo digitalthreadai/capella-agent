@@ -87,6 +87,19 @@ public class ConversationSession {
     }
 
     /**
+     * Records that the assistant requested one or more tool calls.
+     * <p>
+     * This persists the assistant's tool-call turn in the conversation history
+     * so the LLM does not repeat the same calls on the next iteration.
+     *
+     * @param toolCalls the tool calls requested by the assistant
+     */
+    public synchronized void addAssistantToolCalls(List<LlmToolCall> toolCalls) {
+        messages.add(LlmMessage.assistantWithToolCalls(toolCalls));
+        truncateIfNeeded();
+    }
+
+    /**
      * Records that the assistant requested a tool call.
      * <p>
      * This adds an assistant message containing the tool call information

@@ -229,7 +229,24 @@ public abstract class OpenAiCompatibleProvider implements ILlmProvider {
                 break;
             case ASSISTANT:
                 message.addProperty("role", "assistant");
-                message.addProperty("content", msg.getContent());
+                if (msg.hasToolCalls()) {
+                    // OpenAI format: content is null when tool_calls present
+                    message.add("content", com.google.gson.JsonNull.INSTANCE);
+                    JsonArray toolCallsArr = new JsonArray();
+                    for (LlmToolCall tc : msg.getToolCalls()) {
+                        JsonObject tcObj = new JsonObject();
+                        tcObj.addProperty("id", tc.getId());
+                        tcObj.addProperty("type", "function");
+                        JsonObject fn = new JsonObject();
+                        fn.addProperty("name", tc.getName());
+                        fn.addProperty("arguments", tc.getArguments());
+                        tcObj.add("function", fn);
+                        toolCallsArr.add(tcObj);
+                    }
+                    message.add("tool_calls", toolCallsArr);
+                } else {
+                    message.addProperty("content", msg.getContent() != null ? msg.getContent() : "");
+                }
                 break;
             case TOOL:
                 message.addProperty("role", "tool");

@@ -17,7 +17,18 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.eclipse.jface.dialogs.MessageDialog;
+
 import com.capellaagent.core.config.AgentConfiguration;
+import com.capellaagent.core.llm.ILlmProvider;
+import com.capellaagent.core.llm.LlmMessage;
+import com.capellaagent.core.llm.LlmProviderRegistry;
+import com.capellaagent.core.llm.LlmRequestConfig;
+import com.capellaagent.core.llm.LlmResponse;
 
 /**
  * Main preference page for the Capella Agent ecosystem.
@@ -293,17 +304,33 @@ public class CapellaAgentPreferencePage extends PreferencePage implements IWorkb
      * Tests the LLM connection with the current settings.
      */
     private void testConnection() {
-        // PLACEHOLDER: In a full implementation, this would:
-        // 1. Save current settings temporarily
-        // 2. Create the selected ILlmProvider
-        // 3. Send a simple "hello" prompt
-        // 4. Show success/failure dialog
-        org.eclipse.jface.dialogs.MessageDialog.openInformation(
-            getShell(),
-            "Test Connection",
-            "Connection test is not yet implemented.\n\n"
-            + "Provider: " + PROVIDER_LABELS[providerCombo.getSelectionIndex()] + "\n"
-            + "API Key: " + (apiKeyText.getText().isEmpty() ? "(not set)" : "(set)")
-        );
+        try {
+            // Save current settings temporarily
+            savePreferences();
+
+            // Get the active provider
+            ILlmProvider provider = LlmProviderRegistry.getInstance().getActiveProvider();
+
+            // Send a simple test message
+            List<LlmMessage> messages = new ArrayList<>();
+            messages.add(LlmMessage.user("Say 'Connection successful' in one word."));
+            LlmRequestConfig config = new LlmRequestConfig(null, 0.1, 50, null);
+            LlmResponse response = provider.chat(messages, Collections.emptyList(), config);
+
+            if (response != null && response.hasTextContent()) {
+                MessageDialog.openInformation(getShell(), "Test Connection",
+                    "Connection successful!\n\n"
+                    + "Provider: " + provider.getDisplayName() + "\n"
+                    + "Response: " + response.getTextContent().substring(0,
+                        Math.min(100, response.getTextContent().length())));
+            } else {
+                MessageDialog.openWarning(getShell(), "Test Connection",
+                    "Connection established but no response received.");
+            }
+        } catch (Exception e) {
+            MessageDialog.openError(getShell(), "Test Connection Failed",
+                "Could not connect to LLM provider.\n\n"
+                + "Error: " + e.getMessage());
+        }
     }
 }

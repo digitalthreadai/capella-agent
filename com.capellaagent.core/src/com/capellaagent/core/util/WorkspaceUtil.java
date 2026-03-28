@@ -21,16 +21,7 @@ public final class WorkspaceUtil {
 
     private static final Logger LOG = Logger.getLogger(WorkspaceUtil.class.getName());
 
-    /**
-     * PLACEHOLDER: The Capella project nature ID.
-     * <p>
-     * The actual value depends on the Capella version. Common values:
-     * <ul>
-     *   <li>Capella 5.x/6.x: {@code org.polarsys.capella.project.nature}</li>
-     *   <li>Capella 7.x: may differ</li>
-     * </ul>
-     */
-    // PLACEHOLDER: Update this constant for your Capella version
+    /** The Capella 7.0 project nature ID. */
     private static final String CAPELLA_NATURE_ID = "org.polarsys.capella.project.nature";
 
     private WorkspaceUtil() {
@@ -96,8 +87,6 @@ public final class WorkspaceUtil {
 
     /**
      * Checks whether a project has the Capella nature.
-     * <p>
-     * PLACEHOLDER: The nature ID constant must be updated for your Capella version.
      *
      * @param project the project to check
      * @return true if the project has the Capella nature
@@ -107,7 +96,6 @@ public final class WorkspaceUtil {
             return false;
         }
         try {
-            // PLACEHOLDER: Verify CAPELLA_NATURE_ID matches your Capella version
             return project.hasNature(CAPELLA_NATURE_ID);
         } catch (CoreException e) {
             LOG.log(Level.WARNING,

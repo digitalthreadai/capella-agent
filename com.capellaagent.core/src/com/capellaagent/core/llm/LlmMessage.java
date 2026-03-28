@@ -1,5 +1,7 @@
 package com.capellaagent.core.llm;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -29,6 +31,7 @@ public final class LlmMessage {
     private final String content;
     private final String toolCallId;
     private final String name;
+    private final List<LlmToolCall> toolCalls;
 
     /**
      * Constructs a new LlmMessage.
@@ -43,6 +46,24 @@ public final class LlmMessage {
         this.content = Objects.requireNonNull(content, "content must not be null");
         this.toolCallId = toolCallId;
         this.name = name;
+        this.toolCalls = null;
+    }
+
+    /**
+     * Constructs a new LlmMessage with tool calls (used for assistant tool-call messages).
+     *
+     * @param role       the role of the message sender; must not be null
+     * @param content    the text content of the message; must not be null
+     * @param toolCallId optional identifier linking this message to a tool call
+     * @param name       optional name qualifier
+     * @param toolCalls  the list of tool calls; may be null
+     */
+    private LlmMessage(Role role, String content, String toolCallId, String name, List<LlmToolCall> toolCalls) {
+        this.role = Objects.requireNonNull(role, "role must not be null");
+        this.content = Objects.requireNonNull(content, "content must not be null");
+        this.toolCallId = toolCallId;
+        this.name = name;
+        this.toolCalls = toolCalls != null ? List.copyOf(toolCalls) : null;
     }
 
     /**
@@ -136,6 +157,37 @@ public final class LlmMessage {
         return new LlmMessage(Role.TOOL, content, toolCallId, name);
     }
 
+    /**
+     * Creates an assistant message that carries tool calls (no text content).
+     * <p>
+     * This is used to persist the assistant's tool-call turn in the conversation
+     * history so the LLM does not repeat the same calls.
+     *
+     * @param toolCalls the tool calls requested by the assistant
+     * @return a new LlmMessage with ASSISTANT role and tool calls
+     */
+    public static LlmMessage assistantWithToolCalls(List<LlmToolCall> toolCalls) {
+        return new LlmMessage(Role.ASSISTANT, "", null, null, toolCalls);
+    }
+
+    /**
+     * Returns the list of tool calls attached to this message.
+     *
+     * @return the tool calls list; never null, may be empty
+     */
+    public List<LlmToolCall> getToolCalls() {
+        return toolCalls != null ? toolCalls : Collections.emptyList();
+    }
+
+    /**
+     * Checks whether this message carries tool calls.
+     *
+     * @return true if toolCalls is non-null and non-empty
+     */
+    public boolean hasToolCalls() {
+        return toolCalls != null && !toolCalls.isEmpty();
+    }
+
     @Override
     public String toString() {
         return "LlmMessage{role=" + role + ", content='" +
@@ -151,11 +203,12 @@ public final class LlmMessage {
         return role == that.role &&
                 content.equals(that.content) &&
                 Objects.equals(toolCallId, that.toolCallId) &&
-                Objects.equals(name, that.name);
+                Objects.equals(name, that.name) &&
+                Objects.equals(toolCalls, that.toolCalls);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(role, content, toolCallId, name);
+        return Objects.hash(role, content, toolCallId, name, toolCalls);
     }
 }
