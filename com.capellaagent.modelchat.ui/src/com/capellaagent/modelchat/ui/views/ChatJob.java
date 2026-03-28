@@ -1,6 +1,10 @@
 package com.capellaagent.modelchat.ui.views;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -256,29 +260,26 @@ public class ChatJob extends Job {
      */
     private LlmResponse callLlmProvider(ConversationSession session, String providerName) {
         try {
-            // Get the active provider from registry (reads from AgentConfiguration)
             ILlmProvider provider = LlmProviderRegistry.getInstance().getActiveProvider();
 
-            // Get ONLY model-relevant tools (exclude Teamcenter + Simulation to save tokens)
-            List<IToolDescriptor> tools = ToolRegistry.getInstance()
+            // Smart tool selection: pick only relevant tools based on query keywords
+            // This keeps request under 8K tokens for free-tier providers
+            List<IToolDescriptor> allTools = ToolRegistry.getInstance()
                     .getTools("model_read", "model_write", "diagram",
-                              "analysis", "export", "transition");
+                              "analysis", "export", "transition", "ai_intelligence");
+            List<IToolDescriptor> tools = selectRelevantTools(userMessage, allTools);
 
-            // Debug: log tool count
             java.util.logging.Logger.getLogger("ChatJob").info(
-                    "LLM call with " + tools.size() + " model tools, provider: "
-                    + provider.getDisplayName());
+                    "LLM call with " + tools.size() + "/" + allTools.size()
+                    + " tools selected for query, provider: " + provider.getDisplayName());
             if (tools.isEmpty()) {
                 onTextResponse.accept("[Warning: No tools registered. "
                         + "Please close and reopen the AI Model Chat view.]");
             }
 
-            // Build request config — concise system prompt to minimize token usage
             AgentConfiguration config = AgentConfiguration.getInstance();
-            String systemPrompt = "You are a Capella MBSE assistant with tool access. "
-                    + "ALWAYS use the provided tools to query and modify the model. "
-                    + "Never guess model content — call tools to get real data.\n"
-                    + "For write operations: describe what you will do and ask user to confirm before calling the tool.";
+            String systemPrompt = "You are a Capella MBSE assistant. "
+                    + "Use tools to query/modify the model. Never guess — call tools for real data.";
 
             LlmRequestConfig requestConfig = new LlmRequestConfig(
                     config.getLlmModelId().isEmpty() ? null : config.getLlmModelId(),
@@ -287,7 +288,6 @@ public class ChatJob extends Job {
                     systemPrompt
             );
 
-            // Call the LLM
             return provider.chat(session.getMessages(), tools, requestConfig);
 
         } catch (LlmException e) {
@@ -297,5 +297,133 @@ public class ChatJob extends Job {
             onTextResponse.accept("Error connecting to LLM: " + e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Selects only the tools relevant to the user's query using keyword matching.
+     * This keeps the request token count under free-tier limits (8K for GitHub Models).
+     * <p>
+     * Always includes: list_elements, search_elements, get_element_details (core read).
+     * Then adds tools matching keywords in the query (max ~15 tools total).
+     */
+    private List<IToolDescriptor> selectRelevantTools(String query, List<IToolDescriptor> allTools) {
+        String q = query.toLowerCase();
+        Set<String> selected = new LinkedHashSet<>();
+
+        // Always include core read tools
+        selected.addAll(Arrays.asList("list_elements", "search_elements", "get_element_details"));
+
+        // Keyword → tool mapping
+        if (matches(q, "function", "functional")) {
+            selected.addAll(Arrays.asList("get_functional_chain", "get_function_ports",
+                    "get_allocation_matrix", "allocate_function"));
+        }
+        if (matches(q, "component", "physical component", "logical component")) {
+            selected.addAll(Arrays.asList("get_component_ports", "get_interfaces",
+                    "get_deployment_mapping", "get_configuration_items"));
+        }
+        if (matches(q, "requirement", "trace", "traceability", "coverage")) {
+            selected.addAll(Arrays.asList("list_requirements", "get_traceability",
+                    "check_traceability_coverage", "get_requirement_relations"));
+        }
+        if (matches(q, "create", "add", "new")) {
+            selected.addAll(Arrays.asList("create_element", "create_exchange",
+                    "create_interface", "create_capability", "create_physical_link",
+                    "create_port", "create_functional_chain"));
+        }
+        if (matches(q, "update", "modify", "change", "rename", "set")) {
+            selected.addAll(Arrays.asList("update_element", "batch_rename",
+                    "set_description", "set_property_value", "batch_update_properties"));
+        }
+        if (matches(q, "delete", "remove")) {
+            selected.addAll(Arrays.asList("delete_element", "move_element"));
+        }
+        if (matches(q, "diagram", "draw", "show", "display", "visualize")) {
+            selected.addAll(Arrays.asList("list_diagrams", "create_diagram",
+                    "show_element_in_diagram", "add_to_diagram", "export_diagram_image",
+                    "refresh_diagram"));
+        }
+        if (matches(q, "export", "csv", "json", "report", "document", "reqif", "sysml")) {
+            selected.addAll(Arrays.asList("export_to_csv", "export_to_json",
+                    "generate_model_report", "generate_icd_report",
+                    "export_to_reqif", "export_to_sysmlv2", "generate_document"));
+        }
+        if (matches(q, "validate", "validation", "check", "error", "problem")) {
+            selected.addAll(Arrays.asList("run_capella_validation", "validate_naming",
+                    "find_unused_elements", "detect_cycles"));
+        }
+        if (matches(q, "transition", "refine", "propagate")) {
+            selected.addAll(Arrays.asList("transition_oa_to_sa", "transition_sa_to_la",
+                    "transition_la_to_pa", "transition_functions", "auto_transition_all"));
+        }
+        if (matches(q, "impact", "affect", "change analysis")) {
+            selected.addAll(Arrays.asList("impact_analysis", "predict_impact"));
+        }
+        if (matches(q, "scenario", "sequence", "interaction")) {
+            selected.addAll(Arrays.asList("get_scenarios", "create_scenario",
+                    "generate_test_scenarios"));
+        }
+        if (matches(q, "state", "mode", "state machine")) {
+            selected.addAll(Arrays.asList("get_state_machines", "create_state_machine",
+                    "create_mode", "get_modes_captured_time"));
+        }
+        if (matches(q, "interface", "exchange", "port", "link", "communication")) {
+            selected.addAll(Arrays.asList("get_interfaces", "get_exchange_items",
+                    "create_interface", "create_exchange", "create_port",
+                    "get_communication_links"));
+        }
+        if (matches(q, "allocat", "deploy")) {
+            selected.addAll(Arrays.asList("get_allocation_matrix", "allocate_function",
+                    "allocation_completeness", "optimize_allocation"));
+        }
+        if (matches(q, "analys", "review", "assess", "quality", "complexity")) {
+            selected.addAll(Arrays.asList("architecture_complexity", "suggest_improvements",
+                    "review_architecture", "model_statistics"));
+        }
+        if (matches(q, "search", "find", "where", "which", "pattern")) {
+            selected.addAll(Arrays.asList("search_elements", "search_by_pattern",
+                    "find_duplicates"));
+        }
+        if (matches(q, "explain", "what is", "describe", "summarize", "summary")) {
+            selected.addAll(Arrays.asList("explain_element", "summarize_model",
+                    "model_q_and_a"));
+        }
+        if (matches(q, "data", "class", "type", "property", "attribute")) {
+            selected.addAll(Arrays.asList("get_data_model", "create_data_type",
+                    "create_exchange_item", "get_property_values", "set_property_value"));
+        }
+        if (matches(q, "security", "safety", "weight", "mass")) {
+            selected.addAll(Arrays.asList("security_analysis", "weight_analysis",
+                    "generate_safety_report"));
+        }
+
+        // Filter: keep only tools that actually exist in the registry
+        List<IToolDescriptor> result = new ArrayList<>();
+        for (IToolDescriptor tool : allTools) {
+            if (selected.contains(tool.getName())) {
+                result.add(tool);
+            }
+        }
+
+        // Fallback: if nothing matched, return core read tools only
+        if (result.isEmpty()) {
+            for (IToolDescriptor tool : allTools) {
+                String n = tool.getName();
+                if ("list_elements".equals(n) || "search_elements".equals(n)
+                        || "get_element_details".equals(n) || "model_q_and_a".equals(n)) {
+                    result.add(tool);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /** Returns true if the query contains any of the given keywords. */
+    private boolean matches(String query, String... keywords) {
+        for (String kw : keywords) {
+            if (query.contains(kw)) return true;
+        }
+        return false;
     }
 }
