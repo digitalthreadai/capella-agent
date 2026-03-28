@@ -15,6 +15,7 @@ import com.capellaagent.core.llm.providers.MistralProvider;
 import com.capellaagent.core.llm.providers.OllamaProvider;
 import com.capellaagent.core.llm.providers.OpenAiProvider;
 import com.capellaagent.core.llm.providers.OpenRouterProvider;
+import com.capellaagent.core.llm.providers.GitHubModelsProvider;
 
 /**
  * OSGi bundle activator for the {@code com.capellaagent.core} plugin.
@@ -57,6 +58,7 @@ public class Activator extends Plugin {
         registry.registerProvider(new OpenRouterProvider());
         registry.registerProvider(new GeminiProvider());
         registry.registerProvider(new OllamaProvider());
+        registry.registerProvider(new GitHubModelsProvider());
         registry.registerProvider(new CustomEndpointProvider());
 
         LOG.info("Capella Agent Core started. Registered " +

@@ -31,14 +31,14 @@ public class CapellaAgentPreferencePage extends PreferencePage implements IWorkb
     /** Provider IDs matching the LLM provider registry. */
     private static final String[] PROVIDER_IDS = {
         "anthropic", "openai", "groq", "deepseek", "mistral",
-        "openrouter", "gemini", "ollama", "custom"
+        "openrouter", "gemini", "ollama", "github-models", "custom"
     };
 
     /** Display labels for the provider dropdown. */
     private static final String[] PROVIDER_LABELS = {
         "Claude (Anthropic)", "OpenAI / Azure", "Groq Cloud",
         "DeepSeek", "Mistral AI", "OpenRouter", "Google Gemini",
-        "Ollama (Local)", "Custom Endpoint"
+        "Ollama (Local)", "GitHub Models (Free)", "Custom Endpoint"
     };
 
     // --- UI widgets ---
