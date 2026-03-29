@@ -139,7 +139,7 @@ public class ChatJob extends Job {
                 LlmResponse response = callLlmProvider(session, providerName);
 
                 if (response == null) {
-                    onTextResponse.accept("Error: No response from LLM provider.");
+                    onTextResponse.accept(formatUserFriendlyError("no response"));
                     done = true;
                     continue;
                 }
@@ -172,6 +172,17 @@ public class ChatJob extends Job {
                                 done = true;
                                 break;
                             }
+                        }
+
+                        // Check if tool exists before executing
+                        if (!toolRegistry.hasToolTool(toolName)) {
+                            String friendlyError = "I wasn't able to perform that action because the required capability isn't available yet. " +
+                                "Try rephrasing your request, or ask me what I can help with.";
+                            session.addToolResult(toolCallId, createErrorResult(friendlyError));
+                            if (onToolExecution != null) {
+                                onToolExecution.accept("\u26A0 Action not available");
+                            }
+                            continue;
                         }
 
                         // Notify UI about tool execution
@@ -234,7 +245,7 @@ public class ChatJob extends Job {
             return Status.OK_STATUS;
 
         } catch (Exception e) {
-            onTextResponse.accept("Error: " + e.getMessage());
+            onTextResponse.accept(formatUserFriendlyError(e.getMessage()));
             return new Status(IStatus.ERROR, ModelChatUiActivator.PLUGIN_ID,
                     "Chat job failed", e);
         } finally {
@@ -272,15 +283,6 @@ public class ChatJob extends Job {
         if (fullResult.has("elements") && fullResult.get("elements").isJsonArray()) {
             int count = fullResult.getAsJsonArray("elements").size();
             summary.addProperty("elements_count", count);
-            // Include first 3 element names as preview
-            com.google.gson.JsonArray preview = new com.google.gson.JsonArray();
-            com.google.gson.JsonArray elements = fullResult.getAsJsonArray("elements");
-            for (int i = 0; i < Math.min(3, elements.size()); i++) {
-                if (elements.get(i).isJsonObject() && elements.get(i).getAsJsonObject().has("name")) {
-                    preview.add(elements.get(i).getAsJsonObject().get("name").getAsString());
-                }
-            }
-            summary.add("preview_names", preview);
         }
         if (fullResult.has("status")) {
             summary.addProperty("status", fullResult.get("status").getAsString());
@@ -290,7 +292,7 @@ public class ChatJob extends Job {
             summary.addProperty("message", msg.length() > 200 ? msg.substring(0, 200) + "..." : msg);
         }
 
-        summary.addProperty("note", "Full results displayed in chat UI. Call tool again if you need the data.");
+        summary.addProperty("note", "Full results already displayed to the user as an interactive table. Do NOT repeat or list individual elements. Just briefly confirm what was found (e.g. 'Found 103 Physical Functions.') and ask if they need anything else.");
         return summary;
     }
 
@@ -318,6 +320,58 @@ public class ChatJob extends Job {
                 || toolName.equals("transition_oa_to_sa")
                 || toolName.equals("transition_sa_to_la")
                 || toolName.equals("transition_la_to_pa");
+    }
+
+    /**
+     * Creates a JSON error result object for returning to the LLM session.
+     *
+     * @param message the error message
+     * @return a JSON object with error flag and message
+     */
+    private com.google.gson.JsonObject createErrorResult(String message) {
+        com.google.gson.JsonObject error = new com.google.gson.JsonObject();
+        error.addProperty("error", true);
+        error.addProperty("message", message);
+        return error;
+    }
+
+    /**
+     * Converts a raw technical error message into a user-friendly message.
+     * Never exposes HTTP status codes, JSON bodies, or internal details to the user.
+     *
+     * @param rawError the raw error string from the LLM provider or network layer
+     * @return a friendly, actionable error message
+     */
+    private String formatUserFriendlyError(String rawError) {
+        if (rawError == null) rawError = "";
+        String lower = rawError.toLowerCase();
+
+        // Rate limit
+        if (lower.contains("rate_limit") || lower.contains("rate limit") || lower.contains("429") || lower.contains("too many")) {
+            return "\u23F3 The AI service is temporarily busy. Please wait a moment and try again.";
+        }
+        // Token limit
+        if (lower.contains("token") && (lower.contains("limit") || lower.contains("exceeded") || lower.contains("too large"))) {
+            return "\uD83D\uDCDD The request was too large for the AI provider's limits. Try a simpler question or switch to a provider with higher limits in Preferences.";
+        }
+        // Tool not found (from API)
+        if (lower.contains("tool") && (lower.contains("not in request") || lower.contains("validation failed") || lower.contains("not found"))) {
+            return "\u26A0 I wasn't able to perform that action. Try rephrasing your request, or ask me what I can help with.";
+        }
+        // Auth
+        if (lower.contains("unauthorized") || lower.contains("401") || lower.contains("invalid api") || lower.contains("authentication")) {
+            return "\uD83D\uDD11 Could not authenticate with the AI provider. Please check your API key in Window \u2192 Preferences \u2192 Capella Agent.";
+        }
+        // Network
+        if (lower.contains("connect") || lower.contains("timeout") || lower.contains("network") || lower.contains("resolve")) {
+            return "\uD83C\uDF10 Could not reach the AI provider. Please check your internet connection and try again.";
+        }
+        // Model not found
+        if (lower.contains("model") && lower.contains("not found")) {
+            return "\u26A0 The selected AI model is not available. Please check the model name in Preferences.";
+        }
+        // Generic fallback
+        return "\u26A0 Something went wrong while processing your request. Please try again or check your settings in Preferences.";
     }
 
     /**
@@ -371,10 +425,10 @@ public class ChatJob extends Job {
             return provider.chat(windowedMessages, tools, requestConfig);
 
         } catch (LlmException e) {
-            onTextResponse.accept("LLM Error: " + e.getMessage());
+            onTextResponse.accept(formatUserFriendlyError(e.getMessage()));
             return null;
         } catch (Exception e) {
-            onTextResponse.accept("Error connecting to LLM: " + e.getMessage());
+            onTextResponse.accept(formatUserFriendlyError(e.getMessage()));
             return null;
         }
     }

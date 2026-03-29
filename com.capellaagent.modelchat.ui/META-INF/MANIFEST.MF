@@ -15,7 +15,10 @@ Require-Bundle: com.capellaagent.core;bundle-version="1.0.0",
  org.eclipse.jface;bundle-version="3.28.0",
  org.eclipse.swt;bundle-version="3.122.0",
  org.eclipse.core.resources;bundle-version="3.18.0",
- org.eclipse.core.jobs;bundle-version="3.13.0"
+ org.eclipse.core.jobs;bundle-version="3.13.0",
+ org.eclipse.emf.ecore,
+ org.eclipse.sirius,
+ org.eclipse.ui.navigator
 Export-Package: com.capellaagent.modelchat.ui.views,
  com.capellaagent.modelchat.ui.commands,
  com.capellaagent.modelchat.ui.adapters

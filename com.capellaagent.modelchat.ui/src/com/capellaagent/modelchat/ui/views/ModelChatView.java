@@ -463,17 +463,47 @@ public class ModelChatView extends ViewPart {
      */
     private void navigateToElement(String uuid) {
         try {
-            org.eclipse.ui.IViewPart projectExplorer = getSite().getPage()
-                    .showView("capella.project.explorer");
-            // Find element by UUID and select it in the Project Explorer
-            // The Capella Project Explorer supports ISelection-based navigation
+            // Find the element by UUID across all open Sirius sessions
+            org.eclipse.emf.ecore.EObject element = null;
+            for (org.eclipse.sirius.business.api.session.Session s :
+                    org.eclipse.sirius.business.api.session.SessionManager.INSTANCE.getSessions()) {
+                for (org.eclipse.emf.ecore.resource.Resource r : s.getSemanticResources()) {
+                    org.eclipse.emf.common.util.TreeIterator<org.eclipse.emf.ecore.EObject> it = r.getAllContents();
+                    while (it.hasNext()) {
+                        org.eclipse.emf.ecore.EObject obj = it.next();
+                        // Match by EMF URI fragment or Capella element ID
+                        String fragment = obj.eResource() != null ? obj.eResource().getURIFragment(obj) : "";
+                        if (uuid.equals(fragment)) {
+                            element = obj;
+                            break;
+                        }
+                        // Also try Capella's getId() via reflection
+                        try {
+                            java.lang.reflect.Method getId = obj.getClass().getMethod("getId");
+                            Object id = getId.invoke(obj);
+                            if (uuid.equals(id)) {
+                                element = obj;
+                                break;
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    if (element != null) break;
+                }
+                if (element != null) break;
+            }
+
+            if (element == null) return;
+
+            // Select and reveal in Project Explorer
+            org.eclipse.ui.IViewPart explorer = getSite().getPage().showView("capella.project.explorer");
+            if (explorer instanceof org.eclipse.ui.navigator.CommonNavigator) {
+                ((org.eclipse.ui.navigator.CommonNavigator) explorer)
+                    .selectReveal(new org.eclipse.jface.viewers.StructuredSelection(element));
+            }
         } catch (Exception e) {
-            // Fallback: attempt to show in Semantic Browser
             try {
                 getSite().getPage().showView("org.polarsys.capella.core.ui.semantic.browser.view");
-            } catch (Exception ex) {
-                // Silently ignore if neither view is available
-            }
+            } catch (Exception ex) { /* ignore */ }
         }
     }
 
@@ -487,7 +517,7 @@ public class ModelChatView extends ViewPart {
     private void handleBrowserAction(String action, String data) {
         switch (action) {
             case "copy":
-                // Copy text to clipboard
+                // Copy text to clipboard via SWT (works in embedded browser)
                 org.eclipse.swt.dnd.Clipboard clipboard =
                         new org.eclipse.swt.dnd.Clipboard(Display.getDefault());
                 clipboard.setContents(
@@ -495,6 +525,9 @@ public class ModelChatView extends ViewPart {
                         new org.eclipse.swt.dnd.Transfer[]{
                                 org.eclipse.swt.dnd.TextTransfer.getInstance()});
                 clipboard.dispose();
+                if (chatBrowser != null && !chatBrowser.isDisposed()) {
+                    chatBrowser.execute("showCopiedTooltip()");
+                }
                 break;
             case "navigate":
                 navigateToElement(data);
@@ -523,23 +556,28 @@ public class ModelChatView extends ViewPart {
      * Exports the current conversation text to a file.
      */
     private void exportConversation() {
-        org.eclipse.swt.widgets.FileDialog dialog =
-                new org.eclipse.swt.widgets.FileDialog(getSite().getShell(), SWT.SAVE);
-        dialog.setFilterExtensions(new String[]{"*.txt", "*.md", "*.*"});
-        dialog.setFilterNames(new String[]{"Text Files", "Markdown Files", "All Files"});
-        dialog.setFileName("chat_export.txt");
+        org.eclipse.swt.widgets.FileDialog dialog = new org.eclipse.swt.widgets.FileDialog(
+            getSite().getShell(), SWT.SAVE);
+        dialog.setFilterExtensions(new String[]{"*.html", "*.txt", "*.*"});
+        dialog.setFilterNames(new String[]{"HTML Files (styled)", "Text Files (plain)", "All Files"});
+        dialog.setFileName("chat_export.html");
+        dialog.setOverwrite(true);
         String path = dialog.open();
         if (path != null) {
             try {
-                // Extract plain text from the browser content
-                String content = (String) chatBrowser.evaluate(
+                String content;
+                if (path.endsWith(".html") || path.endsWith(".htm")) {
+                    content = (String) chatBrowser.evaluate("return document.documentElement.outerHTML;");
+                } else {
+                    content = (String) chatBrowser.evaluate(
                         "return document.getElementById('chat-container').innerText;");
+                }
                 try (java.io.FileWriter writer = new java.io.FileWriter(path)) {
                     writer.write(content != null ? content : "");
                 }
             } catch (Exception ex) {
                 org.eclipse.jface.dialogs.MessageDialog.openError(
-                        getSite().getShell(), "Export Failed", ex.getMessage());
+                    getSite().getShell(), "Export Failed", ex.getMessage());
             }
         }
     }

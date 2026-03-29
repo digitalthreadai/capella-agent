@@ -1012,9 +1012,7 @@ public class ChatHtmlRenderer {
             + "}\n"
 
             + "function copyToClipboard(text) {\n"
-            + "  navigator.clipboard.writeText(text).then(function() {\n"
-            + "    showCopiedTooltip();\n"
-            + "  });\n"
+            + "  window.javaAction('copy', text);\n"
             + "}\n"
 
             + "function copyTableAsCsv(tableId) {\n"
