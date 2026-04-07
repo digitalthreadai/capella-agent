@@ -50,4 +50,29 @@ public interface ILlmProvider {
      */
     LlmResponse chat(List<LlmMessage> messages, List<IToolDescriptor> tools,
                      LlmRequestConfig config) throws LlmException;
+
+    /**
+     * Parses the provider-specific usage data from a raw chat response into the
+     * normalized {@link LlmUsage} record.
+     * <p>
+     * The default implementation returns {@link LlmUsage#empty()} which signals
+     * "no usage data available." Each provider should override this to extract
+     * the actual token counts from its native response shape:
+     * <ul>
+     *   <li>OpenAI / Groq / GitHub Models / DeepSeek / Mistral / OpenRouter:
+     *       {@code usage.prompt_tokens} and {@code usage.completion_tokens}</li>
+     *   <li>Anthropic: {@code usage.input_tokens} and {@code usage.output_tokens},
+     *       plus {@code usage.cache_read_input_tokens} for caching</li>
+     *   <li>Ollama: {@code prompt_eval_count} and {@code eval_count}</li>
+     *   <li>Gemini: {@code usageMetadata.promptTokenCount} and
+     *       {@code usageMetadata.candidatesTokenCount}</li>
+     * </ul>
+     * The default returning empty is safe — callers fall back to estimation.
+     *
+     * @param rawResponse the parsed JSON object from the provider's HTTP response
+     * @return normalized usage info, or {@link LlmUsage#empty()} if not available
+     */
+    default LlmUsage parseUsage(com.google.gson.JsonObject rawResponse) {
+        return LlmUsage.empty();
+    }
 }

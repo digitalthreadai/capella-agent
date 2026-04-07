@@ -35,6 +35,28 @@ public class ClaudeProvider implements ILlmProvider {
 
     private static final Logger LOG = Logger.getLogger(ClaudeProvider.class.getName());
 
+    /**
+     * Parses Anthropic's {@code usage} block.
+     * <p>
+     * Anthropic shape: {@code usage: {input_tokens, output_tokens,
+     * cache_read_input_tokens, cache_creation_input_tokens}}.
+     */
+    @Override
+    public com.capellaagent.core.llm.LlmUsage parseUsage(com.google.gson.JsonObject rawResponse) {
+        if (rawResponse == null || !rawResponse.has("usage")
+                || !rawResponse.get("usage").isJsonObject()) {
+            return com.capellaagent.core.llm.LlmUsage.empty();
+        }
+        com.google.gson.JsonObject u = rawResponse.getAsJsonObject("usage");
+        int input = u.has("input_tokens") ? u.get("input_tokens").getAsInt() : 0;
+        int output = u.has("output_tokens") ? u.get("output_tokens").getAsInt() : 0;
+        int cached = u.has("cache_read_input_tokens")
+            ? u.get("cache_read_input_tokens").getAsInt() : 0;
+        return new com.capellaagent.core.llm.LlmUsage(
+            input, output, cached, 0,
+            com.capellaagent.core.llm.LlmUsage.Source.EXACT);
+    }
+
     private static final String API_URL = "https://api.anthropic.com/v1/messages";
     private static final String ANTHROPIC_VERSION = "2023-06-01";
     private static final String DEFAULT_MODEL = "claude-sonnet-4-20250514";
