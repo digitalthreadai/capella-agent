@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<toc label="Capella Agent" topic="html/overview.html">
+   <topic label="Getting Started" href="html/getting_started.html">
+      <topic label="Installation" href="html/installation.html"/>
+      <topic label="First Chat" href="html/first_chat.html"/>
+      <topic label="Provider Setup" href="html/provider_setup.html"/>
+   </topic>
+   <topic label="User Guide" href="html/user_guide.html">
+      <topic label="Chat View" href="html/chat_view.html"/>
+      <topic label="Slash Commands" href="html/slash_commands.html"/>
+      <topic label="Agent Modes" href="html/agent_modes.html"/>
+      <topic label="Keyboard Shortcuts" href="html/keyboard_shortcuts.html"/>
+   </topic>
+   <topic label="Cookbook" href="html/cookbook.html">
+      <topic label="Explore a Model" href="html/cookbook_explore.html"/>
+      <topic label="Create Elements" href="html/cookbook_create.html"/>
+      <topic label="Requirements Roundtrip" href="html/cookbook_requirements.html"/>
+      <topic label="Sustainment Demo" href="html/cookbook_sustainment.html"/>
+      <topic label="Generative Architecture" href="html/cookbook_genarch.html"/>
+   </topic>
+   <topic label="Tool Reference" href="html/tool_reference.html"/>
+   <topic label="Known Limitations" href="html/known_limitations.html"/>
+   <topic label="Troubleshooting" href="html/troubleshooting.html"/>
+</toc>

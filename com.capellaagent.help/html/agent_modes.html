@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Agent Modes — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
+.badge-available { background: #d4edda; color: #155724; }
+.badge-roadmap { background: #fff3cd; color: #856404; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <a href="user_guide.html">User Guide</a> &rsaquo;
+  <strong>Agent Modes</strong>
+</nav>
+
+<h1>Agent Modes</h1>
+
+<p>
+  Each agent mode provides a specialized system prompt that tunes the AI's behavior for a
+  specific engineering role. Switching modes changes:
+</p>
+<ul>
+  <li>The system prompt sent to the LLM at the start of the conversation.</li>
+  <li>The starter prompts shown on the empty-state card.</li>
+  <li>The default tool selection bias (which tools the agent is most likely to reach for first).</li>
+</ul>
+
+<p>Switch modes via the toolbar dropdown or the <code>/mode</code> slash command.</p>
+
+<h2>Mode Overview</h2>
+
+<table>
+  <tr><th>Mode</th><th>Status</th><th>Best For</th></tr>
+  <tr>
+    <td><strong>General Assistant</strong></td>
+    <td><span class="badge badge-available">Available</span></td>
+    <td>Exploration, ad-hoc queries, learning the model</td>
+  </tr>
+  <tr>
+    <td><strong>Sustainment Engineer</strong></td>
+    <td><span class="badge badge-available">Available</span></td>
+    <td>Fault triage, ATA classification, impact analysis for maintenance engineers</td>
+  </tr>
+  <tr>
+    <td><strong>Requirements Analyst</strong></td>
+    <td><span class="badge badge-roadmap">Week 13-16</span></td>
+    <td>ReqIF import/export, requirements coverage, trace link management</td>
+  </tr>
+  <tr>
+    <td><strong>Architect</strong></td>
+    <td><span class="badge badge-roadmap">Week 17-22</span></td>
+    <td>Generative architecture proposals, decomposition suggestions, coverage analysis</td>
+  </tr>
+</table>
+
+<h2>General Assistant Mode</h2>
+
+<p>
+  The default mode. The system prompt instructs the agent to act as a knowledgeable
+  MBSE assistant familiar with ARCADIA, Capella, and systems engineering best practices.
+  It makes no assumptions about the user's role and is suitable for any query.
+</p>
+
+<p><strong>Starter prompts:</strong></p>
+<ul>
+  <li>"List all physical functions"</li>
+  <li>"Show me the functional chains in the PA layer"</li>
+  <li>"What are the interfaces between the Avionics and Cabin systems?"</li>
+  <li>"Run a model validation and summarize the issues"</li>
+</ul>
+
+<h2>Sustainment Engineer Mode</h2>
+
+<p>
+  The system prompt is specialized for aerospace and defense sustainment workflows:
+  fault triage, ATA chapter classification, impact radius analysis, and maintenance
+  recommendation generation. Inspired by the Siemens Capella Days 2025 use case.
+</p>
+
+<p>
+  When you switch to this mode, the agent's reasoning is primed to think in terms of
+  fault symptoms, component hierarchies, and field replacement units (FRUs).
+</p>
+
+<p><strong>Starter prompts:</strong></p>
+<ul>
+  <li>"The Seat TV in row 14 is rebooting every time we try to play a VOD movie. Where should I look?"</li>
+  <li>"During an airline-imposed safety video broadcast, audio is silent on the cabin terminal but video plays fine. What functions are involved in audio routing for imposed broadcasts?"</li>
+  <li>"The Available VOD Movies List on the seat-back display is showing yesterday's titles. The Applications Server was rebooted. Which functions feed that list?"</li>
+</ul>
+
+<p>
+  See the full demo walkthrough in the <a href="cookbook_sustainment.html">Sustainment Demo</a> cookbook recipe.
+</p>
+
+<h2>Requirements Analyst Mode (Week 13-16)</h2>
+
+<p>
+  <strong>Planned for Weeks 13-16.</strong> This mode will specialize the agent for
+  requirements engineering workflows:
+</p>
+<ul>
+  <li>Importing and exporting requirements via ReqIF and Excel.</li>
+  <li>Linking requirements to model elements.</li>
+  <li>Generating coverage dashboards showing which requirements have traceability links.</li>
+  <li>Detecting requirements without any downstream allocation (orphaned requirements).</li>
+  <li>Drafting requirements from natural language descriptions.</li>
+</ul>
+
+<p>
+  The four new tools shipping with this mode are: <code>import_reqif</code>,
+  <code>export_reqif</code>, <code>import_requirements_excel</code>, and
+  <code>coverage_dashboard</code>.
+</p>
+
+<h2>Architect Mode (Week 17-22)</h2>
+
+<p>
+  <strong>Planned for Weeks 17-22.</strong> The most advanced mode — the agent acts as
+  a generative architect that can:
+</p>
+<ul>
+  <li>Propose a complete architecture (components + functions + allocations) from a set
+      of natural language requirements.</li>
+  <li>Generate candidate decompositions for a selected component.</li>
+  <li>Identify missing traces between layers and suggest how to fill them.</li>
+  <li>Present proposed changes as a diff preview before committing them to the model.</li>
+  <li>Explain its architectural reasoning in natural language.</li>
+</ul>
+
+<p>
+  Five new tools ship with Architect mode: <code>propose_architecture</code>,
+  <code>suggest_decomposition</code>, <code>find_missing_traces</code>,
+  <code>generate_allocation_proposal</code>, and <code>review_architecture_diff</code>.
+</p>
+
+</body>
+</html>

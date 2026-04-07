@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Recipe: Generative Architecture — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; background: #fff3cd; color: #856404; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <a href="cookbook.html">Cookbook</a> &rsaquo;
+  <strong>Generative Architecture</strong>
+</nav>
+
+<h1>Recipe: Generative Architecture</h1>
+
+<p>
+  <span class="badge">Week 17-22</span>
+  This recipe uses the <strong>Architect</strong> agent mode and five tools shipping in
+  Weeks 17-22: <code>propose_architecture</code>, <code>suggest_decomposition</code>,
+  <code>find_missing_traces</code>, <code>generate_allocation_proposal</code>, and
+  <code>review_architecture_diff</code>.
+</p>
+
+<h2>Step 1 — Switch to Architect Mode</h2>
+
+<pre><code>/mode architect</code></pre>
+
+<p>
+  The system prompt switches to architect persona — the agent now reasons about components,
+  allocations, and system decomposition instead of fault triage or exploration.
+</p>
+
+<h2>Step 2 — Propose an Architecture from Requirements</h2>
+
+<p>Paste a set of requirements as context:</p>
+<pre><code>Propose an architecture for these requirements:
+1. The system shall provide real-time video streaming to all passenger seats.
+2. The system shall support a minimum of 10,000 hours of on-demand content.
+3. The system shall allow crew to override passenger content with safety announcements.
+4. The system shall operate within 200W total power budget.
+5. The system shall be maintainable without removing passenger seats.</code></pre>
+
+<p>
+  The agent calls <code>propose_architecture</code> and returns a structured proposal:
+</p>
+<ul>
+  <li>A list of proposed <strong>logical components</strong> (e.g., Content Server, Display Unit, Crew Control Panel, Power Distribution Module).</li>
+  <li>Proposed <strong>function allocations</strong> for each component.</li>
+  <li>Key <strong>interfaces</strong> between components.</li>
+  <li>Rationale for each design decision, referencing the input requirements.</li>
+</ul>
+
+<h2>Step 3 — Review the Diff Preview</h2>
+
+<p>
+  The proposal is presented as a diff — additions shown in green, nothing removed until
+  you confirm. Review each proposed element and click <strong>Accept</strong> or
+  <strong>Reject</strong> on any item.
+</p>
+
+<p>
+  When you accept the full proposal, the agent calls the appropriate write tools
+  (<code>create_element</code>, <code>allocate_function</code>, <code>create_interface</code>)
+  to commit the changes to the model.
+</p>
+
+<h2>Step 4 — Find Missing Traces in the Avionics Layer</h2>
+
+<pre><code>Find missing traces in the Avionics layer</code></pre>
+
+<p>
+  The agent calls <code>find_missing_traces</code> for the Avionics System subcomponents
+  and returns:
+</p>
+<ul>
+  <li>Physical components with no functional allocation.</li>
+  <li>System functions not realized in the Logical Architecture.</li>
+  <li>Operational activities not linked to System functions.</li>
+</ul>
+
+<h2>Step 5 — Suggest Decomposition</h2>
+
+<pre><code>Suggest a decomposition for the In-Flight Entertainment System</code></pre>
+
+<p>
+  The agent calls <code>suggest_decomposition</code> with the IFE system as the target.
+  It analyzes the current functional allocation and suggests a decomposition into
+  sub-components that respects separation of concerns, maintainability, and the
+  power budget constraint (if captured in the model).
+</p>
+
+<h2>Step 6 — Generate Allocation Proposal</h2>
+
+<pre><code>Propose allocations for the unallocated functions in the PA layer</code></pre>
+
+<p>
+  The agent calls <code>generate_allocation_proposal</code>, which queries all unallocated
+  physical functions and suggests which component each should be allocated to based on
+  naming, co-location, and exchange patterns.
+</p>
+
+<div class="tip">
+  <strong>Iterative workflow:</strong> Architect mode works best iteratively. Accept a
+  subset of the proposal, validate in the model, then ask for the next iteration.
+  Use <code>Ctrl+Z</code> liberally — every change is reversible.
+</div>
+
+</body>
+</html>

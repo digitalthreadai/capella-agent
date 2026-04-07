@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>User Guide — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo; <strong>User Guide</strong>
+</nav>
+
+<h1>User Guide</h1>
+
+<p>
+  The User Guide covers everyday use of the Capella Agent plugin — the chat view UI,
+  slash commands for power users, agent modes for different engineering roles, and
+  keyboard shortcuts.
+</p>
+
+<h2>In This Section</h2>
+
+<table>
+  <tr><th>Topic</th><th>Description</th></tr>
+  <tr>
+    <td><a href="chat_view.html">The AI Model Chat View</a></td>
+    <td>Anatomy of the chat view — toolbar buttons, browser area, input field, and conversation flow</td>
+  </tr>
+  <tr>
+    <td><a href="slash_commands.html">Slash Commands</a></td>
+    <td>Complete reference for all 9 slash commands with usage examples</td>
+  </tr>
+  <tr>
+    <td><a href="agent_modes.html">Agent Modes</a></td>
+    <td>How the 4 agent modes (General, Sustainment, Requirements, Architect) change the AI's behavior</td>
+  </tr>
+  <tr>
+    <td><a href="keyboard_shortcuts.html">Keyboard Shortcuts</a></td>
+    <td>All keyboard shortcuts for efficient use of the chat view</td>
+  </tr>
+</table>
+
+<h2>Basic Workflow</h2>
+
+<ol>
+  <li><strong>Open a Capella model</strong> — the agent can only access open Capella sessions.</li>
+  <li><strong>Select the project</strong> in the chat view toolbar if you have multiple projects open.</li>
+  <li><strong>Choose an agent mode</strong> appropriate for your current task.</li>
+  <li><strong>Type a query</strong> in natural language and press Enter.</li>
+  <li><strong>Review the response</strong> — tool calls are shown inline; model results are rendered as tables or structured text.</li>
+  <li><strong>Follow up</strong> — the agent maintains conversation context within a session.</li>
+</ol>
+
+<div class="tip">
+  <strong>Power user tip:</strong> Use <a href="slash_commands.html">slash commands</a>
+  for instant control without navigating menus. Type <code>/help</code> in the chat input
+  at any time to see the full list.
+</div>
+
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The AI Model Chat View — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <a href="user_guide.html">User Guide</a> &rsaquo;
+  <strong>Chat View</strong>
+</nav>
+
+<h1>The AI Model Chat View</h1>
+
+<p>
+  The <em>AI Model Chat</em> view is the primary interface for interacting with Capella Agent.
+  It is an Eclipse view that docks anywhere in the Capella workbench.
+</p>
+
+<h2>View Layout</h2>
+
+<pre>
++--------------------------------------------------------------+
+|  TOOLBAR                                                     |
+|  [Mode v] [Project v] [Provider/Model v] [Clear] [Export]    |
+|  [Detach] [Theme]                                  [Help ?]  |
++--------------------------------------------------------------+
+|                                                              |
+|  BROWSER AREA (HTML renderer)                                |
+|                                                              |
+|  User: List all physical functions                           |
+|                                                              |
+|  >> Executing tool: list_elements (layer=pa) ...             |
+|                                                              |
+|  Agent: Here are the physical functions in the PA layer:     |
+|  [sortable HTML table with UUID links]                       |
+|                                                              |
+|                                                              |
++--------------------------------------------------------------+
+|  INPUT AREA                                                  |
+|  [ Ask anything about your model...              ] [Send]    |
+|  Token count: 1,240 / 128,000      Cost: $0.0012             |
++--------------------------------------------------------------+
+</pre>
+
+<h2>Toolbar Elements</h2>
+
+<table>
+  <tr><th>Element</th><th>Description</th></tr>
+  <tr>
+    <td><strong>Mode selector</strong></td>
+    <td>Dropdown to switch between agent modes. Changing mode resets the system prompt
+        but preserves conversation history (you can still follow up on prior results).</td>
+  </tr>
+  <tr>
+    <td><strong>Project selector</strong></td>
+    <td>Dropdown listing all open Capella sessions. Select the project you want the agent
+        to work with. Only one project is active at a time.</td>
+  </tr>
+  <tr>
+    <td><strong>Provider / Model selector</strong></td>
+    <td>Dropdown showing the currently active provider and model (e.g., "Claude / claude-opus-4-5").
+        Click to switch mid-conversation.</td>
+  </tr>
+  <tr>
+    <td><strong>Clear</strong></td>
+    <td>Clears the conversation history and resets the browser area to the empty state.
+        Equivalent to the <code>/clear</code> slash command.</td>
+  </tr>
+  <tr>
+    <td><strong>Export</strong></td>
+    <td>Exports the current conversation as an HTML file or Markdown file to your chosen
+        directory.</td>
+  </tr>
+  <tr>
+    <td><strong>Detach</strong></td>
+    <td>Opens the chat in a standalone window, useful for multi-monitor setups where you
+        want the chat on one screen and the Capella model on another.</td>
+  </tr>
+  <tr>
+    <td><strong>Theme toggle</strong></td>
+    <td>Switches the chat area between light and dark themes. The default is light.</td>
+  </tr>
+  <tr>
+    <td><strong>Help</strong></td>
+    <td>Opens this help documentation.</td>
+  </tr>
+</table>
+
+<h2>Browser Area</h2>
+
+<p>
+  The browser area uses an embedded web renderer (SWT Browser / WebKit). All agent responses
+  are rendered as HTML, which means:
+</p>
+<ul>
+  <li>Tables are rendered with full HTML formatting and are sortable.</li>
+  <li>Code blocks use syntax highlighting.</li>
+  <li>Tool call indicators appear as styled inline blocks.</li>
+  <li>UUIDs in results are clickable hyperlinks that trigger Eclipse navigation.</li>
+  <li>Right-click anywhere in the browser to access standard browser context menu options
+      (copy, select all, view source).</li>
+</ul>
+
+<h2>Input Area</h2>
+
+<p>The input area at the bottom contains:</p>
+<ul>
+  <li><strong>Text field:</strong> Multi-line input. Press <strong>Enter</strong> to send,
+      <strong>Shift+Enter</strong> for a new line.</li>
+  <li><strong>Send button:</strong> Submits the query. Disabled while a response is streaming.</li>
+  <li><strong>Token counter:</strong> Live estimate of the current context size vs. the
+      provider's context window limit. The estimate uses a character-density heuristic;
+      see <a href="known_limitations.html">Known Limitations #2</a>.</li>
+  <li><strong>Cost display:</strong> Running session cost estimate based on the provider's
+      published token prices. Shows session aggregate (not per-turn).
+      See <a href="known_limitations.html">Known Limitations #3</a>.</li>
+</ul>
+
+<h2>Conversation Flow</h2>
+
+<ol>
+  <li>You type a query and press Enter.</li>
+  <li>The agent sends the conversation history plus your query to the LLM.</li>
+  <li>If the LLM decides a tool call is needed, the tool call indicator appears and the tool
+      runs against the live Capella model.</li>
+  <li>Tool results are fed back into the conversation automatically (the agent may call
+      multiple tools in sequence for complex queries).</li>
+  <li>The LLM composes a final response, which streams into the browser area.</li>
+  <li>You can ask follow-up questions; the agent remembers the full conversation context.</li>
+</ol>
+
+<div class="tip">
+  <strong>Cancellation:</strong> Press <strong>Esc</strong> while a query is running to
+  cancel the in-flight request. Partially completed tool calls may have already made model
+  changes — use <strong>Edit &rarr; Undo</strong> (<strong>Ctrl+Z</strong>) to reverse them.
+</div>
+
+</body>
+</html>

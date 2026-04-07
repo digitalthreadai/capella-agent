@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Your First Chat — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <a href="getting_started.html">Getting Started</a> &rsaquo;
+  <strong>First Chat</strong>
+</nav>
+
+<h1>Your First Chat</h1>
+
+<p>
+  This walkthrough uses the <strong>In-Flight Entertainment (IFE)</strong> sample model
+  bundled in the repository under <code>demo/</code>. If you have your own Capella project
+  open, the same steps apply.
+</p>
+
+<h2>Step 1 — Open the IFE Sample Model</h2>
+
+<ol>
+  <li>In the <strong>Project Explorer</strong>, right-click in an empty area and choose
+      <strong>Import... &rarr; General &rarr; Existing Projects into Workspace</strong>.</li>
+  <li>Browse to the <code>demo/</code> folder in the repository and import the <em>IFE</em> project.</li>
+  <li>Double-click the <code>.aird</code> file to open the Sirius session. You should see the
+      5 ARCADIA layers (OA, SA, LA, PA, EPBS) in the Project Explorer tree.</li>
+</ol>
+
+<h2>Step 2 — Open the AI Model Chat View</h2>
+
+<p>Press <strong>Ctrl+Shift+M</strong> or go to
+  <strong>Window &rarr; Show View &rarr; Other... &rarr; Capella Agent &rarr; AI Model Chat</strong>.
+</p>
+
+<p>
+  The view docks to the right side of the workbench by default. You should see:
+</p>
+<ul>
+  <li>A <strong>toolbar</strong> at the top with buttons for mode, model/provider selection, and utilities.</li>
+  <li>A <strong>browser area</strong> (the main chat window) showing either the welcome wizard or an empty-state card.</li>
+  <li>A <strong>text input field</strong> at the bottom with a placeholder prompt.</li>
+</ul>
+
+<p>
+  Confirm that the <strong>project dropdown</strong> in the toolbar shows <em>IFE</em>. If it shows
+  "No open Capella sessions", make sure the <code>.aird</code> file is open.
+</p>
+
+<h2>Step 3 — Send Your First Query</h2>
+
+<p>In the input field, type:</p>
+<pre><code>List all physical functions</code></pre>
+<p>Press <strong>Enter</strong> to send.</p>
+
+<p>You will see a brief tool-call indicator in the chat:</p>
+<pre><code>&gt;&gt; Executing tool: list_elements (layer=pa, element_type=functions) ...</code></pre>
+
+<p>
+  After a second or two, the agent returns a sortable HTML table. Each row shows a physical
+  function with its name, UUID, and a description excerpt.
+</p>
+
+<h2>Step 4 — Understand the Result Table</h2>
+
+<p>The result table has these features:</p>
+<ul>
+  <li><strong>Sortable columns</strong> — click any column header to sort ascending or descending.</li>
+  <li><strong>UUID links</strong> — each UUID in the table is a clickable hyperlink. Clicking one
+      navigates your Project Explorer to that element and selects it.</li>
+  <li><strong>Copy buttons</strong> — hover over any cell to reveal a small copy icon for copying
+      the value to the clipboard.</li>
+</ul>
+
+<h2>Step 5 — Navigate to an Element via UUID</h2>
+
+<ol>
+  <li>Find a row that interests you — for example, a function called <em>ProcessData</em>.</li>
+  <li>Click its UUID (looks like <code>a1b2c3d4-...</code>).</li>
+  <li>The <strong>Project Explorer</strong> scrolls to and selects that element automatically.</li>
+  <li>The Capella Properties view at the bottom of the workbench shows the element's details.</li>
+</ol>
+
+<div class="tip">
+  <strong>Tip:</strong> You can also ask the agent directly:
+  <code>Get details for element a1b2c3d4-...</code>
+  and it will call <code>get_element_details</code> to return the full property set for that UUID.
+</div>
+
+<h2>Step 6 — Toolbar Buttons Reference</h2>
+
+<table>
+  <tr><th>Button</th><th>Action</th></tr>
+  <tr><td>Mode selector (dropdown)</td><td>Switch between agent modes (General Assistant, Sustainment Engineer, etc.)</td></tr>
+  <tr><td>Provider / Model (dropdown)</td><td>Switch the active LLM provider and model mid-conversation</td></tr>
+  <tr><td>Clear (broom icon)</td><td>Clear the current conversation history (<code>/clear</code>)</td></tr>
+  <tr><td>Export (download icon)</td><td>Export the conversation as HTML or Markdown</td></tr>
+  <tr><td>Detach (external link icon)</td><td>Open the chat in a detached window for a larger view</td></tr>
+  <tr><td>Help (?)</td><td>Open this help documentation</td></tr>
+</table>
+
+<div class="tip">
+  <strong>Next:</strong> Now that you have made your first query, explore the
+  <a href="cookbook_explore.html">Explore a Model</a> recipe for a deeper walkthrough,
+  or set up additional providers in <a href="provider_setup.html">Provider Setup</a>.
+</div>
+
+</body>
+</html>

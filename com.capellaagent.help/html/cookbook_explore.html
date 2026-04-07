@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Recipe: Explore a Capella Model — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+.step { counter-increment: step-counter; }
+.step-header { background: #4A90E2; color: white; padding: 8px 16px; border-radius: 6px;
+               font-weight: bold; margin: 24px 0 8px 0; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <a href="cookbook.html">Cookbook</a> &rsaquo;
+  <strong>Explore a Model</strong>
+</nav>
+
+<h1>Recipe: Explore a Capella Model</h1>
+
+<p>
+  This recipe teaches the fundamental navigation pattern for Capella Agent:
+  listing elements, navigating by UUID, and querying relationships.
+  Estimated time: 10 minutes.
+</p>
+
+<p><strong>Prerequisites:</strong> IFE sample model open, General Assistant mode active, a provider configured.</p>
+
+<h2>Step 1 — Open the IFE Model</h2>
+
+<p>Import the IFE project from <code>demo/</code> into your workspace if you have not already.
+Open the <code>.aird</code> file to start the Sirius session. Confirm that the Project Explorer
+shows all 5 ARCADIA layers.</p>
+
+<h2>Step 2 — List All Physical Functions</h2>
+
+<p>In the chat input, type:</p>
+<pre><code>List all physical functions</code></pre>
+
+<p>
+  The agent calls <code>list_elements(layer=pa, element_type=functions)</code> and returns
+  a sortable HTML table with columns: Name, UUID, Type, and Description.
+  The IFE model has roughly 30+ physical functions.
+</p>
+
+<div class="tip">
+  <strong>Try also:</strong>
+  "List all system components in the SA layer" or
+  "Show me all capabilities in the operational analysis".
+</div>
+
+<h2>Step 3 — Click a UUID to Navigate</h2>
+
+<p>
+  In the result table, find a function that interests you — for example <em>ProcessData</em>
+  or <em>DisplayVideoOnSeatTV</em>. Click the UUID in the table.
+</p>
+
+<p>
+  The <strong>Project Explorer</strong> automatically scrolls to and selects that element.
+  The Eclipse Properties view at the bottom shows its full properties.
+</p>
+
+<h2>Step 4 — Get Full Element Details</h2>
+
+<p>Copy a UUID from the table (hover to reveal the copy icon). Then ask:</p>
+<pre><code>Get details for element 07256f31-32c7-42f5-b36b-bebd43492921</code></pre>
+
+<p>
+  The agent calls <code>get_element_details(id="07256f31-...")</code> and returns a rich
+  detail panel showing: full name, description, type, parent hierarchy, all outgoing and
+  incoming exchanges, and any property values.
+</p>
+
+<h2>Step 5 — Show the Functional Chains</h2>
+
+<pre><code>Show me the functional chains</code></pre>
+
+<p>
+  The agent calls <code>get_functional_chain</code> for each chain it finds and returns a
+  list. Each chain entry includes its name, UUID, and the sequence of involved functions.
+</p>
+
+<p>
+  Pick a chain from the list and ask for more detail:
+</p>
+<pre><code>Show the full involvement sequence for the "Display VOD Movie on Seat TV" chain</code></pre>
+
+<h2>Step 6 — Query Interfaces Between Systems</h2>
+
+<pre><code>What are the interfaces between the Avionics and Cabin systems?</code></pre>
+
+<p>
+  The agent calls <code>get_interfaces</code> filtered to exchanges between those two
+  component groups. It returns a table of interfaces, their exchange items, and the
+  direction (Avionics &rarr; Cabin or Cabin &rarr; Avionics).
+</p>
+
+<h2>Summary</h2>
+
+<p>You have learned the core navigation loop:</p>
+<ol>
+  <li>List elements by layer and type.</li>
+  <li>Click UUIDs to navigate to elements in the model.</li>
+  <li>Ask for full details of any element.</li>
+  <li>Query relationships: chains, interfaces, traceability.</li>
+</ol>
+
+<div class="tip">
+  <strong>Next recipe:</strong> <a href="cookbook_create.html">Create Model Elements</a> —
+  learn how to use the agent to add new components and exchanges to the model.
+</div>
+
+</body>
+</html>

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Capella Agent — AI-Powered MBSE</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f0f4f8;
+  color: #1a1a2e;
+  line-height: 1.6;
+}
+
+/* Hero */
+.hero {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  color: #fff;
+  padding: 80px 24px 60px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 40%, rgba(74,144,226,0.15) 0%, transparent 50%),
+              radial-gradient(circle at 70% 70%, rgba(44,95,138,0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-block;
+  background: rgba(74,144,226,0.2);
+  border: 1px solid rgba(74,144,226,0.5);
+  color: #7bb8f5;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.82em;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.hero h1 {
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+}
+.hero h1 span { color: #4A90E2; }
+.hero p {
+  font-size: 1.15rem;
+  color: rgba(255,255,255,0.75);
+  max-width: 580px;
+  margin: 0 auto 36px;
+}
+.hero-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  display: inline-block;
+  padding: 13px 28px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.btn-primary {
+  background: #4A90E2;
+  color: #fff;
+  border: 2px solid #4A90E2;
+}
+.btn-primary:hover { background: #3a7bc8; border-color: #3a7bc8; transform: translateY(-1px); }
+.btn-secondary {
+  background: transparent;
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.4);
+}
+.btn-secondary:hover { border-color: #fff; background: rgba(255,255,255,0.08); }
+
+/* Stats bar */
+.stats-bar {
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 20px 24px;
+}
+.stats-bar-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+.stat { text-align: center; }
+.stat-number { font-size: 1.8rem; font-weight: 700; color: #4A90E2; display: block; line-height: 1; }
+.stat-label { font-size: 0.82rem; color: #666; margin-top: 4px; }
+
+/* Main content */
+.content { max-width: 1000px; margin: 0 auto; padding: 56px 24px; }
+
+/* Features grid */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 56px;
+}
+.feature-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+.feature-icon {
+  width: 48px;
+  height: 48px;
+  background: #e8f4fd;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+}
+.feature-card h3 { font-size: 1.05rem; font-weight: 600; color: #1a1a2e; margin-bottom: 8px; }
+.feature-card p { font-size: 0.9rem; color: #555; line-height: 1.55; }
+
+/* Quick start */
+.quickstart {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 56px;
+}
+.quickstart h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 32px;
+  text-align: center;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 32px;
+}
+.step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.step-num {
+  width: 36px;
+  height: 36px;
+  background: #4A90E2;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.step-content h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+.step-content p { font-size: 0.87rem; color: #555; }
+.step-content code { background: #f4f6f8; padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 0.85em; }
+
+/* Docs nav */
+.docs-nav {
+  margin-bottom: 56px;
+}
+.docs-nav h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+.doc-link {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px;
+  text-decoration: none;
+  color: #1a1a2e;
+  transition: all 0.2s;
+  display: block;
+}
+.doc-link:hover {
+  border-color: #4A90E2;
+  background: #e8f4fd;
+  transform: translateY(-2px);
+}
+.doc-link .doc-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; color: #4A90E2; }
+.doc-link .doc-desc { font-size: 0.82rem; color: #666; }
+
+/* Provider badges */
+.provider-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 56px;
+  text-align: center;
+}
+.provider-section h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+.provider-section p { color: #555; margin-bottom: 24px; }
+.provider-badges { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.badge {
+  background: #f4f6f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #333;
+}
+.badge.free { background: #d4edda; border-color: #a3d9a5; color: #155724; }
+.badge.local { background: #cfe2ff; border-color: #9ec5fe; color: #0a3374; }
+
+/* Footer */
+footer {
+  background: #1a1a2e;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  padding: 32px 24px;
+  font-size: 0.85rem;
+}
+footer a { color: #4A90E2; text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge">Version 1.0.0 beta1 — EPL 2.0</div>
+  <h1>Capella Agent<br/><span>AI-Powered MBSE</span></h1>
+  <p>
+    An AI multi-agent ecosystem embedded inside Eclipse Capella.
+    Query, explore, and modify your ARCADIA models in plain English —
+    backed by 10 LLM providers and 95+ specialized tools.
+  </p>
+  <div class="hero-buttons">
+    <a href="../help/html/getting_started.html" class="btn btn-primary">Get Started</a>
+    <a href="../help/html/cookbook.html" class="btn btn-secondary">Cookbook</a>
+  </div>
+</section>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+  <div class="stats-bar-inner">
+    <div class="stat">
+      <span class="stat-number">95+</span>
+      <div class="stat-label">Model Tools</div>
+    </div>
+    <div class="stat">
+      <span class="stat-number">10</span>
+      <div class="stat-label">LLM Providers</div>
+    </div>
+    <div class="stat">
+      <span class="stat-number">9</span>
+      <div class="stat-label">OSGi Bundles</div>
+    </div>
+    <div class="stat">
+      <span class="stat-number">MCP</span>
+      <div class="stat-label">Claude Code Bridge</div>
+    </div>
+    <div class="stat">
+      <span class="stat-number">EPL 2.0</span>
+      <div class="stat-label">Open Source</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="content">
+
+  <!-- Key features -->
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">&#128295;</div>
+      <h3>95+ Model Tools</h3>
+      <p>
+        Read, write, diagram, analyze, export, and transition your ARCADIA model
+        using natural language. Every tool call is logged and reversible via Ctrl+Z.
+      </p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#129302;</div>
+      <h3>10 LLM Providers</h3>
+      <p>
+        Claude, OpenAI, Azure OpenAI, GitHub Models (free), Groq (free), Mistral,
+        OpenRouter, Ollama, LM Studio, and Custom OpenAI-compatible endpoints.
+      </p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128279;</div>
+      <h3>MCP Bridge</h3>
+      <p>
+        All 95+ tools are exposed via the Model Context Protocol so Claude Code
+        in your terminal can access your live Capella model directly.
+      </p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128274;</div>
+      <h3>Offline / Air-Gapped</h3>
+      <p>
+        Use Ollama or LM Studio for fully local inference. No data leaves your machine —
+        approved for ITAR-controlled program models.
+      </p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128200;</div>
+      <h3>Sustainment Mode</h3>
+      <p>
+        Specialized agent mode for fault triage. Reduce a 90-minute field fault
+        analysis to under 60 seconds with ATA classification and impact analysis.
+      </p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128221;</div>
+      <h3>Audit Log</h3>
+      <p>
+        Every tool call is recorded with parameters, element UUIDs, and timestamps.
+        Nothing is silent. Nothing is irreversible.
+      </p>
+    </div>
+  </div>
+
+  <!-- 3-step quick start -->
+  <div class="quickstart">
+    <h2>Get Running in 3 Steps</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>Install the Plugin</h3>
+          <p>
+            Run <code>reinstall.bat</code> from the repository root (sets
+            <code>CAPELLA_HOME</code> first), then restart Capella.
+            Or use <strong>Help &rarr; Install New Software</strong> with the p2 site.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>Configure a Provider</h3>
+          <p>
+            Open <strong>Window &rarr; Preferences &rarr; Capella Agent &rarr; LLM Providers</strong>.
+            GitHub Models is free and requires only a GitHub token — no billing setup.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>Open the IFE Model and Ask</h3>
+          <p>
+            Press <strong>Ctrl+Shift+M</strong> to open the AI Chat view.
+            Type <code>List all physical functions</code> and press Enter.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documentation links -->
+  <div class="docs-nav">
+    <h2>Documentation</h2>
+    <div class="docs-grid">
+      <a href="../help/html/getting_started.html" class="doc-link">
+        <div class="doc-title">Getting Started</div>
+        <div class="doc-desc">Prerequisites, installation, first query</div>
+      </a>
+      <a href="../help/html/installation.html" class="doc-link">
+        <div class="doc-title">Installation Guide</div>
+        <div class="doc-desc">Build from source, reinstall.bat, GUI install</div>
+      </a>
+      <a href="../help/html/provider_setup.html" class="doc-link">
+        <div class="doc-title">Provider Setup</div>
+        <div class="doc-desc">Configure Claude, OpenAI, Groq, Ollama, and more</div>
+      </a>
+      <a href="../help/html/cookbook.html" class="doc-link">
+        <div class="doc-title">Cookbook</div>
+        <div class="doc-desc">5 step-by-step recipes for real MBSE tasks</div>
+      </a>
+      <a href="../help/html/tool_reference.html" class="doc-link">
+        <div class="doc-title">Tool Reference</div>
+        <div class="doc-desc">All 95+ tools with parameters and descriptions</div>
+      </a>
+      <a href="../help/html/slash_commands.html" class="doc-link">
+        <div class="doc-title">Slash Commands</div>
+        <div class="doc-desc">9 slash commands for power users</div>
+      </a>
+      <a href="../help/html/agent_modes.html" class="doc-link">
+        <div class="doc-title">Agent Modes</div>
+        <div class="doc-desc">General, Sustainment, Requirements, Architect</div>
+      </a>
+      <a href="../help/html/known_limitations.html" class="doc-link">
+        <div class="doc-title">Known Limitations</div>
+        <div class="doc-desc">11 documented limitations with workarounds</div>
+      </a>
+      <a href="../help/html/troubleshooting.html" class="doc-link">
+        <div class="doc-title">Troubleshooting</div>
+        <div class="doc-desc">Common errors and how to fix them</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Providers section -->
+  <div class="provider-section">
+    <h2>Supported LLM Providers</h2>
+    <p>Bring your own key, or use local models for fully air-gapped operation.</p>
+    <div class="provider-badges">
+      <span class="badge">Claude (Anthropic)</span>
+      <span class="badge">OpenAI</span>
+      <span class="badge">Azure OpenAI</span>
+      <span class="badge free">GitHub Models (Free)</span>
+      <span class="badge free">Groq (Free)</span>
+      <span class="badge">Mistral</span>
+      <span class="badge">OpenRouter</span>
+      <span class="badge local">Ollama (Local)</span>
+      <span class="badge local">LM Studio (Local)</span>
+      <span class="badge">Custom OpenAI-compatible</span>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<footer>
+  <p>
+    Capella Agent &bull; Open Source under
+    <a href="https://www.eclipse.org/legal/epl-2.0/">Eclipse Public License 2.0</a>
+    &bull; Built for Eclipse Capella 7.0.1
+  </p>
+</footer>
+
+</body>
+</html>

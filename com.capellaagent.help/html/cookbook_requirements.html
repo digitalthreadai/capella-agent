@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Recipe: Requirements Roundtrip — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; background: #fff3cd; color: #856404; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <a href="cookbook.html">Cookbook</a> &rsaquo;
+  <strong>Requirements Roundtrip</strong>
+</nav>
+
+<h1>Recipe: Requirements Roundtrip</h1>
+
+<p>
+  <span class="badge">Week 13-16</span>
+  This recipe uses the <strong>Requirements Analyst</strong> agent mode and four tools
+  that ship in Weeks 13-16: <code>import_reqif</code>, <code>export_reqif</code>,
+  <code>import_requirements_excel</code>, and <code>coverage_dashboard</code>.
+  The workflow described here will become available in that release.
+</p>
+
+<p>
+  The roundtrip: import requirements from ReqIF or Excel &rarr; link to model elements &rarr;
+  view coverage &rarr; export back to ReqIF.
+</p>
+
+<h2>Step 1 — Switch to Requirements Analyst Mode</h2>
+
+<pre><code>/mode requirements</code></pre>
+
+<p>
+  The empty-state card updates to show requirements-focused starter prompts.
+  The system prompt is now tuned for trace link creation and coverage analysis.
+</p>
+
+<h2>Step 2A — Import from ReqIF</h2>
+
+<pre><code>import_reqif path="/path/to/your/requirements.reqif"</code></pre>
+
+<p>
+  The agent parses the ReqIF file and imports the requirement modules and requirements into
+  the Capella Requirements viewpoint. It returns a summary table:
+</p>
+<ul>
+  <li>Number of modules imported.</li>
+  <li>Number of requirements created.</li>
+  <li>Any requirements skipped (duplicate IDs or parse errors).</li>
+</ul>
+
+<h2>Step 2B — Import from Excel (Alternative)</h2>
+
+<pre><code>import_requirements_excel path="reqs.xlsx" id_col="ID" text_col="Description" type_col="Type"</code></pre>
+
+<p>
+  The agent reads the Excel file column-by-column using the provided column names.
+  The <code>id_col</code> and <code>text_col</code> parameters are required;
+  <code>type_col</code>, <code>priority_col</code>, and <code>source_col</code> are optional.
+</p>
+
+<h2>Step 3 — Link Requirements to Model Elements</h2>
+
+<p>Link a single requirement by its ID:</p>
+<pre><code>Link requirement REQ-IFE-047 to the "Display VOD Movie on Seat TV" functional chain</code></pre>
+
+<p>Or link in bulk using a natural language description:</p>
+<pre><code>Link all requirements containing "seat TV" to physical components in the Cabin System</code></pre>
+
+<p>
+  The agent calls <code>link_requirements_to_elements</code> for each match and reports
+  how many links were created.
+</p>
+
+<h2>Step 4 — View the Coverage Dashboard</h2>
+
+<pre><code>Show me the requirements coverage dashboard</code></pre>
+
+<p>
+  The agent calls <code>coverage_dashboard</code> and renders an HTML dashboard showing:
+</p>
+<ul>
+  <li>Overall coverage percentage (requirements with at least one trace link).</li>
+  <li>Coverage by module / type / priority.</li>
+  <li>A list of uncovered requirements (no links yet).</li>
+  <li>A list of model elements with no incoming requirements.</li>
+</ul>
+
+<h2>Step 5 — Export Back to ReqIF</h2>
+
+<pre><code>Export all requirements to ReqIF at path "/output/updated_requirements.reqif"</code></pre>
+
+<p>
+  The agent calls <code>export_reqif</code> and writes the updated ReqIF file with
+  trace links included. The output is compatible with standard ReqIF tooling (IBM DOORS,
+  PTC Integrity, Polarion).
+</p>
+
+<div class="tip">
+  <strong>Tip:</strong> After linking, run the coverage dashboard again to confirm coverage
+  improved. Then ask: "Which requirements are still uncovered?" to get a focused list for
+  the next linking session.
+</div>
+
+<div class="tip">
+  <strong>Next recipe:</strong> <a href="cookbook_sustainment.html">Sustainment Engineering Demo</a> —
+  the full 5-minute fault triage walkthrough using the IFE model.
+</div>
+
+</body>
+</html>

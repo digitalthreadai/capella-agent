@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Recipe: Sustainment Engineering Demo — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <a href="cookbook.html">Cookbook</a> &rsaquo;
+  <strong>Sustainment Demo</strong>
+</nav>
+
+<h1>Recipe: Sustainment Engineering Demo</h1>
+
+<p>
+  This recipe walks through the full 5-minute IFE demo — the flagship showcase of
+  Capella Agent. A sustainment engineer diagnoses a field fault using the live
+  Capella model in under 60 seconds.
+</p>
+
+<p>
+  <strong>Target audience:</strong> Aerospace and defense sustainment engineering teams,
+  Capella Days attendees, enterprise buyers evaluating the tool.
+</p>
+
+<h2>The Story Arc</h2>
+
+<blockquote>
+  <em>It's 3am. A sustainment engineer receives a fault report from the field. Today, they
+  open four different tools and spend 90 minutes identifying the right subsystem to dispatch.
+  Watch the agent do it in 60 seconds.</em>
+</blockquote>
+
+<h2>Setup</h2>
+
+<ol>
+  <li>Open the IFE project in Capella with the <code>.aird</code> session running.</li>
+  <li>Open the <em>AI Model Chat</em> view (<strong>Ctrl+Shift+M</strong>).</li>
+  <li>Set the mode dropdown to <strong>Sustainment Engineer</strong>.</li>
+  <li>Confirm the chat is empty (use <code>/clear</code> if needed).</li>
+  <li>Verify the status bar shows "Ready" next to your provider name.</li>
+</ol>
+
+<h2>The Demo Query</h2>
+
+<p>Click the first starter prompt from the empty-state card, or type it manually:</p>
+<pre><code>The Seat TV in row 14 is rebooting every time we try to play a VOD movie. Where should I look?</code></pre>
+
+<h2>Expected Agent Response Flow</h2>
+
+<p>The agent calls four tools in sequence:</p>
+
+<table>
+  <tr><th>Tool Call</th><th>Result</th></tr>
+  <tr>
+    <td><code>classify_fault_ata</code></td>
+    <td>ATA chapter 44 — Cabin Systems (shown as a badge in chat)</td>
+  </tr>
+  <tr>
+    <td><code>lookup_fault_symptom</code></td>
+    <td>Candidate component types: Cabin Video Display Unit, Cabin Video Player, Cabin Video Unit SW</td>
+  </tr>
+  <tr>
+    <td><code>get_functional_chain</code></td>
+    <td>The chain from <em>Acquire Audio Stream</em> &rarr; <em>Decode Video Packet</em> &rarr; <em>Display Video on Seat TV</em> (UUID: 07256f31-32c7-42f5-b36b-bebd43492921)</td>
+  </tr>
+  <tr>
+    <td><code>impact_analysis</code></td>
+    <td>7 components + 12 exchanges in the impact radius</td>
+  </tr>
+</table>
+
+<p>The final response includes:</p>
+<ul>
+  <li>Likely subsystem: <strong>Cabin Video Display Unit</strong></li>
+  <li>ATA chapter: <strong>44 - Cabin Systems</strong></li>
+  <li>Affected functional chain (with clickable UUID)</li>
+  <li>Prioritized components to inspect</li>
+  <li>Related requirements (REQ-IFE-047, REQ-IFE-091)</li>
+  <li>Recommended action: pull the Cabin Video Display Unit for row 14</li>
+</ul>
+
+<p>
+  The elapsed time indicator in the response shows approximately <strong>47 seconds</strong>.
+  That is the payoff moment.
+</p>
+
+<h2>Click-Through: Navigate to the Functional Chain</h2>
+
+<p>
+  Click the UUID <code>07256f31-32c7-42f5-b36b-bebd43492921</code> in the response.
+  The Project Explorer jumps to <em>Display VOD Movie on Seat TV</em> and highlights it.
+  The associated Sirius diagram opens with that functional chain in focus.
+</p>
+
+<h2>Trust: Audit Log and Undo</h2>
+
+<p>
+  Open <strong>Window &rarr; Show View &rarr; Audit Log</strong>.
+  Every tool call is recorded: tool name, parameters, element UUIDs touched, and timestamp.
+  Nothing is hidden.
+</p>
+
+<p>
+  In Capella, go to <strong>Edit &rarr; Undo</strong>. Every action the agent took is on the
+  Eclipse undo stack. Nothing is irreversible.
+</p>
+
+<h2>Reach: Offline Mode and MCP Bridge</h2>
+
+<ul>
+  <li>Switch the provider to <strong>Ollama (Local)</strong> in Preferences. The status bar shows "Ready — offline". The entire assistant runs locally on your laptop, suitable for ITAR or air-gapped networks.</li>
+  <li>In a terminal, run <code>claude "List all physical functions from the IFE model"</code> via the MCP bridge. All 95+ tools are available from the command line too.</li>
+</ul>
+
+<h2>Additional Demo Queries</h2>
+
+<pre><code>During an airline-imposed safety video broadcast, audio is silent on the cabin terminal
+but video plays fine. What functions are involved in audio routing for imposed broadcasts?</code></pre>
+
+<pre><code>The Available VOD Movies List on the seat-back display is showing yesterday's titles.
+The Applications Server was rebooted. Which functions feed that list?</code></pre>
+
+<div class="tip">
+  <strong>Live demo tip:</strong> Run all three queries at least once before a live presentation
+  to verify the model has the right elements. See the verification checklist in
+  <code>demo/SUSTAINMENT_DEMO_SCRIPT.md</code> for full pre-flight steps.
+</div>
+
+</body>
+</html>

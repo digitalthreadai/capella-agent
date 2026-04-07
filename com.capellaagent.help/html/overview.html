@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Capella Agent — Overview</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <strong>Capella Agent Help</strong>
+</nav>
+
+<h1>Capella Agent — Overview</h1>
+
+<p>
+  <strong>Capella Agent</strong> is an AI-powered multi-agent ecosystem embedded inside
+  Eclipse Capella. It lets systems engineers query, explore, and modify their ARCADIA models
+  using plain English, driven by state-of-the-art large language models.
+</p>
+
+<h2>Key Capabilities</h2>
+
+<table>
+  <tr><th>Capability</th><th>Details</th></tr>
+  <tr><td><strong>95+ model tools</strong></td><td>Read, write, diagram, analysis, export, transition, AI intelligence, Teamcenter, simulation</td></tr>
+  <tr><td><strong>10 LLM providers</strong></td><td>Claude (Anthropic), OpenAI, Azure OpenAI, GitHub Models, Groq, Mistral, OpenRouter, Ollama, LM Studio, Custom OpenAI-compatible</td></tr>
+  <tr><td><strong>MCP bridge</strong></td><td>All 95+ tools exposed via the Model Context Protocol so Claude Code in your terminal can access your live Capella model</td></tr>
+  <tr><td><strong>4 agent modes</strong></td><td>General Assistant, Sustainment Engineer, Requirements Analyst (Week 13-16), Architect (Week 17-22)</td></tr>
+  <tr><td><strong>Offline / air-gapped</strong></td><td>Use Ollama or LM Studio for fully local, ITAR-safe operation</td></tr>
+  <tr><td><strong>Audit log</strong></td><td>Every tool call is logged with parameters, element UUIDs, and timestamps</td></tr>
+</table>
+
+<h2>Architecture Overview</h2>
+
+<pre>
++------------------------------------------------------------------+
+|                      Eclipse Capella Workbench                   |
+|  +--------------------+   +----------------------------------+   |
+|  |  AI Model Chat UI  |   |   com.capellaagent.modelchat     |   |
+|  |  (Browser widget)  +---+   95+ CapellaTool instances      |   |
+|  +--------+-----------+   +------------+---------------------+   |
+|           |                            |                         |
+|  +--------v-----------+   +------------v---------------------+   |
+|  | com.capellaagent   |   |   Capella Model (EMF / Sirius)   |   |
+|  |   .core            |   |   CapellaModelService            |   |
+|  | LLM providers (10) |   +----------------------------------+   |
+|  | Tool framework     |                                          |
+|  | Event bus          |   +----------------------------------+   |
+|  | Session persistence|   |  com.capellaagent.mcp            |   |
+|  +--------------------+   |  MCP JSON-RPC server             |   |
+|                           |  (Claude Code bridge)            |   |
+|                           +----------------------------------+   |
++------------------------------------------------------------------+
+</pre>
+
+<h2>Bundle Map</h2>
+
+<table>
+  <tr><th>Bundle</th><th>Purpose</th></tr>
+  <tr><td><code>com.capellaagent.core</code></td><td>LLM providers, tool framework, event bus, config, security, session persistence</td></tr>
+  <tr><td><code>com.capellaagent.core.ui</code></td><td>Reusable chat widgets, markdown rendering, HTML browser widget</td></tr>
+  <tr><td><code>com.capellaagent.modelchat</code></td><td>All 95+ Capella model tools (read, write, diagram, analysis, export, transition, AI)</td></tr>
+  <tr><td><code>com.capellaagent.modelchat.ui</code></td><td>AI Model Chat view, toolbar, mode selector, welcome wizard</td></tr>
+  <tr><td><code>com.capellaagent.teamcenter</code></td><td>Siemens Teamcenter PLM integration (7 tools — customer-specific)</td></tr>
+  <tr><td><code>com.capellaagent.simulation</code></td><td>MATLAB/Simulink simulation bridge (6 tools)</td></tr>
+  <tr><td><code>com.capellaagent.simulation.ui</code></td><td>Simulation dashboard view</td></tr>
+  <tr><td><code>com.capellaagent.mcp</code></td><td>Model Context Protocol server — exposes tools to Claude Code CLI</td></tr>
+  <tr><td><code>com.capellaagent.help</code></td><td>This documentation bundle</td></tr>
+</table>
+
+<h2>Quick Start</h2>
+
+<ol>
+  <li><a href="installation.html">Install the plugin</a> using <code>reinstall.bat</code> or Install New Software.</li>
+  <li><a href="provider_setup.html">Configure an LLM provider</a> — GitHub Models is free and requires no billing.</li>
+  <li><a href="first_chat.html">Open the IFE sample model</a> and send your first query.</li>
+</ol>
+
+<div class="tip">
+  <strong>New to Capella Agent?</strong> Start with the
+  <a href="getting_started.html">Getting Started</a> guide, then work through the
+  <a href="cookbook.html">Cookbook</a> for practical step-by-step recipes.
+</div>
+
+</body>
+</html>

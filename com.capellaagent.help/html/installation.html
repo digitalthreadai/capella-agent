@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Installation Guide — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <a href="getting_started.html">Getting Started</a> &rsaquo;
+  <strong>Installation</strong>
+</nav>
+
+<h1>Installation Guide</h1>
+
+<h2>Prerequisites</h2>
+
+<table>
+  <tr><th>Requirement</th><th>Version</th><th>Download</th></tr>
+  <tr><td>Eclipse Capella</td><td>7.0.1</td><td><a href="https://www.eclipse.org/capella/download.html">eclipse.org/capella</a></td></tr>
+  <tr><td>Java JDK</td><td>17+</td><td><a href="https://adoptium.net">adoptium.net</a> (Temurin)</td></tr>
+  <tr><td>Apache Maven</td><td>3.8+</td><td><a href="https://maven.apache.org/download.cgi">maven.apache.org</a> (build only)</td></tr>
+  <tr><td>Git</td><td>2.x</td><td><a href="https://git-scm.com">git-scm.com</a> (build only)</td></tr>
+</table>
+
+<p>
+  Verify your Java version: open a terminal and run <code>java -version</code>.
+  If Capella launches with a bundled JRE, ensure it is also Java 17 by checking
+  <strong>Help &rarr; About Capella &rarr; Installation Details &rarr; Configuration</strong>.
+</p>
+
+<h2>Option A: Build from Source with reinstall.bat</h2>
+
+<p>This is the recommended path for developers and early adopters.</p>
+
+<h3>Step 1 — Clone the repository</h3>
+<pre><code>git clone https://github.com/your-org/capella-agent.git
+cd capella-agent</code></pre>
+
+<h3>Step 2 — Generate the local Capella p2 repository</h3>
+<p>
+  Capella's OSGi bundles are not on Maven Central, so the build references a local p2 repository
+  generated from your Capella installation.
+</p>
+<pre><code># Windows (from the Capella installation directory)
+# The p2 repo is usually already present at:
+#   C:\Apps\capella-7.0.1\p2repo
+# If it is missing, see tools/README.md for generation steps.</code></pre>
+
+<h3>Step 3 — Configure CAPELLA_HOME in reinstall.bat</h3>
+<p>Open <code>reinstall.bat</code> and edit the <code>CAPELLA_HOME</code> variable:</p>
+<pre><code>set CAPELLA_HOME=C:\Apps\capella-7.0.1</code></pre>
+
+<h3>Step 4 — Run the build</h3>
+<pre><code>reinstall.bat</code></pre>
+<p>This runs <code>mvn clean verify</code> then copies all plugin JARs into Capella's <code>dropins/</code> folder.</p>
+
+<h3>Step 5 — Restart Capella</h3>
+<p>Close and reopen Capella. The plugin loads automatically from the <code>dropins</code> folder.</p>
+
+<h2>Option B: Maven Build Only (no reinstall.bat)</h2>
+
+<pre><code>mvn clean verify -pl com.capellaagent.site -am</code></pre>
+<p>
+  The built p2 update site is generated at
+  <code>com.capellaagent.site/target/repository/</code>.
+  Use this path as the update site URL in the next option.
+</p>
+
+<h2>Option C: Install New Software (GUI)</h2>
+
+<ol>
+  <li>Build the p2 site using Option B, or obtain a pre-built ZIP from GitHub Releases.</li>
+  <li>In Capella: <strong>Help &rarr; Install New Software...</strong></li>
+  <li>Click <strong>Add...</strong></li>
+  <li>Enter a name (e.g., <em>Capella Agent</em>) and click <strong>Local...</strong> to browse to
+      <code>com.capellaagent.site/target/repository</code> or <strong>Archive...</strong> for a ZIP file.</li>
+  <li>Select <strong>Capella Agent - AI Multi-Agent Ecosystem</strong>.</li>
+  <li>Click <strong>Next</strong>, review the items, accept the EPL 2.0 license, and click <strong>Finish</strong>.</li>
+  <li>Restart Capella when prompted.</li>
+</ol>
+
+<div class="warning">
+  <strong>SmartScreen warning (Windows):</strong> Because the JARs are not yet code-signed,
+  Windows SmartScreen may block the installation. Right-click the downloaded ZIP,
+  select <strong>Properties</strong>, and click <strong>Unblock</strong>.
+  See <a href="known_limitations.html">Known Limitations #8</a>.
+</div>
+
+<h2>Verifying the Installation</h2>
+
+<ol>
+  <li>In Capella, open <strong>Help &rarr; About Capella &rarr; Installation Details</strong>.</li>
+  <li>On the <strong>Plug-ins</strong> tab, search for <code>com.capellaagent</code>.</li>
+  <li>You should see all 9 bundles listed with version <code>1.0.0.qualifier</code>.</li>
+  <li>Open the <em>AI Model Chat</em> view with <strong>Ctrl+Shift+M</strong>.
+      The view should appear with the welcome wizard or an empty chat state.</li>
+</ol>
+
+<h2>Common Installation Errors</h2>
+
+<table>
+  <tr><th>Error</th><th>Cause</th><th>Fix</th></tr>
+  <tr>
+    <td>Cannot resolve dependency <code>org.polarsys.capella.core.data.gen</code></td>
+    <td>The Capella p2 repository is not configured or the path is wrong</td>
+    <td>Check <code>CAPELLA_HOME</code> in reinstall.bat and verify the <code>p2repo</code> folder exists</td>
+  </tr>
+  <tr>
+    <td><code>mvn: command not found</code></td>
+    <td>Maven is not on PATH</td>
+    <td>Add Maven's <code>bin/</code> directory to your system PATH, or use the full path</td>
+  </tr>
+  <tr>
+    <td>Capella starts but no <em>AI Model Chat</em> view in the menu</td>
+    <td>The plugin JARs were not copied to <code>dropins/</code></td>
+    <td>Run <code>reinstall.bat</code> again and check for errors in the Maven output</td>
+  </tr>
+  <tr>
+    <td>Java version error during build</td>
+    <td>Maven is using Java 11 or earlier</td>
+    <td>Set <code>JAVA_HOME</code> to a Java 17+ JDK before running the build</td>
+  </tr>
+</table>
+
+</body>
+</html>

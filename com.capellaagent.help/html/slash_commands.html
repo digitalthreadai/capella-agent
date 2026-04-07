@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Slash Commands — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <a href="user_guide.html">User Guide</a> &rsaquo;
+  <strong>Slash Commands</strong>
+</nav>
+
+<h1>Slash Commands</h1>
+
+<p>
+  Slash commands are typed directly in the chat input field. They begin with a forward
+  slash (<code>/</code>) and are processed immediately without sending anything to the LLM.
+  Type <code>/help</code> at any time to see this list inside the chat view.
+</p>
+
+<h2>Command Reference</h2>
+
+<table>
+  <tr><th>Command</th><th>Aliases</th><th>Description</th><th>Example</th></tr>
+  <tr>
+    <td><code>/help</code></td>
+    <td><code>/h</code>, <code>/?</code></td>
+    <td>Display the slash command reference inside the chat view</td>
+    <td><code>/help</code></td>
+  </tr>
+  <tr>
+    <td><code>/clear</code></td>
+    <td><code>/c</code>, <code>/reset</code></td>
+    <td>Clear the conversation history and return to the empty state. Does not affect model changes already made.</td>
+    <td><code>/clear</code></td>
+  </tr>
+  <tr>
+    <td><code>/export</code></td>
+    <td><code>/e</code>, <code>/save</code></td>
+    <td>Export the current conversation to an HTML or Markdown file. Opens a file save dialog.</td>
+    <td><code>/export</code></td>
+  </tr>
+  <tr>
+    <td><code>/mode</code></td>
+    <td><code>/m</code></td>
+    <td>Switch the active agent mode. Provide the mode name as an argument. Valid modes: <code>general</code>, <code>sustainment</code>, <code>requirements</code>, <code>architect</code>.</td>
+    <td><code>/mode sustainment</code></td>
+  </tr>
+  <tr>
+    <td><code>/tools</code></td>
+    <td><code>/t</code></td>
+    <td>Show the full list of available tools with their categories and descriptions. The list is rendered as an HTML table in the chat area.</td>
+    <td><code>/tools</code></td>
+  </tr>
+  <tr>
+    <td><code>/model</code></td>
+    <td>—</td>
+    <td>Show the currently active provider and model. Optionally switch model with an argument (must be a model supported by the active provider).</td>
+    <td><code>/model</code><br/><code>/model gpt-4o</code></td>
+  </tr>
+  <tr>
+    <td><code>/providers</code></td>
+    <td><code>/p</code></td>
+    <td>List all configured providers with their connection status (green/red) and the currently selected model for each.</td>
+    <td><code>/providers</code></td>
+  </tr>
+  <tr>
+    <td><code>/undo</code></td>
+    <td><code>/u</code></td>
+    <td>Trigger Eclipse's undo action from within the chat. Equivalent to pressing Ctrl+Z in the Capella workbench. Useful after a model-modifying tool call.</td>
+    <td><code>/undo</code></td>
+  </tr>
+  <tr>
+    <td><code>/version</code></td>
+    <td><code>/v</code></td>
+    <td>Display the Capella Agent version, build date, active provider, and the version of the connected Capella installation.</td>
+    <td><code>/version</code></td>
+  </tr>
+</table>
+
+<h2>Notes</h2>
+
+<ul>
+  <li>Slash commands are handled client-side in the plugin and do not consume any LLM tokens.</li>
+  <li>Arguments are separated from the command by a space: <code>/mode sustainment</code>.</li>
+  <li>Unknown commands are passed through to the LLM as regular text (the leading slash is preserved).</li>
+  <li><code>/clear</code> does not undo any model changes. Use <code>Edit &rarr; Undo</code> or <code>/undo</code> to revert model changes.</li>
+</ul>
+
+<div class="tip">
+  <strong>Quick tip:</strong> After a long debugging session, use <code>/clear</code> to start
+  fresh. The token counter drops to zero and you get the full context window back.
+</div>
+
+</body>
+</html>

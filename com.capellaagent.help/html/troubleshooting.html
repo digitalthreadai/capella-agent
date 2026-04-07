@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Troubleshooting — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo; <strong>Troubleshooting</strong>
+</nav>
+
+<h1>Troubleshooting</h1>
+
+<p>
+  This page covers common issues and their solutions. If you encounter a problem not
+  listed here, please file a GitHub issue with the log output from
+  <strong>Window &rarr; Show View &rarr; Error Log</strong>.
+</p>
+
+<h2>Common Issues</h2>
+
+<h3>Error: "Multiple Capella projects are open"</h3>
+
+<p>
+  <strong>Symptom:</strong> The agent replies that it cannot determine which project to use,
+  or the result table shows elements from the wrong project.
+</p>
+<p>
+  <strong>Cause:</strong> You have more than one Capella project open with an active
+  Sirius session.
+</p>
+<p>
+  <strong>Fix:</strong> Use the <strong>project dropdown</strong> in the chat view toolbar
+  to explicitly select the project you want the agent to work with.
+</p>
+
+<h3>Error: "No open Capella sessions found"</h3>
+
+<p>
+  <strong>Symptom:</strong> The agent replies that it cannot find any open Capella models.
+</p>
+<p>
+  <strong>Cause:</strong> No Capella project has an active Sirius session. Either no project
+  is open, or the <code>.aird</code> file has not been opened.
+</p>
+<p>
+  <strong>Fix:</strong> Double-click the <code>.aird</code> file in the Project Explorer to
+  open the Sirius session. The status indicator in the chat view toolbar should change from
+  red to green.
+</p>
+
+<h3>Error: "Could not authenticate" / 401 Unauthorized</h3>
+
+<p>
+  <strong>Symptom:</strong> The agent sends a query but returns an authentication error.
+</p>
+<p>
+  <strong>Cause:</strong> The API key for the active provider is missing, expired, or incorrect.
+</p>
+<p>
+  <strong>Fix:</strong>
+</p>
+<ol>
+  <li>Open <strong>Window &rarr; Preferences &rarr; Capella Agent &rarr; LLM Providers</strong>.</li>
+  <li>Select the active provider.</li>
+  <li>Re-enter the API key (keys must be re-entered after Capella restarts due to OS keystore
+      access policies on some machines).</li>
+  <li>Click <strong>Test Connection</strong>. A green checkmark confirms the key works.</li>
+  <li>Click <strong>Apply and Close</strong>.</li>
+</ol>
+
+<h3>Error: "Context length exceeded"</h3>
+
+<p>
+  <strong>Symptom:</strong> The agent returns an error stating the conversation is too long,
+  or the provider API returns a 400 error referencing context length.
+</p>
+<p>
+  <strong>Cause:</strong> The accumulated conversation history plus the model results exceeds
+  the provider's context window limit.
+</p>
+<p>
+  <strong>Fix options:</strong>
+</p>
+<ul>
+  <li>Type <code>/clear</code> to reset the conversation and start a fresh session.</li>
+  <li>Switch to a provider with a larger context window. Claude (Anthropic) supports up to
+      200k tokens; OpenAI GPT-4o supports 128k tokens; Groq supports up to 32k tokens.</li>
+  <li>Use more targeted queries instead of listing all elements — ask for specific layers,
+      types, or use the <code>max_results</code> limit.</li>
+</ul>
+
+<h3>Error: "Tool not available" / Hallucinated tool name</h3>
+
+<p>
+  <strong>Symptom:</strong> The agent attempts to call a tool that does not exist (e.g.,
+  <code>get_all_model_data</code> or <code>search_model</code>) and reports that the tool
+  is not available.
+</p>
+<p>
+  <strong>Cause:</strong> The LLM hallucinated a tool name. This happens more frequently
+  with smaller models or when the query uses vocabulary that does not match any real tool.
+</p>
+<p>
+  <strong>Fix:</strong> Rephrase your query using more specific vocabulary.
+  For example:
+</p>
+<ul>
+  <li>Instead of "search the model for avionics" &rarr; "List all components in the PA layer
+      whose name contains Avionics"</li>
+  <li>Type <code>/tools</code> to see the full list of available tool names for reference.</li>
+  <li>Use a more capable model (e.g., Claude Opus or GPT-4o) for complex multi-step queries
+      where smaller models tend to hallucinate.</li>
+</ul>
+
+<h3>Performance: Slow First Query</h3>
+
+<p>
+  <strong>Symptom:</strong> The first query after opening Capella Agent takes 5–15 seconds
+  before the LLM starts responding.
+</p>
+<p>
+  <strong>Cause:</strong> The first call initializes the HTTP client, warms the JVM JIT
+  compiler, and (for some providers) establishes a TLS session.
+</p>
+<p>
+  <strong>Fix:</strong> Send a simple warm-up query when you first open the chat view,
+  such as "Hello" or "/version". Subsequent queries will be significantly faster.
+</p>
+
+<h3>Installation Error Table</h3>
+
+<table>
+  <tr><th>Error Message</th><th>Cause</th><th>Fix</th></tr>
+  <tr>
+    <td><code>Cannot resolve dependency org.polarsys.capella.core.data.gen</code></td>
+    <td>Capella p2 repository not configured or path is wrong</td>
+    <td>Check <code>CAPELLA_HOME</code> in reinstall.bat; verify the <code>p2repo</code> folder exists</td>
+  </tr>
+  <tr>
+    <td><code>mvn: command not found</code></td>
+    <td>Maven not on PATH</td>
+    <td>Add Maven's <code>bin/</code> to your PATH, or set <code>MAVEN_HOME</code></td>
+  </tr>
+  <tr>
+    <td>Capella starts but no AI Model Chat menu item</td>
+    <td>Plugin JARs not copied to <code>dropins/</code></td>
+    <td>Re-run <code>reinstall.bat</code> and check Maven output for errors</td>
+  </tr>
+  <tr>
+    <td><code>UnsupportedClassVersionError</code> on startup</td>
+    <td>Plugin was compiled with Java 17 but Capella's JVM is older</td>
+    <td>Ensure Capella's JVM is Java 17+; check <code>-vm</code> argument in <code>capella.ini</code></td>
+  </tr>
+  <tr>
+    <td>SmartScreen warning on Windows install</td>
+    <td>Plugin JAR is not code-signed (beta limitation)</td>
+    <td>Right-click ZIP &rarr; Properties &rarr; Unblock. See <a href="known_limitations.html">Known Limitations #8</a>.</td>
+  </tr>
+  <tr>
+    <td><code>SWTException: Widget is disposed</code> in Error Log</td>
+    <td>Browser widget disposed while a response was streaming (usually after closing the view)</td>
+    <td>Harmless — close the Error Log. Reopen the chat view if needed.</td>
+  </tr>
+</table>
+
+<div class="tip">
+  <strong>Still stuck?</strong> Open <strong>Window &rarr; Show View &rarr; Error Log</strong>,
+  copy the full stack trace, and file a GitHub issue. Include your Capella version,
+  Java version, OS, and the provider you are using.
+</div>
+
+</body>
+</html>

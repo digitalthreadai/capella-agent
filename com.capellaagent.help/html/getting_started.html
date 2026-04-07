@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Getting Started with Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo; <strong>Getting Started</strong>
+</nav>
+
+<h1>Getting Started with Capella Agent</h1>
+
+<p>
+  This guide walks you from a fresh Capella installation to your first AI-assisted model query
+  in about 10 minutes.
+</p>
+
+<h2>Prerequisites</h2>
+
+<table>
+  <tr><th>Requirement</th><th>Version</th><th>Notes</th></tr>
+  <tr><td>Eclipse Capella</td><td>7.0.1</td><td>Available from polarsys.org</td></tr>
+  <tr><td>Java</td><td>17 or later</td><td>Must be the JVM Capella launches with</td></tr>
+  <tr><td>Maven (for build)</td><td>3.8+</td><td>Only needed if building from source</td></tr>
+  <tr><td>Internet access</td><td>—</td><td>Required for cloud LLM providers; not needed for Ollama</td></tr>
+</table>
+
+<h2>Installation Methods</h2>
+
+<h3>Method 1: reinstall.bat (Recommended for Development)</h3>
+
+<p>
+  The <code>reinstall.bat</code> script in the repository root builds the plugin from source
+  and side-loads it directly into your Capella installation. This is the fastest workflow
+  when you want to keep up with the latest changes.
+</p>
+
+<ol>
+  <li>Clone the repository: <code>git clone https://github.com/your-org/capella-agent.git</code></li>
+  <li>Edit <code>reinstall.bat</code> and set <code>CAPELLA_HOME</code> to your Capella installation directory (e.g., <code>C:\Apps\capella-7.0.1</code>).</li>
+  <li>Run <code>reinstall.bat</code> from the repository root. It runs <code>mvn clean verify</code> then copies the plugin JARs into Capella's <code>dropins</code> folder.</li>
+  <li>Restart Capella.</li>
+</ol>
+
+<div class="tip">
+  <strong>Tip:</strong> After the first successful build, subsequent rebuilds only take 30-60 seconds
+  because Maven caches the compiled classes.
+</div>
+
+<h3>Method 2: Install New Software (GUI)</h3>
+
+<ol>
+  <li>In Capella, open <strong>Help &rarr; Install New Software...</strong></li>
+  <li>Click <strong>Add...</strong> and point to the p2 update site URL (or a local <code>file:///</code> path to <code>com.capellaagent.site/target/repository</code> after building).</li>
+  <li>Select <strong>Capella Agent - AI Multi-Agent Ecosystem</strong> from the category list.</li>
+  <li>Follow the wizard. Accept the EPL 2.0 license. Restart when prompted.</li>
+</ol>
+
+<div class="warning">
+  <strong>Note:</strong> Plugin JARs in this beta release are not code-signed. Windows may show a SmartScreen
+  warning. See <a href="known_limitations.html">Known Limitations #8</a> for the workaround.
+</div>
+
+<h2>First Launch — The Welcome Wizard</h2>
+
+<p>
+  The first time you open the <em>AI Model Chat</em> view, a welcome wizard appears automatically.
+  It guides you through:
+</p>
+<ol>
+  <li>Selecting an LLM provider (GitHub Models is pre-selected as the free default)</li>
+  <li>Entering your API key and clicking <strong>Test Connection</strong></li>
+  <li>Choosing your default agent mode (General Assistant for most users)</li>
+</ol>
+
+<p>
+  You can revisit these settings at any time via <strong>Window &rarr; Preferences &rarr; Capella Agent</strong>.
+</p>
+
+<h2>Opening the Chat View</h2>
+
+<p>Three ways to open the <em>AI Model Chat</em> view:</p>
+<ul>
+  <li>Keyboard shortcut: <strong>Ctrl+Shift+M</strong></li>
+  <li>Menu: <strong>Window &rarr; Show View &rarr; Other... &rarr; Capella Agent &rarr; AI Model Chat</strong></li>
+  <li>Toolbar: click the robot icon in the Capella toolbar (if visible)</li>
+</ul>
+
+<h2>Your First Query</h2>
+
+<ol>
+  <li>Open the <strong>In-Flight Entertainment (IFE)</strong> sample model included in the repository under <code>demo/</code>.</li>
+  <li>In the chat view, make sure the IFE project is selected in the project dropdown.</li>
+  <li>Type the following in the input field and press <strong>Enter</strong>:
+    <pre><code>List all physical functions</code></pre>
+  </li>
+  <li>The agent calls <code>list_elements</code> with <code>layer=pa, element_type=functions</code> and returns a sortable HTML table of all physical functions with their UUIDs, names, and descriptions.</li>
+  <li>Click any UUID in the table to navigate to that element in the Project Explorer.</li>
+</ol>
+
+<div class="tip">
+  <strong>Next steps:</strong> Read the <a href="first_chat.html">First Chat</a> guide for a full
+  walkthrough of the result table and toolbar buttons, or jump straight to the
+  <a href="cookbook_explore.html">Explore a Model</a> recipe.
+</div>
+
+</body>
+</html>

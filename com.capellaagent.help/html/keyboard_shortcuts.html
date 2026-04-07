@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Keyboard Shortcuts — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+kbd { background: #e8e8e8; border: 1px solid #ccc; border-radius: 3px; padding: 2px 6px;
+      font-family: monospace; font-size: 0.9em; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <a href="user_guide.html">User Guide</a> &rsaquo;
+  <strong>Keyboard Shortcuts</strong>
+</nav>
+
+<h1>Keyboard Shortcuts</h1>
+
+<h2>Capella Agent Shortcuts</h2>
+
+<table>
+  <tr><th>Shortcut</th><th>Action</th><th>Context</th></tr>
+  <tr>
+    <td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd></td>
+    <td>Open AI Model Chat view</td>
+    <td>Global (Capella workbench)</td>
+  </tr>
+  <tr>
+    <td><kbd>Enter</kbd></td>
+    <td>Send message</td>
+    <td>Chat input field has focus</td>
+  </tr>
+  <tr>
+    <td><kbd>Shift</kbd>+<kbd>Enter</kbd></td>
+    <td>Insert a new line (multi-line input)</td>
+    <td>Chat input field has focus</td>
+  </tr>
+  <tr>
+    <td><kbd>Esc</kbd></td>
+    <td>Cancel the running LLM request / tool execution</td>
+    <td>Chat view (while a response is streaming)</td>
+  </tr>
+  <tr>
+    <td><kbd>Ctrl</kbd>+<kbd>L</kbd></td>
+    <td>Clear the conversation (same as <code>/clear</code>)</td>
+    <td>Chat view has focus</td>
+  </tr>
+  <tr>
+    <td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td>
+    <td>Undo the last model change (Eclipse standard undo)</td>
+    <td>Global</td>
+  </tr>
+</table>
+
+<h2>Notes on Conflicts</h2>
+
+<div class="warning">
+  <strong>Ctrl+E conflict:</strong> The Export toolbar button does not have a dedicated keyboard
+  shortcut because <kbd>Ctrl</kbd>+<kbd>E</kbd> is already used by Capella for
+  "Open Resource" (Quick Access). Use the export toolbar button or type <code>/export</code>
+  in the chat input instead.
+</div>
+
+<div class="tip">
+  <strong>Re-mapping shortcuts:</strong> Capella Agent shortcuts can be customized in
+  <strong>Window &rarr; Preferences &rarr; General &rarr; Keys</strong>.
+  Search for "Capella Agent" to see all bindable commands.
+</div>
+
+<h2>Standard Eclipse Shortcuts Useful with Capella Agent</h2>
+
+<table>
+  <tr><th>Shortcut</th><th>Action</th><th>Why It Is Useful</th></tr>
+  <tr>
+    <td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td>
+    <td>Undo</td>
+    <td>Reverses the last model change made by a tool call. For multi-tool turns, press multiple times.</td>
+  </tr>
+  <tr>
+    <td><kbd>Ctrl</kbd>+<kbd>Y</kbd></td>
+    <td>Redo</td>
+    <td>Reapplies a change after undo.</td>
+  </tr>
+  <tr>
+    <td><kbd>F5</kbd></td>
+    <td>Refresh</td>
+    <td>Refreshes the Project Explorer after model changes.</td>
+  </tr>
+  <tr>
+    <td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd></td>
+    <td>Open Resource</td>
+    <td>Quickly navigate to any file in the workspace.</td>
+  </tr>
+  <tr>
+    <td><kbd>Ctrl</kbd>+<kbd>F6</kbd></td>
+    <td>Switch editor</td>
+    <td>Cycle through open diagrams and editors.</td>
+  </tr>
+</table>
+
+</body>
+</html>

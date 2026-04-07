@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Setting Up an LLM Provider — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <a href="getting_started.html">Getting Started</a> &rsaquo;
+  <strong>Provider Setup</strong>
+</nav>
+
+<h1>Setting Up an LLM Provider</h1>
+
+<p>
+  Capella Agent supports 10 LLM providers. You need at least one configured before the
+  agent can respond to queries.
+</p>
+
+<h2>Provider Quick Reference</h2>
+
+<table>
+  <tr><th>Provider</th><th>Free Tier</th><th>Offline</th><th>API Key Source</th></tr>
+  <tr><td>Claude (Anthropic)</td><td>No</td><td>No</td><td><a href="https://console.anthropic.com">console.anthropic.com</a></td></tr>
+  <tr><td>OpenAI</td><td>No</td><td>No</td><td><a href="https://platform.openai.com/api-keys">platform.openai.com</a></td></tr>
+  <tr><td>Azure OpenAI</td><td>No</td><td>No</td><td>Azure portal (your subscription)</td></tr>
+  <tr><td>GitHub Models</td><td><strong>Yes</strong></td><td>No</td><td><a href="https://github.com/settings/tokens">github.com/settings/tokens</a></td></tr>
+  <tr><td>Groq</td><td><strong>Yes</strong></td><td>No</td><td><a href="https://console.groq.com">console.groq.com</a></td></tr>
+  <tr><td>Mistral</td><td>Limited</td><td>No</td><td><a href="https://console.mistral.ai">console.mistral.ai</a></td></tr>
+  <tr><td>OpenRouter</td><td>Limited</td><td>No</td><td><a href="https://openrouter.ai/keys">openrouter.ai</a></td></tr>
+  <tr><td>Ollama</td><td><strong>Yes (local)</strong></td><td><strong>Yes</strong></td><td>No key needed</td></tr>
+  <tr><td>LM Studio</td><td><strong>Yes (local)</strong></td><td><strong>Yes</strong></td><td>No key needed</td></tr>
+  <tr><td>Custom OpenAI-compatible</td><td>Varies</td><td>Varies</td><td>Endpoint URL + optional key</td></tr>
+</table>
+
+<div class="tip">
+  <strong>Recommended for first-time users:</strong> GitHub Models is completely free
+  (no billing required), supports GPT-4o and several other models, and requires only a
+  GitHub personal access token which you likely already have.
+</div>
+
+<h2>Opening the Preferences Page</h2>
+
+<p>
+  All provider configuration lives in
+  <strong>Window &rarr; Preferences &rarr; Capella Agent &rarr; LLM Providers</strong>.
+</p>
+<p>
+  Select a provider from the left-hand list, enter the required fields, and click
+  <strong>Test Connection</strong>. A green checkmark confirms the key works. Click
+  <strong>Apply and Close</strong>.
+</p>
+
+<h2>Claude (Anthropic)</h2>
+
+<ol>
+  <li>Go to <a href="https://console.anthropic.com">console.anthropic.com</a> and sign up or log in.</li>
+  <li>Navigate to <strong>API Keys</strong> and create a new key.</li>
+  <li>Copy the key (it is shown only once).</li>
+  <li>In Capella Preferences, select <strong>Claude (Anthropic)</strong>.</li>
+  <li>Paste the key into the <strong>API Key</strong> field.</li>
+  <li>Select a model — <code>claude-opus-4-5</code> is the most capable, <code>claude-haiku-3-5</code> is fastest.</li>
+  <li>Click <strong>Test Connection</strong>.</li>
+</ol>
+
+<div class="tip">
+  <strong>Best model for MBSE:</strong> Claude excels at structured reasoning and long-context
+  analysis, making it ideal for large Capella models with hundreds of elements.
+</div>
+
+<h2>OpenAI</h2>
+
+<ol>
+  <li>Go to <a href="https://platform.openai.com/api-keys">platform.openai.com/api-keys</a>.</li>
+  <li>Create a new secret key and copy it.</li>
+  <li>In Capella Preferences, select <strong>OpenAI</strong>.</li>
+  <li>Paste the key and select a model (<code>gpt-4o</code> recommended).</li>
+  <li>Click <strong>Test Connection</strong>.</li>
+</ol>
+
+<h2>GitHub Models (Free)</h2>
+
+<ol>
+  <li>Go to <a href="https://github.com/settings/tokens">github.com/settings/tokens</a>.</li>
+  <li>Generate a new token (classic). No special scopes are required — a token with no
+      selected scopes works for GitHub Models.</li>
+  <li>Copy the token.</li>
+  <li>In Capella Preferences, select <strong>GitHub Models</strong>.</li>
+  <li>Paste the token into the <strong>API Key</strong> field.</li>
+  <li>Select a model — <code>gpt-4o</code> or <code>Meta-Llama-3.1-405B-Instruct</code>.</li>
+  <li>Click <strong>Test Connection</strong>.</li>
+</ol>
+
+<h2>Groq (Free)</h2>
+
+<ol>
+  <li>Go to <a href="https://console.groq.com">console.groq.com</a> and sign up.</li>
+  <li>Create an API key.</li>
+  <li>In Capella Preferences, select <strong>Groq</strong>.</li>
+  <li>Paste the key and select <code>llama-3.3-70b-versatile</code> or <code>mixtral-8x7b-32768</code>.</li>
+  <li>Click <strong>Test Connection</strong>.</li>
+</ol>
+
+<div class="tip">
+  <strong>Performance note:</strong> Groq uses custom inference hardware and is extremely fast —
+  often 10-20x faster than OpenAI for the same model size. Ideal for interactive queries.
+</div>
+
+<h2>Ollama (Offline / Air-Gapped)</h2>
+
+<ol>
+  <li>Install Ollama from <a href="https://ollama.com">ollama.com</a> on your local machine.</li>
+  <li>Pull a model: <code>ollama pull llama3.1</code> (or <code>mistral</code>, <code>codellama</code>, etc.).</li>
+  <li>Start Ollama: <code>ollama serve</code> (it runs on <code>http://localhost:11434</code> by default).</li>
+  <li>In Capella Preferences, select <strong>Ollama</strong>.</li>
+  <li>The base URL defaults to <code>http://localhost:11434</code> — change this if Ollama is on another host.</li>
+  <li>No API key is required.</li>
+  <li>Select the model you pulled from the dropdown (Capella Agent queries Ollama for the list).</li>
+  <li>Click <strong>Test Connection</strong>.</li>
+</ol>
+
+<div class="warning">
+  <strong>ITAR / air-gapped:</strong> When using Ollama or LM Studio, no data leaves your machine.
+  This is the approved path for ITAR-controlled program models.
+</div>
+
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tool Reference — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 960px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 36px; }
+h3 { color: #333; margin-top: 24px; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+.cat-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; background: #e8f4fd; color: #2C5F8A; }
+.roadmap { background: #fff3cd; color: #856404; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo; <strong>Tool Reference</strong>
+</nav>
+
+<h1>Tool Reference</h1>
+
+<p>
+  Capella Agent ships with <strong>95+ tools</strong> across 9 categories. Tools are invoked
+  automatically by the LLM based on your natural language queries — you rarely need to name
+  them explicitly. This reference is useful when you want to understand what is available
+  or when debugging unexpected behavior.
+</p>
+
+<p>
+  For the full tool details with all parameters, see
+  <code>TOOLS.md</code> in the repository root.
+</p>
+
+<h2>Category Summary</h2>
+
+<table>
+  <tr><th>Category</th><th>Count</th><th>Description</th></tr>
+  <tr><td>Model Read</td><td>21</td><td>Query elements, properties, relationships — read-only</td></tr>
+  <tr><td>Model Write</td><td>21</td><td>Create, update, delete model elements — modifies the model</td></tr>
+  <tr><td>Diagram</td><td>9</td><td>Create, refresh, export, and manage Sirius diagrams</td></tr>
+  <tr><td>Analysis</td><td>13</td><td>Validate, detect cycles, measure complexity, safety analysis</td></tr>
+  <tr><td>Export</td><td>8</td><td>CSV, JSON, ICD reports, traceability matrices, diff reports</td></tr>
+  <tr><td>Transition</td><td>5</td><td>ARCADIA layer transitions (OA &rarr; SA &rarr; LA &rarr; PA &rarr; EPBS)</td></tr>
+  <tr><td>AI Intelligence</td><td>5</td><td>Gather model context for AI-driven allocation, interfaces, review</td></tr>
+  <tr><td>Teamcenter</td><td>7</td><td>Siemens Teamcenter PLM integration (customer-specific, not fully implemented)</td></tr>
+  <tr><td>Simulation</td><td>6</td><td>MATLAB/Simulink simulation orchestration</td></tr>
+  <tr><td>Requirements</td><td>4</td><td><span class="cat-badge roadmap">Week 13-16</span> ReqIF, Excel import/export, coverage</td></tr>
+  <tr><td>Generative Architecture</td><td>5</td><td><span class="cat-badge roadmap">Week 17-22</span> Propose, decompose, find missing traces</td></tr>
+</table>
+
+<h2>Model Read Tools (21)</h2>
+
+<table>
+  <tr><th>Tool</th><th>Description</th><th>Key Parameters</th></tr>
+  <tr>
+    <td><code>list_elements</code></td>
+    <td>List model elements by ARCADIA layer and type. Returns name, UUID, type, description.</td>
+    <td><code>layer</code> (oa/sa/la/pa), <code>element_type</code> (functions/components/actors/exchanges/capabilities/all), <code>max_results</code></td>
+  </tr>
+  <tr>
+    <td><code>get_element_details</code></td>
+    <td>Get full details for a model element by UUID: all properties, exchanges, allocations.</td>
+    <td><code>id</code> (UUID)</td>
+  </tr>
+  <tr>
+    <td><code>search_elements</code></td>
+    <td>Search elements by name pattern (substring or regex) across all layers.</td>
+    <td><code>pattern</code>, <code>layer</code> (optional), <code>element_type</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>get_element_hierarchy</code></td>
+    <td>Get the containment hierarchy tree for an element (ancestors and descendants).</td>
+    <td><code>id</code> (UUID), <code>depth</code> (default 3)</td>
+  </tr>
+  <tr>
+    <td><code>list_diagrams</code></td>
+    <td>List all Sirius diagrams in the session with optional type and layer filters.</td>
+    <td><code>layer</code> (optional), <code>diagram_type</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>list_requirements</code></td>
+    <td>List requirements from the Requirements viewpoint with optional text filter.</td>
+    <td><code>filter</code> (optional text), <code>module</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>get_traceability</code></td>
+    <td>Get traceability links across ARCADIA layers for a given element.</td>
+    <td><code>id</code> (UUID), <code>direction</code> (upstream/downstream/both)</td>
+  </tr>
+  <tr>
+    <td><code>validate_model</code></td>
+    <td>Run structural validation and return a list of issues grouped by severity.</td>
+    <td><code>layer</code> (optional, defaults to all layers)</td>
+  </tr>
+  <tr>
+    <td><code>get_allocation_matrix</code></td>
+    <td>Get the function-to-component allocation matrix for a layer.</td>
+    <td><code>layer</code> (la/pa)</td>
+  </tr>
+  <tr>
+    <td><code>get_functional_chain</code></td>
+    <td>Get functional chain details including all involved functions and exchanges.</td>
+    <td><code>id</code> (UUID, optional), <code>name</code> (optional search)</td>
+  </tr>
+  <tr>
+    <td><code>get_interfaces</code></td>
+    <td>List interfaces with their exchange items, users, and involved components.</td>
+    <td><code>layer</code> (optional), <code>component_id</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>get_scenarios</code></td>
+    <td>List scenarios with instance roles and message sequences.</td>
+    <td><code>layer</code> (optional), <code>scenario_type</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>explain_element</code></td>
+    <td>Gather comprehensive context for AI explanation: full details, hierarchy, exchanges, allocations, diagrams.</td>
+    <td><code>id</code> (UUID)</td>
+  </tr>
+  <tr>
+    <td><code>get_state_machines</code></td>
+    <td>List state machines with states, transitions, and trigger conditions.</td>
+    <td><code>component_id</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>get_data_model</code></td>
+    <td>List data types and classes in a layer (for data-flow models).</td>
+    <td><code>layer</code></td>
+  </tr>
+  <tr>
+    <td><code>get_physical_paths</code></td>
+    <td>List physical paths with their involved physical links and nodes.</td>
+    <td><code>layer</code> (pa default)</td>
+  </tr>
+  <tr>
+    <td><code>get_exchange_items</code></td>
+    <td>List exchange items with their elements and types.</td>
+    <td><code>layer</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>get_property_values</code></td>
+    <td>Get all property values attached to a model element.</td>
+    <td><code>id</code> (UUID)</td>
+  </tr>
+  <tr>
+    <td><code>get_constraints</code></td>
+    <td>List constraints with their expressions and constrained elements.</td>
+    <td><code>layer</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>get_configuration_items</code></td>
+    <td>List EPBS configuration items with their physical component realizations.</td>
+    <td>none required</td>
+  </tr>
+  <tr>
+    <td><code>get_deployment_mapping</code></td>
+    <td>Show PA behavior component-to-node deployment mapping.</td>
+    <td>none required</td>
+  </tr>
+</table>
+
+<h2>Model Write Tools (21)</h2>
+
+<table>
+  <tr><th>Tool</th><th>Description</th><th>Key Parameters</th></tr>
+  <tr>
+    <td><code>create_element</code></td>
+    <td>Create a function, component, or actor in the specified layer and parent.</td>
+    <td><code>name</code>, <code>type</code> (PhysicalComponent/PhysicalFunction/Actor/...), <code>parent_id</code> or <code>parent_name</code>, <code>layer</code></td>
+  </tr>
+  <tr>
+    <td><code>create_exchange</code></td>
+    <td>Create a functional or component exchange between two elements.</td>
+    <td><code>source_id</code>, <code>target_id</code>, <code>name</code> (optional), <code>exchange_type</code></td>
+  </tr>
+  <tr>
+    <td><code>allocate_function</code></td>
+    <td>Allocate a function to a component (creates FunctionRealization link).</td>
+    <td><code>function_id</code>, <code>component_id</code></td>
+  </tr>
+  <tr>
+    <td><code>create_capability</code></td>
+    <td>Create a capability with optional function involvements.</td>
+    <td><code>name</code>, <code>layer</code>, <code>involved_function_ids</code> (optional list)</td>
+  </tr>
+  <tr>
+    <td><code>update_element</code></td>
+    <td>Update the name and/or description of an element by UUID.</td>
+    <td><code>id</code> (UUID), <code>name</code> (optional), <code>description</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>delete_element</code></td>
+    <td>Delete a model element. Requires explicit confirmation parameter.</td>
+    <td><code>id</code> (UUID), <code>confirmed</code> (must be true)</td>
+  </tr>
+  <tr>
+    <td><code>create_interface</code></td>
+    <td>Create an interface with optional exchange items.</td>
+    <td><code>name</code>, <code>layer</code>, <code>exchange_item_ids</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>create_functional_chain</code></td>
+    <td>Create a functional chain with an ordered list of involved functions.</td>
+    <td><code>name</code>, <code>layer</code>, <code>function_ids</code> (ordered list)</td>
+  </tr>
+  <tr>
+    <td><code>create_physical_link</code></td>
+    <td>Create a physical link between two node components or ports.</td>
+    <td><code>source_id</code>, <code>target_id</code>, <code>name</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>batch_rename</code></td>
+    <td>Batch rename elements whose names match a pattern (regex replace).</td>
+    <td><code>layer</code>, <code>element_type</code>, <code>pattern</code>, <code>replacement</code></td>
+  </tr>
+  <tr>
+    <td><code>create_scenario</code></td>
+    <td>Create an interaction scenario in a layer with instance roles.</td>
+    <td><code>name</code>, <code>layer</code>, <code>scenario_type</code>, <code>instance_role_ids</code></td>
+  </tr>
+  <tr>
+    <td><code>create_state_machine</code></td>
+    <td>Create a state machine on a component with optional initial state.</td>
+    <td><code>component_id</code>, <code>name</code>, <code>initial_state</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>create_data_type</code></td>
+    <td>Create a data type (class, enumeration, string, integer, etc.).</td>
+    <td><code>name</code>, <code>type_kind</code>, <code>layer</code></td>
+  </tr>
+  <tr>
+    <td><code>move_element</code></td>
+    <td>Move an element to a different parent container.</td>
+    <td><code>id</code> (UUID), <code>new_parent_id</code></td>
+  </tr>
+  <tr>
+    <td><code>clone_element</code></td>
+    <td>Deep-copy an element into the same parent (all children included).</td>
+    <td><code>id</code> (UUID), <code>new_name</code> (optional)</td>
+  </tr>
+  <tr>
+    <td><code>set_property_value</code></td>
+    <td>Set a named string property value on an element.</td>
+    <td><code>id</code> (UUID), <code>property_name</code>, <code>value</code></td>
+  </tr>
+  <tr>
+    <td><code>create_exchange_item</code></td>
+    <td>Create an exchange item in a layer.</td>
+    <td><code>name</code>, <code>layer</code>, <code>kind</code> (FLOW/EVENT/SHARED_DATA/...)</td>
+  </tr>
+  <tr>
+    <td><code>batch_update_properties</code></td>
+    <td>Set a property on multiple elements matching a filter at once.</td>
+    <td><code>layer</code>, <code>element_type</code>, <code>filter</code>, <code>property_name</code>, <code>value</code></td>
+  </tr>
+  <tr>
+    <td><code>create_port</code></td>
+    <td>Create a component or function port.</td>
+    <td><code>parent_id</code>, <code>name</code>, <code>port_kind</code> (FunctionInputPort/FunctionOutputPort/ComponentPort)</td>
+  </tr>
+  <tr>
+    <td><code>create_involvement</code></td>
+    <td>Link a function to a capability (FunctionInvolvement).</td>
+    <td><code>function_id</code>, <code>capability_id</code></td>
+  </tr>
+  <tr>
+    <td><code>create_generalization</code></td>
+    <td>Create a generalization (inheritance) link between two components or actors.</td>
+    <td><code>sub_id</code>, <code>super_id</code></td>
+  </tr>
+</table>
+
+<h2>Diagram Tools (9)</h2>
+<p>Tools for managing Sirius diagrams: <code>update_diagram</code>, <code>refresh_diagram</code>, <code>create_diagram</code>, <code>export_diagram_image</code>, <code>show_element_in_diagram</code>, <code>list_diagram_elements</code>, <code>clone_diagram</code>, <code>auto_layout_diagram</code>, <code>delete_diagram</code>.</p>
+
+<h2>Analysis Tools (13)</h2>
+<p>Tools for model health and quality analysis: <code>check_traceability_coverage</code>, <code>run_capella_validation</code>, <code>detect_cycles</code>, <code>impact_analysis</code>, <code>find_unused_elements</code>, <code>model_statistics</code>, <code>allocation_completeness</code>, <code>get_refinement_status</code>, <code>interface_consistency</code>, <code>reachability_analysis</code>, <code>architecture_complexity</code>, <code>identify_singletons</code>, <code>generate_safety_report</code>.</p>
+
+<h2>Export Tools (8)</h2>
+<p>Tools for generating reports and exports: <code>export_to_csv</code>, <code>export_to_json</code>, <code>generate_icd_report</code>, <code>generate_model_report</code>, <code>export_traceability_matrix</code>, <code>export_allocation_matrix_csv</code>, <code>export_diagram_catalog</code>, <code>generate_diff_report</code>.</p>
+
+<h2>Transition Tools (5)</h2>
+<p>Tools for ARCADIA layer transitions: <code>transition_oa_to_sa</code>, <code>transition_sa_to_la</code>, <code>transition_la_to_pa</code>, <code>reconcile_layers</code>, <code>transition_pa_to_epbs</code>.</p>
+
+<h2>AI Intelligence Tools (5)</h2>
+<p>Context-gathering tools that feed the LLM with structured model data for AI-driven recommendations: <code>auto_allocate</code>, <code>suggest_interfaces</code>, <code>review_architecture</code>, <code>generate_test_scenarios</code>, <code>model_q_and_a</code>.</p>
+
+<h2>Teamcenter Tools (7)</h2>
+<div class="warning">
+  <strong>Note:</strong> Teamcenter tools are not fully implemented in the beta release.
+  They return "not implemented" unless you have a customer-specific integration.
+  See <a href="known_limitations.html">Known Limitations #9</a>.
+</div>
+<p>Available tools: <code>search_teamcenter</code>, <code>tc_get_object</code>, <code>tc_get_bom</code>, <code>tc_list_requirements</code>, <code>tc_import_requirement</code>, <code>tc_import_part</code>, <code>tc_create_trace_link</code>.</p>
+
+<h2>Simulation Tools (6)</h2>
+<div class="warning">
+  <strong>Note:</strong> Simulation tools require MATLAB Engine API for Java. See <a href="known_limitations.html">Known Limitations #10</a>.
+</div>
+<p>Available tools: <code>list_simulation_engines</code>, <code>extract_simulation_params</code>, <code>run_simulation</code>, <code>propagate_simulation_results</code>, <code>run_what_if</code>, <code>get_simulation_status</code>.</p>
+
+</body>
+</html>
