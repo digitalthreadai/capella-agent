@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capella Agent — 6-Week Production Plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0A0A0F;
+      --surface: #12121A;
+      --surface-hover: #1E1E2E;
+      --terminal-bg: #1A1A2E;
+      --terminal-border: #2A2A3E;
+      --text: #E8E8ED;
+      --muted: #8888A0;
+      --muted-fg: #6E6E88;
+      --primary: #00BCD4;
+      --primary-rgb: 0,188,212;
+      --secondary: #FF6D00;
+      --green: #4ADE80;
+      --blue: #60A5FA;
+      --purple: #A78BFA;
+      --red: #F87171;
+      --yellow: #FCD34D;
+      --sidebar-w: 260px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    code, pre, .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; }
+    pre { background: var(--terminal-bg); border: 1px solid var(--terminal-border); border-radius: 8px; padding: 1rem 1.25rem; overflow-x: auto; color: #c8c8d6; }
+    code:not(pre code) { background: rgba(var(--primary-rgb), 0.10); color: var(--primary); padding: 0.12em 0.4em; border-radius: 4px; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .gradient-text { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* Layout */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--terminal-border);
+      padding: 1.75rem 1.25rem;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--terminal-border);
+    }
+    .sidebar-brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #0A0A0F;
+      font-size: 1rem;
+    }
+    .sidebar-brand-text { font-weight: 700; font-size: 0.95rem; }
+    .sidebar-brand-text small { display: block; color: var(--muted-fg); font-weight: 400; font-size: 0.7rem; margin-top: 1px; }
+
+    .sidebar-section { margin-bottom: 1.5rem; }
+    .sidebar-section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted-fg);
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+      padding: 0 0.65rem;
+    }
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.65rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: background 0.15s ease, color 0.15s ease;
+      border-left: 2px solid transparent;
+    }
+    .sidebar-link:hover { background: var(--surface-hover); color: var(--text); text-decoration: none; }
+    .sidebar-link.active { background: rgba(var(--primary-rgb), 0.10); color: var(--primary); border-left-color: var(--primary); }
+    .sidebar-link-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted-fg);
+      min-width: 1.5em;
+    }
+    .sidebar-link.active .sidebar-link-num { color: var(--primary); }
+
+    .sidebar-footer {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--terminal-border);
+      font-size: 0.72rem;
+      color: var(--muted-fg);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .sidebar-footer a { display: block; color: var(--muted); margin-top: 0.4rem; }
+
+    /* Main content */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      max-width: calc(100vw - var(--sidebar-w));
+    }
+    .main-inner { max-width: 920px; margin: 0 auto; padding: 3rem 2.5rem 6rem; }
+
+    /* Hero */
+    .hero {
+      background:
+        radial-gradient(circle at top right, rgba(var(--primary-rgb), 0.08), transparent 50%),
+        radial-gradient(circle at bottom left, rgba(255, 109, 0, 0.06), transparent 50%);
+      border: 1px solid var(--terminal-border);
+      border-radius: 16px;
+      padding: 2.5rem 2.25rem;
+      margin-bottom: 2.5rem;
+    }
+    .hero-eyebrow {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--primary);
+      background: rgba(var(--primary-rgb), 0.10);
+      padding: 0.3em 0.75em;
+      border-radius: 99px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.8rem;
+    }
+    .hero-title {
+      font-size: clamp(1.75rem, 3.6vw, 2.5rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.7rem;
+      line-height: 1.15;
+    }
+    .hero-subtitle {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 680px;
+      margin-bottom: 1.5rem;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--terminal-border);
+    }
+    .hero-stat-num {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--primary);
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+    }
+    .hero-stat-label {
+      font-size: 0.72rem;
+      color: var(--muted-fg);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 0.3rem;
+    }
+
+    /* Filter chips */
+    .filter-bar {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--terminal-border);
+      z-index: 50;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .chip {
+      cursor: pointer;
+      padding: 0.4rem 0.9rem;
+      border-radius: 99px;
+      border: 1px solid var(--terminal-border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 500;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .chip:hover { border-color: var(--primary); color: var(--text); }
+    .chip.active { background: rgba(var(--primary-rgb), 0.12); border-color: var(--primary); color: var(--primary); }
+
+    /* Sections */
+    section { scroll-margin-top: 4rem; margin-bottom: 3.5rem; }
+    h2.section-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: baseline;
+      gap: 0.7rem;
+    }
+    h2.section-title .num {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .section-subtitle { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.95rem; }
+    h3 { font-size: 1.15rem; font-weight: 600; margin: 1.5rem 0 0.6rem; letter-spacing: -0.01em; }
+    h4 { font-size: 0.95rem; font-weight: 600; margin: 1rem 0 0.4rem; color: var(--text); }
+    p { margin-bottom: 0.85rem; color: var(--text); }
+    ul, ol { margin: 0.5rem 0 0.9rem 1.4rem; }
+    li { margin-bottom: 0.35rem; color: var(--text); }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+    }
+    .card-title {
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.6rem;
+    }
+    .card.success { border-left: 3px solid var(--green); }
+    .card.warning { border-left: 3px solid var(--yellow); }
+    .card.info { border-left: 3px solid var(--blue); }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0 1.25rem;
+      font-size: 0.86rem;
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td { padding: 0.7rem 0.9rem; text-align: left; border-bottom: 1px solid var(--terminal-border); }
+    th {
+      background: var(--terminal-bg);
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.7rem;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface-hover); }
+    td code { font-size: 0.78rem; }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 0.18em 0.55em;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .badge.new { background: rgba(74, 222, 128, 0.15); color: var(--green); }
+    .badge.modify { background: rgba(96, 165, 250, 0.15); color: var(--blue); }
+    .badge.reuse { background: rgba(167, 139, 250, 0.15); color: var(--purple); }
+    .badge.reliability { background: rgba(96, 165, 250, 0.15); color: var(--blue); }
+    .badge.demo { background: rgba(255, 109, 0, 0.15); color: var(--secondary); }
+    .badge.polish { background: rgba(74, 222, 128, 0.15); color: var(--green); }
+
+    /* Phase header */
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem;
+      background: linear-gradient(90deg, var(--surface), transparent);
+      border-left: 3px solid var(--primary);
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+    }
+    .phase-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1;
+    }
+    .phase-meta { font-size: 0.78rem; color: var(--muted-fg); font-family: 'JetBrains Mono', monospace; margin-top: 0.2rem; }
+
+    /* Workstream */
+    .workstream {
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 10px;
+      margin: 1rem 0 1.5rem;
+      overflow: hidden;
+    }
+    .workstream-header {
+      padding: 1rem 1.4rem;
+      background: var(--terminal-bg);
+      border-bottom: 1px solid var(--terminal-border);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+    .workstream-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: rgba(var(--primary-rgb), 0.1);
+      padding: 0.25em 0.6em;
+      border-radius: 4px;
+    }
+    .workstream-title { font-weight: 600; font-size: 1rem; flex: 1; }
+    .workstream-body { padding: 1.4rem; }
+
+    /* Acceptance test */
+    .accept {
+      background: rgba(74, 222, 128, 0.05);
+      border: 1px solid rgba(74, 222, 128, 0.2);
+      border-left: 3px solid var(--green);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin: 1.25rem 0;
+    }
+    .accept-title {
+      color: var(--green);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .accept ol { margin: 0.4rem 0 0 1.3rem; }
+    .accept li { font-size: 0.88rem; }
+
+    .out-of-scope {
+      background: rgba(248, 113, 113, 0.05);
+      border-left: 3px solid var(--red);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+    }
+    .out-of-scope .title { color: var(--red); font-weight: 700; font-size: 0.85rem; margin-bottom: 0.5rem; }
+
+    /* Mobile */
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); transition: transform 0.25s ease; }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; max-width: 100vw; }
+      .main-inner { padding: 1.5rem 1.25rem 4rem; }
+      .menu-toggle { display: flex !important; }
+    }
+    .menu-toggle {
+      display: none;
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      width: 42px;
+      height: 42px;
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 8px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 200;
+      color: var(--text);
+    }
+
+    /* Hide elements when filter active */
+    section.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Toggle menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">CA</div>
+        <div class="sidebar-brand-text">
+          Capella Agent
+          <small>6-Week Production Plan</small>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Plan</div>
+        <a class="sidebar-link" href="#context"><span class="sidebar-link-num">§</span>Context &amp; Goals</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Phase 1 — Reliability</div>
+        <a class="sidebar-link" href="#phase1"><span class="sidebar-link-num">W1-2</span>Overview</a>
+        <a class="sidebar-link" href="#ws-1a"><span class="sidebar-link-num">1A</span>JUnit + Tycho</a>
+        <a class="sidebar-link" href="#ws-1b"><span class="sidebar-link-num">1B</span>Undo / Redo</a>
+        <a class="sidebar-link" href="#ws-1c"><span class="sidebar-link-num">1C</span>Token Meter</a>
+        <a class="sidebar-link" href="#ws-1d"><span class="sidebar-link-num">1D</span>Crash Recovery</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Phase 2 — Sustainment Demo</div>
+        <a class="sidebar-link" href="#phase2"><span class="sidebar-link-num">W3-4</span>Overview</a>
+        <a class="sidebar-link" href="#ws-2a"><span class="sidebar-link-num">2A</span>Sustainment Mode</a>
+        <a class="sidebar-link" href="#ws-2b"><span class="sidebar-link-num">2B</span>Fault DB</a>
+        <a class="sidebar-link" href="#ws-2c"><span class="sidebar-link-num">2C</span>Demo Recording</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Phase 3 — Polish</div>
+        <a class="sidebar-link" href="#phase3"><span class="sidebar-link-num">W5-6</span>Overview</a>
+        <a class="sidebar-link" href="#ws-3a"><span class="sidebar-link-num">3A</span>Icons</a>
+        <a class="sidebar-link" href="#ws-3b"><span class="sidebar-link-num">3B</span>Welcome Wizard</a>
+        <a class="sidebar-link" href="#ws-3c"><span class="sidebar-link-num">3C</span>Status Bar</a>
+        <a class="sidebar-link" href="#ws-3d"><span class="sidebar-link-num">3D</span>Shortcuts</a>
+        <a class="sidebar-link" href="#ws-3e"><span class="sidebar-link-num">3E</span>Branded Errors</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Reference</div>
+        <a class="sidebar-link" href="#files"><span class="sidebar-link-num">§</span>Critical Files</a>
+        <a class="sidebar-link" href="#reuse"><span class="sidebar-link-num">§</span>Reuse Inventory</a>
+        <a class="sidebar-link" href="#verify"><span class="sidebar-link-num">§</span>Verification</a>
+        <a class="sidebar-link" href="#scope"><span class="sidebar-link-num">§</span>Out of Scope</a>
+      </div>
+
+      <div class="sidebar-footer">
+        <div>v1.0 · Approved</div>
+        <a href="index.html">← Back to docs hub</a>
+        <a href="README.html">README</a>
+        <a href="COO.html">Strategy</a>
+        <a href="TOOLS.html">Tools catalog</a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="main-inner">
+
+        <!-- Hero -->
+        <div class="hero">
+          <span class="hero-eyebrow">Production Hardening · Track 2</span>
+          <h1 class="hero-title gradient-text">From Working Prototype to Shippable Beta</h1>
+          <p class="hero-subtitle">A focused 6-week plan to take Capella Agent from "it works on my machine" to "a Fortune-100 customer can install it, watch a demo, and start a paid pilot." Reliability fundamentals, the killer sales demo, and visible product polish.</p>
+          <div class="hero-stats">
+            <div>
+              <div class="hero-stat-num">6</div>
+              <div class="hero-stat-label">Weeks</div>
+            </div>
+            <div>
+              <div class="hero-stat-num">3</div>
+              <div class="hero-stat-label">Phases</div>
+            </div>
+            <div>
+              <div class="hero-stat-num">12</div>
+              <div class="hero-stat-label">Workstreams</div>
+            </div>
+            <div>
+              <div class="hero-stat-num">15</div>
+              <div class="hero-stat-label">Smoke Tests</div>
+            </div>
+            <div>
+              <div class="hero-stat-num">1</div>
+              <div class="hero-stat-label">Shippable Beta</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <button class="chip active" data-filter="all">All</button>
+          <button class="chip" data-filter="reliability">Reliability</button>
+          <button class="chip" data-filter="demo">Sustainment Demo</button>
+          <button class="chip" data-filter="polish">Polish</button>
+        </div>
+
+        <!-- Context -->
+        <section id="context">
+          <h2 class="section-title"><span class="num">§ 0</span>Context &amp; Goals</h2>
+          <p>Capella Agent has shipped a working multi-agent plugin with <strong>116 tools</strong>, an HTML browser UI, <strong>10 LLM providers</strong>, an MCP bridge, a clean tool-call loop, and styled tool result rendering. Real users can install it, ask <em>"list all physical functions,"</em> and get sortable tables back from a live Capella model.</p>
+          <p>But it is not yet a <strong>shippable enterprise product</strong>. There are <em>zero</em> automated tests, no token metering, no crash recovery, no icons, no welcome wizard, no status bar, only one keyboard shortcut, and no branded sales demo to put in front of a Fortune-100 buyer.</p>
+          <p>This plan covers the first 6 weeks of the production-hardening track. It transforms <code>capella-agent</code> from "working prototype" to "credibly shippable beta" — the kind of thing you can hand to a paying pilot customer and a Capella Days conference demo.</p>
+
+          <div class="card success">
+            <div class="card-title">Target completion criteria for Week 6</div>
+            <ol>
+              <li><code>mvn clean verify</code> runs an automated test suite with &gt; 0 passing tests on every PR</li>
+              <li>Every write tool can be undone via Eclipse <code>Edit → Undo</code> and verified by a test</li>
+              <li>The chat view shows a live token + cost meter in the status line</li>
+              <li>A chat session crash leaves no orphaned model state and can be resumed</li>
+              <li>A 5-minute "sustainment engineer" demo video exists and is committed to the repo</li>
+              <li>The plugin has real icons, a welcome wizard, branded error dialogs, and 5+ keyboard shortcuts</li>
+              <li>A first beta customer can install the new build, watch the demo, and start using it</li>
+            </ol>
+          </div>
+        </section>
+
+        <!-- ============ PHASE 1 ============ -->
+        <section id="phase1" data-track="reliability">
+          <div class="phase-header">
+            <div>
+              <div class="phase-num">01</div>
+              <div class="phase-meta">WEEKS 1-2</div>
+            </div>
+            <div>
+              <h2 class="section-title" style="margin: 0;">Reliability Fundamentals <span class="badge reliability">RELIABILITY</span></h2>
+              <p class="section-subtitle" style="margin-top: 0.4rem; margin-bottom: 0;">Stop shipping by hope. JUnit, undo verification, token meter, crash recovery.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="ws-1a" data-track="reliability">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">1A</span>
+              <span class="workstream-title">JUnit + Tycho Surefire Test Infrastructure</span>
+              <span class="badge new">NEW</span>
+            </div>
+            <div class="workstream-body">
+              <p><strong>Why now:</strong> The repo has zero tests and <code>tycho-surefire-plugin</code> is not in <code>pom.xml</code>. Every other workstream depends on tests existing.</p>
+
+              <h4>Files to create</h4>
+              <pre>com.capellaagent.core.tests/
+├── META-INF/MANIFEST.MF              # Fragment-Host: com.capellaagent.core
+├── build.properties
+├── pom.xml                            # packaging: eclipse-test-plugin
+└── src/com/capellaagent/core/tests/
+    ├── tools/      ToolRegistryTest, ToolParameterTest, ToolResultTest, AbstractCapellaToolTest
+    ├── llm/        ConversationSessionTest, LlmMessageTest, OpenAiCompatibleProviderTest
+    ├── security/   SecurityServiceTest
+    └── capella/    CapellaModelServiceTest
+
+com.capellaagent.modelchat.tests/
+├── META-INF/MANIFEST.MF              # Fragment-Host: com.capellaagent.modelchat
+├── pom.xml
+└── src/com/capellaagent/modelchat/tests/
+    ├── ToolRegistrationTest          # asserts all 116 tools register
+    ├── read/ListElementsToolTest
+    ├── read/SearchElementsToolTest
+    ├── write/CreateElementToolTest
+    └── write/DeleteElementToolTest</pre>
+
+              <h4>Files to modify</h4>
+              <ul>
+                <li><code>pom.xml</code> — add <code>tycho-surefire-plugin</code> + test modules</li>
+                <li><code>com.capellaagent.feature/feature.xml</code> — keep test fragments OUT of the feature</li>
+                <li><code>.github/workflows/build.yml</code> <span class="badge new">NEW</span> — <code>mvn clean verify</code> on every push</li>
+              </ul>
+
+              <h4>Test stack</h4>
+              <ul>
+                <li>JUnit 5 (Jupiter) via the Eclipse target platform</li>
+                <li>Mockito 5 for <code>Session</code>, <code>TransactionalEditingDomain</code>, <code>HttpClient</code> mocks</li>
+                <li>Headless mode — no UI tests in this phase</li>
+              </ul>
+
+              <p><strong>Coverage target:</strong> 60% line coverage on <code>core</code> package by end of Week 2.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="ws-1b" data-track="reliability">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">1B</span>
+              <span class="workstream-title">Undo / Redo Verification</span>
+              <span class="badge new">NEW</span>
+            </div>
+            <div class="workstream-body">
+              <h4>What exists</h4>
+              <ul>
+                <li><code>CapellaModelService.executeInTransaction()</code> already wraps writes in a <code>RecordingCommand</code> at <code>com.capellaagent.core/.../CapellaModelService.java:323</code></li>
+                <li>49 files use <code>RecordingCommand</code></li>
+                <li><code>AuditLogger</code> writes JSON entries to <code>{workspace}/.capella-agent/audit.log</code></li>
+              </ul>
+
+              <h4>What's missing</h4>
+              <ul>
+                <li>No automated test ever invokes Edit → Undo on a tool result</li>
+                <li>No proof that <code>delete_element</code>, <code>move_element</code>, <code>merge_elements</code> are properly undoable</li>
+              </ul>
+
+              <h4>Test pattern</h4>
+              <pre>1. Load fixture model, snapshot element count + a known element's name
+2. Execute the tool via ToolRegistry
+3. Assert the change happened
+4. Call domain.getCommandStack().undo()
+5. Assert the model is back to the original snapshot
+6. Call redo() and assert the change is back</pre>
+
+              <h4>Tools to verify</h4>
+              <table>
+                <tr><th>Tool</th><th>Risk</th></tr>
+                <tr><td><code>create_element</code></td><td>Low</td></tr>
+                <tr><td><code>update_element</code></td><td>Low</td></tr>
+                <tr><td><code>delete_element</code></td><td>Medium (cascades)</td></tr>
+                <tr><td><code>batch_rename</code></td><td>High (bulk)</td></tr>
+                <tr><td><code>merge_elements</code></td><td>High (cross-references)</td></tr>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="ws-1c" data-track="reliability">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">1C</span>
+              <span class="workstream-title">Token Meter + Cost Display</span>
+              <span class="badge new">NEW</span>
+            </div>
+            <div class="workstream-body">
+              <h4>What exists</h4>
+              <ul>
+                <li><code>ChatJob</code> has <code>MAX_HISTORY_MESSAGES = 8</code> and <code>MAX_TOOL_RESULT_CHARS = 8000</code></li>
+                <li>No real token counting — just message-count heuristic</li>
+                <li>No status display</li>
+              </ul>
+
+              <h4>Files to create</h4>
+              <table>
+                <tr><th>File</th><th>Purpose</th></tr>
+                <tr><td><code>core/llm/TokenEstimator.java</code></td><td>char/4 heuristic + per-provider model pricing</td></tr>
+                <tr><td><code>core/llm/TokenUsageTracker.java</code></td><td>Singleton, persists to <code>{workspace}/.capella-agent/usage.json</code></td></tr>
+                <tr><td><code>modelchat.ui/.../statusbar/CapellaAgentStatusContribution.java</code></td><td>Status bar widget</td></tr>
+              </table>
+
+              <h4>Files to modify</h4>
+              <ul>
+                <li><code>ChatJob.java</code> — pre-call token estimate, refuse if over limit; post-call read actual usage</li>
+                <li><code>ModelChatView.java</code> — footer label: <code>"Tokens this session: 12,450 · Today: 87,210 · Cost: $0.18"</code></li>
+                <li><code>com.capellaagent.modelchat.ui/plugin.xml</code> — register status contribution</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="ws-1d" data-track="reliability">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">1D</span>
+              <span class="workstream-title">Crash Recovery + Session Persistence</span>
+              <span class="badge new">NEW</span>
+            </div>
+            <div class="workstream-body">
+              <h4>What exists</h4>
+              <ul>
+                <li><code>ConversationSession</code> is purely in-memory</li>
+                <li>Killing the JVM mid-tool-loop loses the chat</li>
+                <li>Partial model writes are NOT rolled back (each tool commits independently)</li>
+              </ul>
+
+              <h4>Files to create</h4>
+              <p><code>com.capellaagent.core/.../session/ConversationStore.java</code> — JSON snapshots at <code>{workspace}/.capella-agent/sessions/{projectName}/{sessionId}.json</code>:</p>
+              <ul>
+                <li><code>saveSession()</code> — atomic temp + rename</li>
+                <li><code>loadLatestSession(projectName)</code></li>
+                <li><code>listSessions(projectName)</code></li>
+                <li><code>deleteSession(sessionId)</code></li>
+                <li>Auto-save trigger: after every assistant message</li>
+              </ul>
+
+              <h4>Files to modify</h4>
+              <ul>
+                <li><code>ConversationSession.java</code> — <code>setStore()</code>, <code>toJson()</code>, <code>fromJson()</code></li>
+                <li><code>ModelChatView.java</code> — restore on view creation; show "Resume" / "Discard" banner if last message was assistant-with-tool-calls without a result</li>
+                <li><code>ChatJob.java</code> — try/finally that always saves; mark <code>{"status":"crashed","lastError":"..."}</code> on uncaught exceptions</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section data-track="reliability">
+          <div class="accept">
+            <div class="accept-title">✓ Phase 1 acceptance tests</div>
+            <ol>
+              <li><code>mvn clean verify</code> runs tests, all pass</li>
+              <li>CI workflow runs on a PR</li>
+              <li>Coverage report shows ≥ 60% on <code>core</code></li>
+              <li>Manual: create a function, click Edit → Undo, confirm it disappears</li>
+              <li>Manual: type a 50K-token message, get a friendly "too large" error before any API call</li>
+              <li>Manual: kill Capella mid-tool-loop, restart, see the chat history restored with a "Resume" banner</li>
+            </ol>
+          </div>
+        </section>
+
+        <!-- ============ PHASE 2 ============ -->
+        <section id="phase2" data-track="demo">
+          <div class="phase-header">
+            <div>
+              <div class="phase-num">02</div>
+              <div class="phase-meta">WEEKS 3-4</div>
+            </div>
+            <div>
+              <h2 class="section-title" style="margin: 0;">Sustainment Engineering Demo <span class="badge demo">DEMO</span></h2>
+              <p class="section-subtitle" style="margin-top: 0.4rem; margin-bottom: 0;">The killer MBSE+AI sales demo. All three core tools already exist.</p>
+            </div>
+          </div>
+
+          <div class="card info">
+            <div class="card-title">Why this demo wins</div>
+            <p>Tony Komar's Siemens Capella Days 2025 talk proved sustainment engineering is the most credible MBSE+AI use case. We have all three core tools already (<code>get_functional_chain</code>, <code>impact_analysis</code>, <code>get_traceability</code>) — confirmed real implementations, not placeholders. This phase is <em>packaging</em>, not building.</p>
+          </div>
+        </section>
+
+        <section id="ws-2a" data-track="demo">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">2A</span>
+              <span class="workstream-title">Sustainment Mode (UI thin layer)</span>
+              <span class="badge new">NEW</span>
+              <span class="badge modify">MODIFY</span>
+            </div>
+            <div class="workstream-body">
+              <h4>Files to create</h4>
+              <p><code>com.capellaagent.modelchat.ui/.../views/SustainmentModeAction.java</code></p>
+              <ul>
+                <li>Toolbar button: <strong>🔧 Sustainment Mode</strong></li>
+                <li>Pre-loads system prompt: <em>"You are a sustainment engineering assistant. Use get_functional_chain, impact_analysis, and get_traceability to identify root causes. Always present findings as: 1) Likely subsystem, 2) Affected functional chain, 3) Components to inspect, 4) Related requirements. Cite element UUIDs."</em></li>
+                <li>Pre-fills chat with example prompts</li>
+              </ul>
+
+              <h4>Files to modify</h4>
+              <ul><li><code>ModelChatView.java</code> — add the toolbar action</li></ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="ws-2b" data-track="demo">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">2B</span>
+              <span class="workstream-title">Fault Symptom Database</span>
+              <span class="badge new">NEW</span>
+            </div>
+            <div class="workstream-body">
+              <table>
+                <tr><th>Tool</th><th>Description</th></tr>
+                <tr><td><code>lookup_fault_symptom</code></td><td>Looks up <code>{project}/.capella-agent/sustainment/symptoms.json</code>. Returns matching component types, ATA codes, common root causes.</td></tr>
+                <tr><td><code>classify_fault_ata</code></td><td>Bundled JSON of ATA Spec 100 chapters (32 = landing gear, 27 = flight controls, 21 = air conditioning, etc.)</td></tr>
+              </table>
+              <p>These two tools transform vague natural-language fault reports into structured queries the existing tools can chase down.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="ws-2c" data-track="demo">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">2C</span>
+              <span class="workstream-title">Demo Script + 5-Minute Recording</span>
+              <span class="badge new">NEW</span>
+            </div>
+            <div class="workstream-body">
+              <h4>Files to create</h4>
+              <pre>demo/
+├── SUSTAINMENT_DEMO_SCRIPT.md      # exact words + clicks
+├── sustainment_sample_model.zip     # IFE model packaged
+├── prompts.txt                      # natural-language queries
+└── README.md                        # how to reproduce</pre>
+
+              <h4>Demo script outline</h4>
+              <table>
+                <tr><th>Time</th><th>Action</th></tr>
+                <tr><td>0:00</td><td><strong>Hook</strong> (15s): "Sustainment engineers spend hours digging through models and manuals. Watch this take 60 seconds."</td></tr>
+                <tr><td>0:15</td><td><strong>Setup</strong> (15s): Open Capella, IFE model loaded, click 🔧 Sustainment Mode</td></tr>
+                <tr><td>0:30</td><td><strong>Symptom 1</strong> (90s): <em>"Nose wheel landing gear is retracting 30 seconds slower than nominal. What should I check?"</em> → agent calls 3 tools → structured findings with clickable UUIDs</td></tr>
+                <tr><td>2:00</td><td><strong>Click-through</strong> (60s): Click a UUID → element selected in Project Explorer</td></tr>
+                <tr><td>3:00</td><td><strong>Symptom 2</strong> (90s): <em>"What requirements does the Hydraulic Subsystem trace to?"</em> → table</td></tr>
+                <tr><td>4:30</td><td><strong>Wrap</strong> (30s): Show 116 tools menu, mention zero-internet Ollama mode, show MCP bridge for Claude Code</td></tr>
+              </table>
+
+              <h4>Recording</h4>
+              <ul>
+                <li>OBS Studio or Windows + G</li>
+                <li>Save as <code>demo/sustainment_demo_v1.mp4</code> (Git LFS or external CDN)</li>
+                <li>Upload to YouTube as unlisted, link from <code>demo/README.md</code></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section data-track="demo">
+          <div class="accept">
+            <div class="accept-title">✓ Phase 2 acceptance tests</div>
+            <ol>
+              <li>Demo can be reproduced end-to-end on a fresh Capella install with the IFE model</li>
+              <li>MP4 + script + sample model are committed</li>
+              <li>A blog post or <code>forum.mbse-capella.org</code> reply is drafted (not posted yet) referencing Tony Komar's talk and offering the demo</li>
+            </ol>
+          </div>
+        </section>
+
+        <!-- ============ PHASE 3 ============ -->
+        <section id="phase3" data-track="polish">
+          <div class="phase-header">
+            <div>
+              <div class="phase-num">03</div>
+              <div class="phase-meta">WEEKS 5-6</div>
+            </div>
+            <div>
+              <h2 class="section-title" style="margin: 0;">Polish Pass <span class="badge polish">POLISH</span></h2>
+              <p class="section-subtitle" style="margin-top: 0.4rem; margin-bottom: 0;">Make the plugin look like a $50K/year product, not a hackathon project.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="ws-3a" data-track="polish">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">3A</span>
+              <span class="workstream-title">Icon Set</span>
+              <span class="badge new">NEW</span>
+            </div>
+            <div class="workstream-body">
+              <p><strong>What exists:</strong> Empty icon directories. <code>plugin.xml</code> references <code>icons/chat_16.png</code> that doesn't exist.</p>
+              <pre>com.capellaagent.modelchat.ui/icons/
+├── chat_16.png         chat_32.png         (view)
+├── send_16.png         clear_16.png        (toolbar)
+├── export_16.png       detach_16.png       (toolbar)
+├── theme_16.png        sustainment_16.png  (toolbar)
+└── agent_logo_48.png                       (welcome page)
+
+com.capellaagent.simulation.ui/icons/simulation_16.png
+com.capellaagent.core.ui/icons/settings_16.png</pre>
+              <h4>Approach</h4>
+              <ul>
+                <li>Lucide / Phosphor / Tabler open-source icon sets</li>
+                <li>Single accent color matching chat HTML theme</li>
+                <li>16×16 base + 32×32 @2x for HiDPI</li>
+                <li><code>tools/build_icons.py</code> for regeneration</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="ws-3b" data-track="polish">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">3B</span>
+              <span class="workstream-title">Welcome Wizard</span>
+              <span class="badge new">NEW</span>
+            </div>
+            <div class="workstream-body">
+              <pre>com.capellaagent.core.ui/
+├── plugin.xml                                  # add org.eclipse.ui.intro
+├── intro/
+│   ├── introContent.xml
+│   ├── css/welcome.css                         # dark theme matching chat UI
+│   └── images/hero.png, step_*.png
+└── src/com/capellaagent/core/ui/welcome/
+    ├── WelcomeWizard.java
+    ├── WelcomePage1Provider.java               # Pick LLM provider
+    ├── WelcomePage2ApiKey.java                 # Enter API key (or skip for Ollama)
+    ├── WelcomePage3Test.java                   # Test connection
+    └── WelcomePage4Done.java                   # Open chat view</pre>
+              <p><strong>Trigger:</strong> First time the chat view is opened, check <code>IEclipsePreferences.getBoolean("welcome.shown", false)</code>. Add <code>Help → Welcome</code> for repeat access.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="ws-3c" data-track="polish">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">3C</span>
+              <span class="workstream-title">Status Bar Contribution</span>
+              <span class="badge modify">FINALIZE</span>
+            </div>
+            <div class="workstream-body">
+              <p>Extends Workstream 1C:</p>
+              <pre>🤖 Capella Agent · Ready · Claude Sonnet · 12.4K tokens · $0.18</pre>
+              <ul>
+                <li>Click → preferences</li>
+                <li>Right-click → "Switch Provider", "Test Connection", "Clear Session", "Show Token Report"</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="ws-3d" data-track="polish">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">3D</span>
+              <span class="workstream-title">Keyboard Shortcuts</span>
+              <span class="badge modify">MODIFY plugin.xml</span>
+            </div>
+            <div class="workstream-body">
+              <p><strong>What exists:</strong> Only <code>ENTER</code> → send message.</p>
+              <table>
+                <tr><th>Shortcut</th><th>Command</th><th>Scope</th></tr>
+                <tr><td><code>Ctrl+Shift+M</code></td><td>Open Capella Agent chat view</td><td>Global</td></tr>
+                <tr><td><code>Ctrl+Enter</code></td><td>Send message (alt to Enter)</td><td>ModelChatView</td></tr>
+                <tr><td><code>Esc</code></td><td>Cancel running tool job</td><td>ModelChatView</td></tr>
+                <tr><td><code>Ctrl+L</code></td><td>Clear conversation</td><td>ModelChatView</td></tr>
+                <tr><td><code>Ctrl+E</code></td><td>Export chat to HTML</td><td>ModelChatView</td></tr>
+                <tr><td><code>Ctrl+Shift+T</code></td><td>Toggle theme</td><td>ModelChatView</td></tr>
+                <tr><td><code>Ctrl+,</code></td><td>Open Capella Agent preferences</td><td>Global</td></tr>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="ws-3e" data-track="polish">
+          <div class="workstream">
+            <div class="workstream-header">
+              <span class="workstream-id">3E</span>
+              <span class="workstream-title">Branded Error Dialogs</span>
+              <span class="badge new">NEW</span>
+            </div>
+            <div class="workstream-body">
+              <p><strong>What exists:</strong> <code>formatUserFriendlyError()</code> in <code>ChatJob.java:345</code> already covers 7 error categories with emoji prefixes.</p>
+              <h4>File to create</h4>
+              <p><code>com.capellaagent.core.ui/.../dialogs/BrandedErrorDialog.java</code> — replaces raw <code>MessageDialog.openError()</code>:</p>
+              <ul>
+                <li>Logo (top-left)</li>
+                <li>One-sentence headline (large)</li>
+                <li>Suggestion (smaller)</li>
+                <li>Expandable "Show details" with raw exception</li>
+                <li>"Copy diagnostic" button (clipboard: stack trace, plugin version, JVM, OS)</li>
+                <li>"Open Preferences" button (when error is auth/config related)</li>
+                <li>Static convenience methods: <code>openAuthError()</code>, <code>openNetworkError()</code>, <code>openTokenError()</code>, <code>openGenericError()</code></li>
+              </ul>
+              <h4>Files to modify</h4>
+              <ul>
+                <li><code>ModelChatView.java</code></li>
+                <li><code>ChatJob.java</code></li>
+                <li><code>CapellaAgentPreferencePage.java</code></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section data-track="polish">
+          <div class="accept">
+            <div class="accept-title">✓ Phase 3 acceptance tests</div>
+            <ol>
+              <li>Chat view shows a real icon, not a missing-image box</li>
+              <li>First launch shows the welcome wizard</li>
+              <li>Status bar shows live token count and updates every message</li>
+              <li>All 7 keyboard shortcuts work</li>
+              <li>Triggering an auth error shows a branded dialog with logo, suggestion, and "Open Preferences" button</li>
+              <li>The "Copy diagnostic" button copies a usable bug report to clipboard</li>
+            </ol>
+          </div>
+        </section>
+
+        <!-- Critical files reference -->
+        <section id="files">
+          <h2 class="section-title"><span class="num">REF</span>Critical Files Reference</h2>
+          <table>
+            <tr><th>Area</th><th>File</th><th>Type</th></tr>
+            <tr><td>Test scaffold</td><td><code>com.capellaagent.core.tests/</code>, <code>com.capellaagent.modelchat.tests/</code></td><td><span class="badge new">NEW</span></td></tr>
+            <tr><td>Tycho test config</td><td><code>pom.xml</code></td><td><span class="badge modify">MODIFY</span></td></tr>
+            <tr><td>CI</td><td><code>.github/workflows/build.yml</code></td><td><span class="badge new">NEW</span></td></tr>
+            <tr><td>Token estimator</td><td><code>core/llm/TokenEstimator.java</code></td><td><span class="badge new">NEW</span></td></tr>
+            <tr><td>Token tracker</td><td><code>core/llm/TokenUsageTracker.java</code></td><td><span class="badge new">NEW</span></td></tr>
+            <tr><td>Session store</td><td><code>core/session/ConversationStore.java</code></td><td><span class="badge new">NEW</span></td></tr>
+            <tr><td>Session class</td><td><code>core/session/ConversationSession.java</code></td><td><span class="badge modify">MODIFY</span></td></tr>
+            <tr><td>Chat job</td><td><code>modelchat.ui/.../ChatJob.java</code></td><td><span class="badge modify">MODIFY</span></td></tr>
+            <tr><td>Chat view</td><td><code>modelchat.ui/.../ModelChatView.java</code></td><td><span class="badge modify">MODIFY</span></td></tr>
+            <tr><td>Status bar</td><td><code>modelchat.ui/.../statusbar/CapellaAgentStatusContribution.java</code></td><td><span class="badge new">NEW</span></td></tr>
+            <tr><td>Sustainment tools</td><td><code>modelchat/.../tools/sustainment/FaultLookupTool.java</code>, <code>AtaSpecTool.java</code></td><td><span class="badge new">NEW</span></td></tr>
+            <tr><td>Demo assets</td><td><code>demo/SUSTAINMENT_DEMO_SCRIPT.md</code>, <code>demo/README.md</code>, <code>demo/prompts.txt</code></td><td><span class="badge new">NEW</span></td></tr>
+            <tr><td>Welcome wizard</td><td><code>core.ui/.../welcome/*.java</code> + <code>intro/introContent.xml</code></td><td><span class="badge new">NEW</span></td></tr>
+            <tr><td>Branded dialog</td><td><code>core.ui/.../dialogs/BrandedErrorDialog.java</code></td><td><span class="badge new">NEW</span></td></tr>
+            <tr><td>Icons</td><td><code>com.capellaagent.modelchat.ui/icons/*.png</code></td><td><span class="badge new">NEW</span></td></tr>
+            <tr><td>Plugin XML</td><td><code>com.capellaagent.modelchat.ui/plugin.xml</code>, <code>com.capellaagent.core.ui/plugin.xml</code></td><td><span class="badge modify">MODIFY</span></td></tr>
+          </table>
+        </section>
+
+        <!-- Reuse inventory -->
+        <section id="reuse">
+          <h2 class="section-title"><span class="num">REF</span>Existing Functions to Reuse <span class="badge reuse">DO NOT REBUILD</span></h2>
+          <table>
+            <tr><th>Need</th><th>Reuse</th></tr>
+            <tr><td>Wrap writes in transactions</td><td><code>CapellaModelService.executeInTransaction(session, label, runnable)</code> at <code>core/.../CapellaModelService.java:323</code></td></tr>
+            <tr><td>Audit logging</td><td><code>AuditLogger</code> at <code>core/.../security/AuditLogger.java</code> (writes to <code>.capella-agent/audit.log</code>)</td></tr>
+            <tr><td>User-friendly errors</td><td><code>ChatJob.formatUserFriendlyError(String)</code> at <code>modelchat.ui/.../ChatJob.java:345</code></td></tr>
+            <tr><td>HTML rendering</td><td><code>ChatHtmlRenderer</code> (1010 lines, supports all 9 categories)</td></tr>
+            <tr><td>Tool registration</td><td><code>ToolRegistry</code> singleton — <code>register()</code>, <code>getTools(String...)</code>, <code>hasTool()</code>, <code>executeTool()</code></td></tr>
+            <tr><td>Persistent preferences</td><td><code>AgentConfiguration.getInstance()</code> (uses <code>IEclipsePreferences</code>)</td></tr>
+            <tr><td>Secure secrets</td><td><code>org.eclipse.equinox.security.storage.ISecurePreferences</code></td></tr>
+            <tr><td>Sustainment building blocks</td><td><code>GetFunctionalChainTool</code>, <code>ImpactAnalysisTool</code>, <code>GetTraceabilityTool</code> — all real, all working</td></tr>
+          </table>
+        </section>
+
+        <!-- Verification -->
+        <section id="verify">
+          <h2 class="section-title"><span class="num">✓</span>Verification — End-to-End Smoke Test</h2>
+          <p>After each phase: <code>mvn clean verify</code>, reinstall the update site into Capella 7.0.1, run the manual smoke test below.</p>
+          <div class="card success">
+            <div class="card-title">Manual smoke test (every release of Weeks 1–6)</div>
+            <ol>
+              <li>Open Capella, install the new build, restart</li>
+              <li><strong>First launch:</strong> welcome wizard appears, walk through provider setup</li>
+              <li>Open the IFE sample project, open the AI Model Chat view</li>
+              <li>Status bar shows <code>🤖 Capella Agent · Ready · {provider} · 0 tokens</code></li>
+              <li>Type: "List all physical functions" → table appears, status bar updates</li>
+              <li>Click a UUID → element selected in Project Explorer</li>
+              <li>Hit <code>Ctrl+L</code> → chat clears</li>
+              <li>Hit <code>Ctrl+E</code> → HTML export dialog opens</li>
+              <li>Click 🔧 Sustainment Mode → system prompt updates, example prompts shown</li>
+              <li>Run the full demo script — all 5 minutes work without errors</li>
+              <li>Type something that would exceed token limit → friendly error before API call</li>
+              <li>Force-kill Capella mid-tool-loop, restart → resume banner appears, history restored</li>
+              <li>Create a function via chat, then Edit → Undo → function disappears</li>
+              <li>Open Help → Welcome → wizard appears again</li>
+              <li>Trigger an auth error (wrong API key) → branded dialog with logo and "Open Preferences" button</li>
+            </ol>
+          </div>
+          <div class="card info">
+            <div class="card-title">Automated test gate</div>
+            <ul>
+              <li>CI must show: <code>Tests run: NN, Failures: 0, Errors: 0</code></li>
+              <li>Line coverage on <code>core</code>: ≥ 60% (Week 2), ≥ 70% (Week 6)</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Out of scope -->
+        <section id="scope">
+          <h2 class="section-title"><span class="num">⊘</span>Out of Scope for Weeks 1–6</h2>
+          <div class="out-of-scope">
+            <div class="title">Deliberately deferred</div>
+            <ul>
+              <li>Code-signing certificate (Week 7+)</li>
+              <li>Hosted p2 update site on GitHub Pages (Week 9+)</li>
+              <li>Requirements roundtrip / ReqIF (Roadmap Phase 2, Week 13+)</li>
+              <li>Generative architecture from requirements (Roadmap Phase 3, Week 17+)</li>
+              <li>Teamcenter integration (intentionally deferred)</li>
+              <li>MATLAB integration (intentionally deferred)</li>
+              <li>Localization (English-only ships)</li>
+              <li>SBOM generation (later hardening phase)</li>
+              <li>UI tests with SWTBot (Week 2 stops at unit tests)</li>
+            </ul>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Filter chips
+    const chips = document.querySelectorAll('.chip');
+    const filterableSections = document.querySelectorAll('section[data-track]');
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const filter = chip.dataset.filter;
+        filterableSections.forEach(s => {
+          if (filter === 'all' || s.dataset.track === filter) {
+            s.classList.remove('hidden');
+          } else {
+            s.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // Scroll spy
+    const links = document.querySelectorAll('.sidebar-link');
+    const sections = Array.from(document.querySelectorAll('section[id]'));
+    function onScroll() {
+      const scrollY = window.scrollY + 120;
+      let current = sections[0]?.id;
+      for (const s of sections) {
+        if (s.offsetTop <= scrollY) current = s.id;
+      }
+      links.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+      });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // Mobile sidebar close on link click
+    document.querySelectorAll('.sidebar-link').forEach(l => {
+      l.addEventListener('click', () => {
+        if (window.innerWidth < 900) {
+          document.querySelector('.sidebar').classList.remove('open');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

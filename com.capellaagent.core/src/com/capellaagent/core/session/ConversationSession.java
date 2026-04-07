@@ -25,7 +25,24 @@ public class ConversationSession {
     /** Default maximum number of messages before truncation. */
     public static final int DEFAULT_MAX_MESSAGES = 50;
 
+    /**
+     * Schema version for persisted session JSON.
+     * <p>
+     * Bump this whenever the on-disk shape of a session changes incompatibly.
+     * The persistence layer (added in Week 3) is responsible for migrating
+     * older versions to the current one. Older sessions that cannot be
+     * migrated should be archived to {@code .capella-agent/sessions/_legacy/}
+     * rather than discarded.
+     * <p>
+     * History:
+     * <ul>
+     *   <li>1 — initial schema (sessionId, messages, maxMessages, mode reserved)</li>
+     * </ul>
+     */
+    public static final int SCHEMA_VERSION = 1;
+
     private final String sessionId;
+    private final int schemaVersion;
     private final List<LlmMessage> messages;
     private int maxMessages;
 
@@ -43,6 +60,7 @@ public class ConversationSession {
      */
     public ConversationSession(int maxMessages) {
         this.sessionId = UUID.randomUUID().toString();
+        this.schemaVersion = SCHEMA_VERSION;
         this.messages = new ArrayList<>();
         this.maxMessages = maxMessages;
     }
@@ -54,6 +72,19 @@ public class ConversationSession {
      */
     public String getSessionId() {
         return sessionId;
+    }
+
+    /**
+     * Returns the schema version this session was constructed with.
+     * <p>
+     * For freshly constructed sessions this always equals {@link #SCHEMA_VERSION}.
+     * The persistence layer (Week 3) will use this to drive migrations when
+     * loading older session files from disk.
+     *
+     * @return the schema version (1 in v1.x)
+     */
+    public int getSchemaVersion() {
+        return schemaVersion;
     }
 
     /**

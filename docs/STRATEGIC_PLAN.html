@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capella Agent — Strategic Plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0A0A0F;
+      --surface: #12121A;
+      --surface-hover: #1E1E2E;
+      --terminal-bg: #1A1A2E;
+      --terminal-border: #2A2A3E;
+      --text: #E8E8ED;
+      --muted: #8888A0;
+      --muted-fg: #6E6E88;
+      --primary: #00BCD4;
+      --primary-rgb: 0,188,212;
+      --secondary: #FF6D00;
+      --green: #4ADE80;
+      --blue: #60A5FA;
+      --purple: #A78BFA;
+      --red: #F87171;
+      --yellow: #FCD34D;
+      --sidebar-w: 280px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    code, pre, .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; }
+    pre { background: var(--terminal-bg); border: 1px solid var(--terminal-border); border-radius: 8px; padding: 1rem 1.25rem; overflow-x: auto; color: #c8c8d6; }
+    code:not(pre code) { background: rgba(var(--primary-rgb), 0.10); color: var(--primary); padding: 0.12em 0.4em; border-radius: 4px; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    em { color: var(--muted); font-style: italic; }
+    strong { color: var(--text); font-weight: 600; }
+
+    .gradient-text { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* Layout */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--terminal-border);
+      padding: 1.75rem 1.25rem;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--terminal-border);
+    }
+    .sidebar-brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #0A0A0F;
+      font-size: 1rem;
+    }
+    .sidebar-brand-text { font-weight: 700; font-size: 0.95rem; }
+    .sidebar-brand-text small { display: block; color: var(--muted-fg); font-weight: 400; font-size: 0.7rem; margin-top: 1px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+    .sidebar-section { margin-bottom: 1.5rem; }
+    .sidebar-section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted-fg);
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+      padding: 0 0.65rem;
+    }
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.65rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 500;
+      transition: background 0.15s ease, color 0.15s ease;
+      border-left: 2px solid transparent;
+    }
+    .sidebar-link:hover { background: var(--surface-hover); color: var(--text); text-decoration: none; }
+    .sidebar-link.active { background: rgba(var(--primary-rgb), 0.10); color: var(--primary); border-left-color: var(--primary); }
+    .sidebar-link-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted-fg);
+      min-width: 1.6em;
+    }
+    .sidebar-link.active .sidebar-link-num { color: var(--primary); }
+
+    .sidebar-footer {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--terminal-border);
+      font-size: 0.72rem;
+      color: var(--muted-fg);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .sidebar-footer a { display: block; color: var(--muted); margin-top: 0.4rem; }
+
+    /* Main */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      max-width: calc(100vw - var(--sidebar-w));
+    }
+    .main-inner { max-width: 960px; margin: 0 auto; padding: 3rem 2.5rem 6rem; }
+
+    /* Hero */
+    .hero {
+      background:
+        radial-gradient(circle at top right, rgba(var(--primary-rgb), 0.10), transparent 50%),
+        radial-gradient(circle at bottom left, rgba(255, 109, 0, 0.08), transparent 50%);
+      border: 1px solid var(--terminal-border);
+      border-radius: 16px;
+      padding: 2.75rem 2.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .hero-eyebrow {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--primary);
+      background: rgba(var(--primary-rgb), 0.10);
+      padding: 0.3em 0.75em;
+      border-radius: 99px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .hero-title {
+      font-size: clamp(1.9rem, 4vw, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.8rem;
+      line-height: 1.1;
+    }
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 720px;
+      margin-bottom: 1.5rem;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--terminal-border);
+    }
+    .hero-stat-num {
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: var(--primary);
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+    }
+    .hero-stat-label {
+      font-size: 0.72rem;
+      color: var(--muted-fg);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 0.3rem;
+    }
+
+    /* Filter chips */
+    .filter-bar {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--terminal-border);
+      z-index: 50;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .chip {
+      cursor: pointer;
+      padding: 0.4rem 0.95rem;
+      border-radius: 99px;
+      border: 1px solid var(--terminal-border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 500;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .chip:hover { border-color: var(--primary); color: var(--text); }
+    .chip.active { background: rgba(var(--primary-rgb), 0.12); border-color: var(--primary); color: var(--primary); }
+
+    /* Sections */
+    section { scroll-margin-top: 4rem; margin-bottom: 3.5rem; }
+    h2.section-title {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: baseline;
+      gap: 0.7rem;
+    }
+    h2.section-title .num {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .section-subtitle { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.95rem; }
+    h3 { font-size: 1.18rem; font-weight: 600; margin: 1.5rem 0 0.6rem; letter-spacing: -0.01em; }
+    h4 { font-size: 0.95rem; font-weight: 600; margin: 1rem 0 0.4rem; color: var(--text); }
+    p { margin-bottom: 0.85rem; color: var(--text); }
+    ul, ol { margin: 0.5rem 0 0.9rem 1.4rem; }
+    li { margin-bottom: 0.35rem; color: var(--text); }
+
+    /* Phase header */
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 1.4rem 1.6rem;
+      background: linear-gradient(90deg, var(--surface), transparent);
+      border-left: 3px solid var(--primary);
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+    }
+    .phase-header.demo { border-left-color: var(--secondary); }
+    .phase-header.req { border-left-color: var(--blue); }
+    .phase-header.ai { border-left-color: var(--purple); }
+    .phase-header.bridge { border-left-color: var(--green); }
+    .phase-header.multi { border-left-color: var(--yellow); }
+    .phase-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1;
+    }
+    .phase-meta { font-size: 0.78rem; color: var(--muted-fg); font-family: 'JetBrains Mono', monospace; margin-top: 0.2rem; }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+    }
+    .card-title {
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.6rem;
+    }
+    .card.success { border-left: 3px solid var(--green); }
+    .card.warning { border-left: 3px solid var(--yellow); }
+    .card.info { border-left: 3px solid var(--blue); }
+    .card.danger { border-left: 3px solid var(--red); }
+
+    /* Pain card (for community signals) */
+    .pain-card {
+      background: rgba(255, 109, 0, 0.04);
+      border: 1px solid rgba(255, 109, 0, 0.2);
+      border-left: 3px solid var(--secondary);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin: 0.75rem 0 1.25rem;
+      font-size: 0.92rem;
+    }
+    .pain-card .label {
+      color: var(--secondary);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-family: 'JetBrains Mono', monospace;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0 1.25rem;
+      font-size: 0.86rem;
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td { padding: 0.7rem 0.9rem; text-align: left; border-bottom: 1px solid var(--terminal-border); vertical-align: top; }
+    th {
+      background: var(--terminal-bg);
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.7rem;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface-hover); }
+    td code { font-size: 0.78rem; }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 0.18em 0.55em;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .badge.critical { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+    .badge.high { background: rgba(255, 109, 0, 0.15); color: var(--secondary); }
+    .badge.medium { background: rgba(96, 165, 250, 0.15); color: var(--blue); }
+    .badge.t1 { background: rgba(0, 188, 212, 0.15); color: var(--primary); }
+    .badge.t2 { background: rgba(167, 139, 250, 0.15); color: var(--purple); }
+    .badge.do-not { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+
+    /* Roi stars */
+    .roi { color: var(--yellow); letter-spacing: 0.1em; }
+
+    /* DON'T BUILD section */
+    .donts {
+      background: rgba(248, 113, 113, 0.04);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin: 1rem 0;
+    }
+    .donts h3 { color: var(--red); margin-top: 0; }
+    .donts ul { list-style: none; margin-left: 0; }
+    .donts li { padding: 0.5rem 0; border-bottom: 1px solid rgba(248, 113, 113, 0.1); }
+    .donts li:last-child { border: none; }
+    .donts li::before { content: '✗  '; color: var(--red); font-weight: 700; margin-right: 0.4rem; }
+
+    /* Quality bar checklist */
+    .quality-bar {
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 12px;
+      padding: 1.75rem 2rem;
+      counter-reset: bar;
+    }
+    .quality-bar h3 { margin-top: 0; }
+    .quality-bar ol { list-style: none; margin-left: 0; }
+    .quality-bar li {
+      counter-increment: bar;
+      padding: 0.7rem 0 0.7rem 2.5rem;
+      position: relative;
+      border-bottom: 1px solid var(--terminal-border);
+      font-size: 0.92rem;
+    }
+    .quality-bar li:last-child { border: none; }
+    .quality-bar li::before {
+      content: counter(bar);
+      position: absolute;
+      left: 0;
+      top: 0.7rem;
+      width: 1.8em;
+      height: 1.8em;
+      border-radius: 50%;
+      background: rgba(74, 222, 128, 0.15);
+      color: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* Mobile */
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); transition: transform 0.25s ease; }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; max-width: 100vw; }
+      .main-inner { padding: 1.5rem 1.25rem 4rem; }
+      .menu-toggle { display: flex !important; }
+    }
+    .menu-toggle {
+      display: none;
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      width: 42px;
+      height: 42px;
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 8px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 200;
+      color: var(--text);
+    }
+
+    section.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Toggle menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">CA</div>
+        <div class="sidebar-brand-text">
+          Capella Agent
+          <small>Strategic Plan</small>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Overview</div>
+        <a class="sidebar-link" href="#why"><span class="sidebar-link-num">§</span>Why this plan</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Track 1 — Roadmap</div>
+        <a class="sidebar-link" href="#track1"><span class="sidebar-link-num">T1</span>Overview</a>
+        <a class="sidebar-link" href="#t1-p1"><span class="sidebar-link-num">P1</span>Sustainment Demo</a>
+        <a class="sidebar-link" href="#t1-p2"><span class="sidebar-link-num">P2</span>Requirements Roundtrip</a>
+        <a class="sidebar-link" href="#t1-p3"><span class="sidebar-link-num">P3</span>AI Co-Design</a>
+        <a class="sidebar-link" href="#t1-p4"><span class="sidebar-link-num">P4</span>Cross-Tool Bridges</a>
+        <a class="sidebar-link" href="#t1-p5"><span class="sidebar-link-num">P5</span>Multi-Agent</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Track 2 — Hardening</div>
+        <a class="sidebar-link" href="#track2"><span class="sidebar-link-num">T2</span>Overview</a>
+        <a class="sidebar-link" href="#t2-a"><span class="sidebar-link-num">A</span>Reliability</a>
+        <a class="sidebar-link" href="#t2-b"><span class="sidebar-link-num">B</span>Security</a>
+        <a class="sidebar-link" href="#t2-c"><span class="sidebar-link-num">C</span>Polish &amp; Brand</a>
+        <a class="sidebar-link" href="#t2-d"><span class="sidebar-link-num">D</span>Documentation</a>
+        <a class="sidebar-link" href="#t2-e"><span class="sidebar-link-num">E</span>Distribution</a>
+        <a class="sidebar-link" href="#t2-f"><span class="sidebar-link-num">F</span>Performance</a>
+        <a class="sidebar-link" href="#t2-g"><span class="sidebar-link-num">G</span>Customer Success</a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Decision Frame</div>
+        <a class="sidebar-link" href="#sequence"><span class="sidebar-link-num">§</span>Sequence</a>
+        <a class="sidebar-link" href="#donts"><span class="sidebar-link-num">⊘</span>What NOT to build</a>
+        <a class="sidebar-link" href="#quality"><span class="sidebar-link-num">★</span>Quality bar</a>
+        <a class="sidebar-link" href="#companion"><span class="sidebar-link-num">§</span>Companion docs</a>
+      </div>
+
+      <div class="sidebar-footer">
+        <div>v1.0 · Master plan</div>
+        <a href="index.html">← Back to docs hub</a>
+        <a href="PRODUCTION_PLAN_WEEKS_1-6.html">6-week execution plan</a>
+        <a href="README.html">README</a>
+        <a href="COO.html">Strategy guide</a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="main-inner">
+
+        <!-- Hero -->
+        <div class="hero">
+          <span class="hero-eyebrow">Master Strategic Plan · v1.0</span>
+          <h1 class="hero-title gradient-text">Capella Agent → Production-Grade Product</h1>
+          <p class="hero-subtitle">Two parallel tracks. A roadmap that solves real community pain points, and a hardening plan that takes <code>capella-agent</code> from working prototype to enterprise-grade product comparable to (or higher than) Siemens software quality standards.</p>
+          <div class="hero-stats">
+            <div>
+              <div class="hero-stat-num">2</div>
+              <div class="hero-stat-label">Tracks</div>
+            </div>
+            <div>
+              <div class="hero-stat-num">5</div>
+              <div class="hero-stat-label">Roadmap Phases</div>
+            </div>
+            <div>
+              <div class="hero-stat-num">7</div>
+              <div class="hero-stat-label">Hardening Areas</div>
+            </div>
+            <div>
+              <div class="hero-stat-num">23+</div>
+              <div class="hero-stat-label">Weeks</div>
+            </div>
+            <div>
+              <div class="hero-stat-num">10</div>
+              <div class="hero-stat-label">Quality Gates</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="filter-bar">
+          <button class="chip active" data-filter="all">All</button>
+          <button class="chip" data-filter="track1">Track 1 — Roadmap</button>
+          <button class="chip" data-filter="track2">Track 2 — Hardening</button>
+        </div>
+
+        <!-- Why -->
+        <section id="why">
+          <h2 class="section-title"><span class="num">§ 0</span>Why This Plan Exists</h2>
+          <p>Capella Agent has shipped a working multi-agent plugin: <strong>116 tools, 10 LLM providers, an HTML browser UI, an MCP bridge, and a clean tool-call loop</strong>. Real users can install it, ask "list all physical functions," and get sortable tables from a live Capella model.</p>
+          <p>But research into the MBSE/Capella community (Capella Days 2025, forum.mbse-capella.org, NalMage academic paper, Obeo SysON announcements) reveals two simultaneous truths:</p>
+          <div class="card warning">
+            <div class="card-title">The Two Truths</div>
+            <ol>
+              <li><strong>The market is ready right now.</strong> A forum thread titled <em>"Capella hasn't kept up with AI and new MBSE capabilities; Is it time to abandon it?"</em> is actively retaining-or-losing paying users. Tony Komar's Siemens Capella Days 2025 talk validated the entire architectural bet (Capella's semantic Arcadia APIs are <em>better</em> than SysML v2 for AI work).</li>
+              <li><strong>A working prototype is not a shippable product.</strong> Zero automated tests. No code signing. No hosted update site. No welcome wizard. No status bar. No icons. No published security model. No customer success motion.</li>
+            </ol>
+          </div>
+          <p>This document is the strategic plan to address both — organized as <strong>two parallel tracks</strong> that reinforce each other.</p>
+        </section>
+
+        <!-- ============ TRACK 1 ============ -->
+        <section id="track1" data-track="track1">
+          <h2 class="section-title"><span class="num">TRACK 1</span>Roadmap — Solving Community Pain Points <span class="badge t1">T1</span></h2>
+          <p class="section-subtitle">Each phase maps to a <strong>specific community signal</strong> (forum thread, conference talk, academic paper, or competitive gap), not technical convenience. Loudest pain first.</p>
+        </section>
+
+        <section id="t1-p1" data-track="track1">
+          <div class="phase-header">
+            <div>
+              <div class="phase-num">P1</div>
+              <div class="phase-meta">WEEKS 1-4</div>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 1.3rem;">Sustainment Engineering Killer Demo <span class="roi">★★★★★</span></h3>
+              <p style="margin-top: 0.3rem; color: var(--muted); font-size: 0.9rem;">Tony Komar's Siemens prototype proved this is the most compelling MBSE+AI sales demo. Tools already exist; this is <em>packaging</em>, not building.</p>
+            </div>
+          </div>
+
+          <div class="pain-card">
+            <span class="label">Community signal</span>
+            Tony Komar (Siemens) at Capella Days 2025: <em>"Sustainment engineers spend hours digging through models and manuals when a fault report comes in."</em> Aero/defense/auto Fortune-100 buyers respond to this exact scenario.
+          </div>
+
+          <table>
+            <tr><th>Capability</th><th>Status</th><th>Gap</th></tr>
+            <tr><td>Fault → Functional Chain query</td><td><code>get_functional_chain</code> exists</td><td>Need a guided "Sustainment Mode" workflow that chains tools</td></tr>
+            <tr><td>Impact analysis from a symptom</td><td><code>impact_analysis</code> exists</td><td>NL alias: "what could cause X?"</td></tr>
+            <tr><td>Maintenance manual lookup</td><td>Missing</td><td>Add <code>lookup_maintenance_doc</code> tool that searches PDFs in a project folder via embeddings</td></tr>
+            <tr><td>Fault classification by ATA spec</td><td>Missing</td><td>Add <code>classify_fault_ata</code> tool with the ATA 100 catalog as bundled data</td></tr>
+          </table>
+
+          <div class="card success">
+            <div class="card-title">Deliverable</div>
+            <p>A 3-minute video — <em>"Nose wheel landing gear retracting 30 seconds slow → AI agent identifies hydraulic system → finds the relevant functional chain → opens the maintenance procedure."</em> This is the demo that wins enterprise deals.</p>
+          </div>
+        </section>
+
+        <section id="t1-p2" data-track="track1">
+          <div class="phase-header req">
+            <div>
+              <div class="phase-num">P2</div>
+              <div class="phase-meta">WEEKS 5-8</div>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 1.3rem;">Requirements Round-Trip <span class="roi">★★★★★</span></h3>
+              <p style="margin-top: 0.3rem; color: var(--muted); font-size: 0.9rem;">Every regulated industry lives in DOORS / Polarion. <strong>No roundtrip = no enterprise sale.</strong></p>
+            </div>
+          </div>
+
+          <div class="pain-card">
+            <span class="label">Community signal</span>
+            Forum is full of <em>"how do I import DOORS requirements / ReqIF / Excel into Capella"</em> threads. Current Capella Requirements Viewpoint is clunky and manual.
+          </div>
+
+          <table>
+            <tr><th>Capability</th><th>Notes</th></tr>
+            <tr><td><code>import_reqif</code></td><td>Parse ReqIF 1.0.1 → create Requirement elements with attributes</td></tr>
+            <tr><td><code>export_reqif</code> <em>(already exists)</em></td><td>Verify roundtrip fidelity with DOORS sample files</td></tr>
+            <tr><td><code>import_requirements_excel</code></td><td>XLSX → Requirements with smart column mapping</td></tr>
+            <tr><td><code>link_requirements_to_elements</code></td><td>NL: <em>"Link REQ-001 through REQ-050 to the Avionics System"</em></td></tr>
+            <tr><td><code>coverage_dashboard</code></td><td>Browser-rendered HTML showing % of requirements with implementation traces</td></tr>
+          </table>
+        </section>
+
+        <section id="t1-p3" data-track="track1">
+          <div class="phase-header ai">
+            <div>
+              <div class="phase-num">P3</div>
+              <div class="phase-meta">WEEKS 9-14</div>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 1.3rem;">AI Architecture Co-Design <span class="roi">★★★★</span></h3>
+              <p style="margin-top: 0.3rem; color: var(--muted); font-size: 0.9rem;">The generative side that gets press attention.</p>
+            </div>
+          </div>
+
+          <div class="pain-card">
+            <span class="label">Community signal</span>
+            The NalMage paper, Komar's RAG demo, and the Obeo SysON announcement all converge here.
+          </div>
+
+          <table>
+            <tr><th>Capability</th><th>Description</th></tr>
+            <tr><td><code>propose_architecture_from_requirements</code></td><td>Read REQs → propose components, functions, allocations as a <em>draft branch</em> the user accepts/rejects</td></tr>
+            <tr><td><code>find_missing_traces</code></td><td>Identify orphaned requirements and suggest plausible target elements</td></tr>
+            <tr><td><code>suggest_decomposition</code></td><td><em>"This LogicalComponent is too complex (&gt;15 functions). Here's a 3-component decomposition."</em></td></tr>
+            <tr><td><code>architecture_review_critique</code></td><td>Run the model through a critique prompt → produce a structured findings report</td></tr>
+            <tr><td><code>compare_alternatives</code></td><td>Generate 2–3 architecture alternatives with tradeoff analysis</td></tr>
+          </table>
+
+          <div class="card danger">
+            <div class="card-title">⚠ Critical UX rule</div>
+            <p>All generative actions create a <strong>diff preview</strong> the user explicitly approves. Never silently mutate the model. This is the #1 trust-builder for enterprise users who fear AI "going rogue" on a million-dollar model.</p>
+          </div>
+        </section>
+
+        <section id="t1-p4" data-track="track1">
+          <div class="phase-header bridge">
+            <div>
+              <div class="phase-num">P4</div>
+              <div class="phase-meta">WEEKS 15-22</div>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 1.3rem;">Cross-Tool Bridges <span class="roi">★★★★</span></h3>
+              <p style="margin-top: 0.3rem; color: var(--muted); font-size: 0.9rem;">Lead with Polarion and JIRA — they're easier to integrate and have huge installed bases.</p>
+            </div>
+          </div>
+
+          <div class="pain-card">
+            <span class="label">Community signal</span>
+            <em>"I have Capella + Polarion + Simulink + Cameo and they don't talk to each other."</em>
+          </div>
+
+          <table>
+            <tr><th>Bridge</th><th>Approach</th><th>Effort</th></tr>
+            <tr><td><strong>Polarion</strong></td><td>REST API (better-documented than Teamcenter)</td><td>M</td></tr>
+            <tr><td><strong>DOORS Next</strong></td><td>OSLC + REST</td><td>M</td></tr>
+            <tr><td><strong>Simulink</strong></td><td>MATLAB Engine API (foundation in <code>simulation</code> module)</td><td>L</td></tr>
+            <tr><td><strong>JIRA</strong></td><td>REST — link Capella elements to issues</td><td>S</td></tr>
+            <tr><td><strong>Confluence</strong></td><td>Publish auto-generated architecture docs</td><td>S</td></tr>
+            <tr><td><strong>Git</strong></td><td><code>git_diff_model</code> — semantic diff of two .aird versions in NL</td><td>M</td></tr>
+          </table>
+        </section>
+
+        <section id="t1-p5" data-track="track1">
+          <div class="phase-header multi">
+            <div>
+              <div class="phase-num">P5</div>
+              <div class="phase-meta">WEEKS 23+</div>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 1.3rem;">Multi-Agent Collaboration <span class="roi">★★★</span></h3>
+              <p style="margin-top: 0.3rem; color: var(--muted); font-size: 0.9rem;">Make the Tc-agent and Simulation-agent actually collaborate.</p>
+            </div>
+          </div>
+
+          <div class="pain-card">
+            <span class="label">Community signal</span>
+            Eclipse LMOS exists, OpenAI/Anthropic have agent SDKs, and your <code>Tc-agent</code> and <code>Simulation-agent</code> are already separate bundles. Time to make them actually collaborate.
+          </div>
+
+          <table>
+            <tr><th>Capability</th><th>Description</th></tr>
+            <tr><td><strong>Agent Bus</strong></td><td>Real pub/sub channel between Model Chat, Teamcenter, Simulation agents</td></tr>
+            <tr><td><strong>Workflow Templates</strong></td><td><em>"Validate requirements → run simulation → update model → notify reviewer"</em> as one NL command</td></tr>
+            <tr><td><strong>Long-running tasks</strong></td><td>Track multi-step workflows in a job manager UI (not just chat)</td></tr>
+            <tr><td><strong>Memory across sessions</strong></td><td>Persistent agent memory (project-scoped knowledge base in SQLite or pgvector)</td></tr>
+          </table>
+        </section>
+
+        <!-- ============ TRACK 2 ============ -->
+        <section id="track2" data-track="track2">
+          <h2 class="section-title"><span class="num">TRACK 2</span>Production Hardening — Siemens-Grade Quality <span class="badge t2">T2</span></h2>
+          <p class="section-subtitle">A working plugin is not a product. Here's what's missing to ship to a Fortune-100 customer who'll pay $50K–$500K/year. Track 2 runs in parallel with Track 1 — the first 6 weeks are detailed in <a href="PRODUCTION_PLAN_WEEKS_1-6.html">PRODUCTION_PLAN_WEEKS_1-6</a>.</p>
+        </section>
+
+        <section id="t2-a" data-track="track2">
+          <h3>A. Reliability &amp; Correctness <span class="badge critical">CRITICAL</span> <span style="color:var(--muted-fg); font-size: 0.8rem; font-weight: 400; margin-left: 0.5rem;">Weeks 1–6</span></h3>
+          <table>
+            <tr><th>Gap</th><th>Action</th><th>Why</th></tr>
+            <tr><td><strong>Zero automated tests</strong></td><td>JUnit 5 + Tycho Surefire. Target 70% coverage on <code>core</code> and tool framework</td><td>Cannot ship without tests. Period.</td></tr>
+            <tr><td><strong>No integration tests</strong></td><td>Headless Capella test fixture loading the IFE sample model</td><td>Catches API breakages before customers do</td></tr>
+            <tr><td><strong>No undo/redo verification</strong></td><td>Test every write tool with <code>EditingDomain.getCommandStack().undo()</code></td><td>Right now we trust EMF transactions blindly</td></tr>
+            <tr><td><strong>No multi-project test</strong></td><td>Test with 3 models open simultaneously, switching between them</td><td>Never tested — likely has bugs</td></tr>
+            <tr><td><strong>Tool error sanitization</strong></td><td>Audit every tool's exception handling — never leak stack traces to user</td><td>Some tools still throw raw RuntimeExceptions</td></tr>
+            <tr><td><strong>Token budgeting with hard caps</strong></td><td>Per-request token meter; refuse to send if &gt; provider limit</td><td>Currently we hope it fits</td></tr>
+            <tr><td><strong>Conversation persistence</strong></td><td>Save chats to disk per project, restore on reopen</td><td>Users lose their work today</td></tr>
+            <tr><td><strong>Crash recovery</strong></td><td>If LLM mid-tool-loop crashes, resume gracefully</td><td>Currently leaves session in broken state</td></tr>
+          </table>
+        </section>
+
+        <section id="t2-b" data-track="track2">
+          <h3>B. Security <span class="badge critical">CRITICAL</span> <span style="color:var(--muted-fg); font-size: 0.8rem; font-weight: 400; margin-left: 0.5rem;">Weeks 3–8</span></h3>
+          <table>
+            <tr><th>Gap</th><th>Action</th></tr>
+            <tr><td><strong>API keys in plain Eclipse preferences</strong></td><td>Use Eclipse SecureStorage exclusively, never plain prefs</td></tr>
+            <tr><td><strong>No SBOM</strong></td><td>Generate CycloneDX SBOM for the Gson + any other bundled libs</td></tr>
+            <tr><td><strong>Unsigned JARs</strong></td><td>Get a code-signing cert. Sign all bundles. Without this, enterprise IT will reject install.</td></tr>
+            <tr><td><strong>No prompt injection guards</strong></td><td>Sanitizer that strips <code>&lt;/system&gt;</code>, <em>"ignore previous"</em>, etc. from tool results before feeding to LLM</td></tr>
+            <tr><td><strong>No PII redaction</strong></td><td>When exporting chat to HTML, optionally redact emails/credentials</td></tr>
+            <tr><td><strong>No air-gapped mode</strong></td><td>Explicit "offline" toggle that disables all cloud providers, only allows Ollama</td></tr>
+            <tr><td><strong>No audit log wired up</strong></td><td>The <code>AuditLogger</code> class exists but isn't wired up. Wire it. Defense customers need this.</td></tr>
+            <tr><td><strong>No tool allowlist</strong></td><td>Admin should configure which tools are enabled at site level via preferences XML</td></tr>
+          </table>
+        </section>
+
+        <section id="t2-c" data-track="track2">
+          <h3>C. Polish &amp; Brand <span class="badge high">HIGH</span> <span style="color:var(--muted-fg); font-size: 0.8rem; font-weight: 400; margin-left: 0.5rem;">Weeks 4–10</span></h3>
+          <table>
+            <tr><th>Gap</th><th>Action</th></tr>
+            <tr><td><strong>Generic icons</strong></td><td>Hire a designer (Fiverr, $200) for: chat icon, agent logo, tool result icons</td></tr>
+            <tr><td><strong>No splash branding</strong></td><td>Splash screen contribution showing "Capella Agent" loading</td></tr>
+            <tr><td><strong>Default Eclipse fonts in chat</strong></td><td>Custom HTML/CSS with branded typography (refine our existing Inter use)</td></tr>
+            <tr><td><strong>Inconsistent error messages</strong></td><td>Standard format: short headline + actionable suggestion + (optional) "Show details"</td></tr>
+            <tr><td><strong>No keyboard shortcuts</strong></td><td>Ctrl+Shift+M = open chat, Ctrl+Enter = send, Esc = cancel</td></tr>
+            <tr><td><strong>No status bar contribution</strong></td><td>Bottom-right indicator with click-to-configure</td></tr>
+            <tr><td><strong>No welcome page</strong></td><td>First-launch wizard: pick provider → enter key → test → done</td></tr>
+          </table>
+        </section>
+
+        <section id="t2-d" data-track="track2">
+          <h3>D. Documentation <span class="badge high">HIGH</span> <span style="color:var(--muted-fg); font-size: 0.8rem; font-weight: 400; margin-left: 0.5rem;">Weeks 6–10</span></h3>
+          <table>
+            <tr><th>Asset</th><th>Format</th><th>Audience</th></tr>
+            <tr><td>Getting Started video</td><td>5 min screen recording</td><td>New users</td></tr>
+            <tr><td>Tool Reference site</td><td>Static site (Docusaurus or MkDocs) generated from <code>TOOLS.md</code></td><td>Power users</td></tr>
+            <tr><td>Cookbook</td><td>10 recipes</td><td>Solution sellers</td></tr>
+            <tr><td>Architecture Decision Records</td><td><code>docs/adr/</code></td><td>Future maintainers</td></tr>
+            <tr><td>Migration Guide</td><td>How to upgrade between versions</td><td>Existing customers</td></tr>
+            <tr><td>Security Whitepaper</td><td>Threat model + mitigations</td><td>Enterprise security teams</td></tr>
+            <tr><td>API JavaDoc</td><td>Public API of <code>core.tools</code> and <code>core.llm</code></td><td>Tool developers</td></tr>
+          </table>
+        </section>
+
+        <section id="t2-e" data-track="track2">
+          <h3>E. Distribution &amp; Operations <span class="badge high">HIGH</span> <span style="color:var(--muted-fg); font-size: 0.8rem; font-weight: 400; margin-left: 0.5rem;">Weeks 8–14</span></h3>
+          <table>
+            <tr><th>Gap</th><th>Action</th></tr>
+            <tr><td><strong>No hosted update site</strong></td><td>Push p2 repo to GitHub Pages or Eclipse Marketplace</td></tr>
+            <tr><td><strong>No version semantics</strong></td><td>Semver. Bump to <code>1.0.0</code> for first release. <code>qualifier</code> only for SNAPSHOTs</td></tr>
+            <tr><td><strong>No release notes</strong></td><td><code>CHANGELOG.md</code> with every version</td></tr>
+            <tr><td><strong>No CI/CD</strong></td><td>GitHub Actions: <code>mvn verify</code> on every PR, signed release on tag push</td></tr>
+            <tr><td><strong>No issue templates</strong></td><td><code>.github/ISSUE_TEMPLATE/*.md</code></td></tr>
+            <tr><td><strong>No telemetry</strong> (opt-in)</td><td>Anonymous usage: tool calls/day, model used, error rates → helps prioritize</td></tr>
+            <tr><td><strong>No license</strong></td><td>Add LICENSE file. EPL 2.0 matches Capella ecosystem</td></tr>
+            <tr><td><strong>No contributor guide</strong></td><td><code>CONTRIBUTING.md</code></td></tr>
+          </table>
+        </section>
+
+        <section id="t2-f" data-track="track2">
+          <h3>F. Performance &amp; Cost <span class="badge medium">MEDIUM</span> <span style="color:var(--muted-fg); font-size: 0.8rem; font-weight: 400; margin-left: 0.5rem;">Weeks 10–14</span></h3>
+          <table>
+            <tr><th>Gap</th><th>Action</th></tr>
+            <tr><td><strong>Token usage not tracked</strong></td><td>Show <em>"Tokens used today: 12,450 / Cost: $0.18"</em> in status bar</td></tr>
+            <tr><td><strong>No request caching</strong></td><td>Identical tool calls within session should hit a cache</td></tr>
+            <tr><td><strong>No model auto-selection</strong></td><td>"Use cheap model for read tools, expensive for write"</td></tr>
+            <tr><td><strong>Slow model load on first query</strong></td><td>Pre-warm LLM provider on plugin activation</td></tr>
+            <tr><td><strong>MCP server not tested at scale</strong></td><td>Load test with 100 tool calls/min</td></tr>
+          </table>
+        </section>
+
+        <section id="t2-g" data-track="track2">
+          <h3>G. Customer Success <span class="badge medium">MEDIUM</span> <span style="color:var(--muted-fg); font-size: 0.8rem; font-weight: 400; margin-left: 0.5rem;">Weeks 12–18</span></h3>
+          <table>
+            <tr><th>Need</th><th>Action</th></tr>
+            <tr><td><strong>Built-in feedback button</strong></td><td><em>"Was this response helpful? 👍 👎"</em> → posts to your backend</td></tr>
+            <tr><td><strong>Diagnostic export</strong></td><td>One-click <em>"Export problem report"</em> bundles logs, config (redacted), version</td></tr>
+            <tr><td><strong>Sample models</strong></td><td>Ship with 2–3 reference models</td></tr>
+            <tr><td><strong>Provider connectivity wizard</strong></td><td><em>"Test all providers"</em> command</td></tr>
+            <tr><td><strong>Error knowledge base</strong></td><td>Common errors page with solutions</td></tr>
+          </table>
+        </section>
+
+        <!-- Sequence -->
+        <section id="sequence">
+          <h2 class="section-title"><span class="num">§</span>Recommended Sequence</h2>
+          <h3>If 1-person effort</h3>
+          <table>
+            <tr><th>Weeks</th><th>Track</th><th>Focus</th></tr>
+            <tr><td>1–2</td><td><span class="badge t2">T2-A</span></td><td>Reliability fundamentals — JUnit, undo/redo, token meter, crash recovery</td></tr>
+            <tr><td>3–4</td><td><span class="badge t1">T1-1</span></td><td>Sustainment Engineering demo + 5-min video → land first beta customer</td></tr>
+            <tr><td>5–6</td><td><span class="badge t2">T2-C</span></td><td>Polish — icons, welcome wizard, status bar, shortcuts, branded errors</td></tr>
+            <tr><td>7–8</td><td><span class="badge t2">T2-B</span></td><td>Security — SecureStorage, audit log wiring, code-signing cert</td></tr>
+            <tr><td>9–10</td><td><span class="badge t2">T2-E</span></td><td>Distribution — GitHub Pages p2 site, semver, CI/CD, marketplace</td></tr>
+            <tr><td>11–12</td><td><span class="badge t2">T2-D</span></td><td>Documentation site + Getting Started video + Cookbook</td></tr>
+            <tr><td>13–16</td><td><span class="badge t1">T1-2</span></td><td>Requirements roundtrip — biggest enterprise unlock</td></tr>
+            <tr><td>17–22</td><td><span class="badge t1">T1-3</span></td><td>Generative architecture — biggest marketing unlock</td></tr>
+            <tr><td>23+</td><td><span class="badge t1">T1-4 → T1-5</span></td><td>Cross-tool bridges → multi-agent collaboration</td></tr>
+          </table>
+          <h3>If 2–3 developers</h3>
+          <p>Parallelize Tracks 1 and 2. Dev A drives Track 2 (hardening, infra, docs), Dev B drives Track 1 (features), Dev C does QA + customer-facing material.</p>
+        </section>
+
+        <!-- Don'ts -->
+        <section id="donts">
+          <h2 class="section-title"><span class="num">⊘</span>What to NOT Build <span class="badge do-not">TRAPS</span></h2>
+          <p>These look attractive but are <strong>traps</strong> that drain effort without moving the needle.</p>
+          <div class="donts">
+            <h3>Avoid these in v1</h3>
+            <ul>
+              <li><strong>Finish Teamcenter integration in v1.</strong> Customers all have different TC configs. Lead with Polarion or skip PLM until a paying customer asks.</li>
+              <li><strong>Build your own RAG.</strong> Use the LLM provider's native context. Adding a vector DB adds operational complexity for marginal value.</li>
+              <li><strong>Compete with Sirius diagram editing.</strong> Adding/removing elements from diagrams via AI is a UX nightmare. Focus on <em>creating</em> new diagrams from element selections.</li>
+              <li><strong>Ship Simulation agent until MATLAB integration is real.</strong> Placeholder tools that say "TODO" damage credibility.</li>
+              <li><strong>Add a chat-based code editor.</strong> That's Claude Code's job — your MCP bridge already covers it.</li>
+              <li><strong>Translate the UI to multiple languages.</strong> EN-only ships faster. Localize on customer demand.</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Quality bar -->
+        <section id="quality">
+          <h2 class="section-title"><span class="num">★</span>The "Siemens or Better" Quality Bar</h2>
+          <p>A customer should be able to:</p>
+          <div class="quality-bar">
+            <h3>10 Quality Gates</h3>
+            <ol>
+              <li>Install the plugin from a hosted update site with <strong>zero manual config</strong></li>
+              <li>Open it, see a welcome page, click through provider setup in <strong>&lt; 60 seconds</strong></li>
+              <li>Open the IFE sample model, type <em>"list all physical functions"</em> → get a styled table in <strong>&lt; 5 seconds</strong></li>
+              <li>Run for <strong>8 hours of continuous use</strong> without a single uncaught exception</li>
+              <li>Reproduce any bug by clicking <em>"Export Problem Report"</em></li>
+              <li>Find the answer to any <em>"how do I…"</em> question in the docs site within <strong>2 clicks</strong></li>
+              <li>Verify code signature on <strong>every</strong> JAR</li>
+              <li>Roll back to the previous version with a single click</li>
+              <li>Run the plugin <strong>completely offline</strong> (Ollama mode) without any errors</li>
+              <li>Submit a feature request via an <strong>in-app button</strong></li>
+            </ol>
+          </div>
+          <p style="margin-top: 1rem;">If any of those is "no" — it's not ready to charge enterprise prices for.</p>
+        </section>
+
+        <!-- Companion -->
+        <section id="companion">
+          <h2 class="section-title"><span class="num">§</span>Companion Documents</h2>
+          <table>
+            <tr><th>Document</th><th>Scope</th></tr>
+            <tr><td><strong>STRATEGIC_PLAN.md / .html</strong></td><td>This document — full strategic plan, both tracks, master vision</td></tr>
+            <tr><td><a href="PRODUCTION_PLAN_WEEKS_1-6.html">PRODUCTION_PLAN_WEEKS_1-6</a></td><td>Detailed execution plan for the first 6 weeks of Track 2 with file-level changes</td></tr>
+            <tr><td><a href="TOOLS.html">TOOLS.html</a></td><td>The 116-tool catalog with example prompts</td></tr>
+            <tr><td><a href="COO.html">COO.html</a></td><td>Strategy &amp; feature guide</td></tr>
+            <tr><td><a href="README.html">README.html</a></td><td>Project overview</td></tr>
+            <tr><td><a href="SITECONFIGURATIONS.html">SITECONFIGURATIONS.html</a></td><td>Setup &amp; install guide</td></tr>
+          </table>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Filter chips
+    const chips = document.querySelectorAll('.chip');
+    const filterableSections = document.querySelectorAll('section[data-track]');
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const filter = chip.dataset.filter;
+        filterableSections.forEach(s => {
+          if (filter === 'all' || s.dataset.track === filter) s.classList.remove('hidden');
+          else s.classList.add('hidden');
+        });
+      });
+    });
+
+    // Scroll spy
+    const links = document.querySelectorAll('.sidebar-link');
+    const sections = Array.from(document.querySelectorAll('section[id]'));
+    function onScroll() {
+      const scrollY = window.scrollY + 120;
+      let current = sections[0]?.id;
+      for (const s of sections) {
+        if (s.offsetTop <= scrollY) current = s.id;
+      }
+      links.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+      });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // Mobile sidebar close on link click
+    document.querySelectorAll('.sidebar-link').forEach(l => {
+      l.addEventListener('click', () => {
+        if (window.innerWidth < 900) {
+          document.querySelector('.sidebar').classList.remove('open');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
