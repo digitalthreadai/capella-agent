@@ -198,4 +198,35 @@ public final class WelcomeWizardModel {
         List<Page> pages = applicablePages();
         return pages.isEmpty() || pages.get(pages.size() - 1) == currentPage;
     }
+
+    /**
+     * Marks the wizard as completed by writing the sentinel key to Eclipse preferences.
+     * Called from {@code WelcomeWizard.performFinish()}.
+     */
+    public void finish() {
+        try {
+            org.eclipse.core.runtime.preferences.IEclipsePreferences prefs =
+                org.eclipse.core.runtime.preferences.InstanceScope.INSTANCE
+                    .getNode("com.capellaagent.core");
+            prefs.put("welcome.wizard.completed", "true");
+            prefs.flush();
+        } catch (Exception e) {
+            // Non-fatal — wizard will re-appear on next launch at worst
+        }
+    }
+
+    /**
+     * Returns true if the welcome wizard has already been completed.
+     * Uses a dedicated sentinel key, not the provider ID (which has a non-empty default).
+     */
+    public static boolean isConfigured() {
+        try {
+            org.eclipse.core.runtime.preferences.IEclipsePreferences prefs =
+                org.eclipse.core.runtime.preferences.InstanceScope.INSTANCE
+                    .getNode("com.capellaagent.core");
+            return "true".equals(prefs.get("welcome.wizard.completed", "false"));
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

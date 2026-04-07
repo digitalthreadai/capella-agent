@@ -30,4 +30,9 @@
 
    </extension>
 
+   <!-- First-launch welcome wizard -->
+   <extension point="org.eclipse.ui.startup">
+      <startup class="com.capellaagent.core.ui.welcome.WelcomeStartupHook"/>
+   </extension>
+
 </plugin>
