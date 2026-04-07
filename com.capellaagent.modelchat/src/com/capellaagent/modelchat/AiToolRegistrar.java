@@ -1,13 +1,20 @@
 package com.capellaagent.modelchat;
 
 import com.capellaagent.core.tools.ToolRegistry;
+import com.capellaagent.modelchat.tools.ai.ApplyArchitectureDiffTool;
+import com.capellaagent.modelchat.tools.ai.ArchitectureReviewCritiqueTool;
 import com.capellaagent.modelchat.tools.ai.AutoAllocateTool;
+import com.capellaagent.modelchat.tools.ai.CompareAlternativesTool;
+import com.capellaagent.modelchat.tools.ai.FindMissingTracesTool;
 import com.capellaagent.modelchat.tools.ai.GenerateTestCasesTool;
 import com.capellaagent.modelchat.tools.ai.GenerateTestScenariosTool;
 import com.capellaagent.modelchat.tools.ai.ModelQAndATool;
 import com.capellaagent.modelchat.tools.ai.OptimizeAllocationTool;
 import com.capellaagent.modelchat.tools.ai.PredictImpactTool;
+import com.capellaagent.modelchat.tools.ai.ProposeArchitectureChangesTool;
+import com.capellaagent.modelchat.tools.ai.ProposeArchitectureFromRequirementsTool;
 import com.capellaagent.modelchat.tools.ai.ReviewArchitectureTool;
+import com.capellaagent.modelchat.tools.ai.SuggestDecompositionTool;
 import com.capellaagent.modelchat.tools.ai.SuggestInterfacesTool;
 import com.capellaagent.modelchat.tools.ai.SummarizeModelTool;
 import com.capellaagent.modelchat.tools.ai.ValidateNamingTool;
@@ -32,5 +39,13 @@ final class AiToolRegistrar {
         parent.reg(registry, new PredictImpactTool());
         parent.reg(registry, new GenerateTestCasesTool());
         parent.reg(registry, new OptimizeAllocationTool());
+        // P3 Generative Architecture tools
+        parent.reg(registry, new ProposeArchitectureChangesTool());
+        parent.reg(registry, new ApplyArchitectureDiffTool());
+        parent.reg(registry, new ProposeArchitectureFromRequirementsTool());
+        parent.reg(registry, new FindMissingTracesTool());
+        parent.reg(registry, new SuggestDecompositionTool());
+        parent.reg(registry, new ArchitectureReviewCritiqueTool());
+        parent.reg(registry, new CompareAlternativesTool());
     }
 }

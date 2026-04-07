@@ -40,6 +40,7 @@ import com.capellaagent.core.tools.ToolRegistry;
 import com.capellaagent.core.llm.ILlmProvider;
 import com.capellaagent.core.llm.LlmProviderRegistry;
 import com.capellaagent.core.session.ConversationSession;
+import com.capellaagent.core.staging.InMemoryStagingArea;
 import com.capellaagent.core.util.WorkspaceUtil;
 import com.capellaagent.modelchat.ui.views.ChatHtmlRenderer;
 
@@ -633,10 +634,61 @@ public class ModelChatView extends ViewPart {
             case "navigate":
                 navigateToElement(data);
                 break;
+            case "apply":
+                handleApplyDiff(data);
+                break;
+            case "discard":
+                handleDiscardDiff(data);
+                break;
             default:
                 // Unknown action, ignore
                 break;
         }
+    }
+
+    /**
+     * Handles the Apply button click from an architecture proposal diff widget.
+     * <p>
+     * Injects a user message asking the LLM to call {@code apply_architecture_diff}
+     * with the given diff_id. The LLM will then invoke the tool, which performs
+     * the actual model mutation inside a single RecordingCommand.
+     *
+     * @param diffId the diff_id token from the proposal widget
+     */
+    private void handleApplyDiff(String diffId) {
+        Display.getDefault().asyncExec(() -> {
+            String sessionId = currentSessionId();
+            String msg = "Please apply the staged architecture changes. "
+                    + "Call apply_architecture_diff with session_id=" + sessionId
+                    + " and diff_id=" + diffId;
+            inputField.setText(msg);
+            appendSystemMessage("Requesting application of diff " + diffId + " \u2014 sending to agent...");
+            sendMessage();
+        });
+    }
+
+    /**
+     * Handles the Discard button click from an architecture proposal diff widget.
+     * <p>
+     * Removes the staged diff from {@link InMemoryStagingArea} immediately (no LLM call needed)
+     * and informs the user.
+     *
+     * @param diffId the diff_id token to discard
+     */
+    private void handleDiscardDiff(String diffId) {
+        String sessionId = currentSessionId();
+        InMemoryStagingArea.getInstance().discard(sessionId, diffId);
+        appendSystemMessage("Diff " + diffId + " discarded.");
+    }
+
+    /**
+     * Returns a stable session identifier for scoping staged diffs.
+     * Uses the ConversationSession's object identity as a hex token.
+     */
+    private String currentSessionId() {
+        return session != null
+                ? Integer.toHexString(System.identityHashCode(session))
+                : "unknown";
     }
 
     /**

@@ -158,6 +158,9 @@ public class ChatHtmlRenderer {
             case "SIMULATION":
                 body = renderSimulation(data);
                 break;
+            case "architecture_proposal":
+                body = renderArchitectureProposal(data);
+                break;
             default:
                 body = renderJsonCard(data);
                 break;
@@ -307,6 +310,68 @@ public class ChatHtmlRenderer {
             return renderComparisonTable(data.getAsJsonArray("results"));
         }
         return renderPropertyCard(data);
+    }
+
+    /**
+     * Renders an architecture proposal diff with Apply and Discard buttons.
+     * <p>
+     * Expected fields: {@code diff_id}, {@code diff_preview}, {@code changes_staged},
+     * {@code session_id}. The Apply button injects the apply command into the chat
+     * via {@code javaAction('apply', diffId)} and the Discard button calls
+     * {@code javaAction('discard', diffId)}.
+     */
+    private String renderArchitectureProposal(JsonObject data) {
+        String diffId = getStr(data, "diff_id");
+        String preview = getStr(data, "diff_preview");
+        String msg = getStr(data, "message");
+        int count = data.has("changes_staged") ? data.get("changes_staged").getAsInt() : 0;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("<div class=\"element-card\" style=\"border-left:3px solid #cba6f7;\">");
+        sb.append("<div style=\"font-weight:600;margin-bottom:6px;color:#cba6f7;\">");
+        sb.append("&#x1F4CB; Architecture Proposal &mdash; ");
+        sb.append(count).append(" change(s) &mdash; ID: <code>")
+                .append(escapeHtml(diffId)).append("</code></div>");
+
+        // Diff preview block
+        if (!preview.isEmpty()) {
+            sb.append("<pre style=\"background:#1e1e2e;border-radius:4px;padding:8px;"
+                    + "font-size:12px;overflow-x:auto;white-space:pre-wrap;\">");
+            // Colour diff lines by prefix
+            for (String line : preview.split("\n", -1)) {
+                String escaped = escapeHtml(line);
+                if (line.startsWith("+")) {
+                    sb.append("<span style=\"color:#a6e3a1;\">").append(escaped).append("</span>\n");
+                } else if (line.startsWith("~")) {
+                    sb.append("<span style=\"color:#f9e2af;\">").append(escaped).append("</span>\n");
+                } else if (line.startsWith("-")) {
+                    sb.append("<span style=\"color:#f38ba8;\">").append(escaped).append("</span>\n");
+                } else {
+                    sb.append(escaped).append("\n");
+                }
+            }
+            sb.append("</pre>");
+        }
+
+        if (!msg.isEmpty()) {
+            sb.append("<div style=\"font-size:11px;color:#7f849c;margin-bottom:8px;\">")
+                    .append(escapeHtml(msg)).append("</div>");
+        }
+
+        // Action buttons
+        sb.append("<div style=\"display:flex;gap:8px;margin-top:8px;\">");
+        sb.append("<button onclick=\"javaAction('apply','").append(escapeHtml(diffId)).append("')\" ")
+                .append("style=\"background:#a6e3a1;color:#1e1e2e;border:none;border-radius:4px;"
+                        + "padding:5px 14px;cursor:pointer;font-weight:600;\">")
+                .append("&#x2714; Apply</button>");
+        sb.append("<button onclick=\"javaAction('discard','").append(escapeHtml(diffId)).append("')\" ")
+                .append("style=\"background:#f38ba8;color:#1e1e2e;border:none;border-radius:4px;"
+                        + "padding:5px 14px;cursor:pointer;font-weight:600;\">")
+                .append("&#x2718; Discard</button>");
+        sb.append("</div>");
+
+        sb.append("</div>");
+        return sb.toString();
     }
 
     // ------------------------------------------------------------------
@@ -756,6 +821,7 @@ public class ChatHtmlRenderer {
             case "ANALYSIS" -> "oa";
             case "EXPORT" -> "pa";
             case "SIMULATION" -> "epbs";
+            case "architecture_proposal" -> "la";
             default -> "oa";
         };
     }
