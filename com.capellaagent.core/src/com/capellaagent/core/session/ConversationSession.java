@@ -66,6 +66,33 @@ public class ConversationSession {
     }
 
     /**
+     * Private constructor used by {@link #restore(String, int, List)} to
+     * rebuild a session from persisted state.
+     */
+    private ConversationSession(String sessionId, int schemaVersion, List<LlmMessage> messages, int maxMessages) {
+        this.sessionId = sessionId;
+        this.schemaVersion = schemaVersion;
+        this.messages = new ArrayList<>(messages);
+        this.maxMessages = maxMessages;
+    }
+
+    /**
+     * Restores a conversation session from persisted state.
+     * <p>
+     * Used exclusively by the persistence layer (Week 3) to rebuild a session
+     * from a JSON file. Bypasses normal construction so the original session
+     * ID and schema version are preserved verbatim.
+     *
+     * @param sessionId     the original session UUID from disk
+     * @param schemaVersion the schema version recorded on disk
+     * @param messages      the message history to restore
+     * @return a session with the supplied state
+     */
+    public static ConversationSession restore(String sessionId, int schemaVersion, List<LlmMessage> messages) {
+        return new ConversationSession(sessionId, schemaVersion, messages, DEFAULT_MAX_MESSAGES);
+    }
+
+    /**
      * Returns the unique session identifier.
      *
      * @return the session ID
