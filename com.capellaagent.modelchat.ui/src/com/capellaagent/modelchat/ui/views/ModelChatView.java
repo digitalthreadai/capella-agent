@@ -75,6 +75,13 @@ public class ModelChatView extends ViewPart {
     private ConversationSession session;
     private ChatJob activeJob;
 
+    // BrowserFunction instances — stored so they can be disposed on view close
+    private org.eclipse.swt.browser.BrowserFunction javaNavigateFunc;
+    private org.eclipse.swt.browser.BrowserFunction javaActionFunc;
+
+    /** Guards against sending a second message while a job is running. */
+    private volatile boolean jobInFlight = false;
+
     @Override
     public void createPartControl(Composite parent) {
         // Initialize conversation session
@@ -223,7 +230,7 @@ public class ModelChatView extends ViewPart {
         chatBrowser.setText(baseHtml);
 
         // Register Java callback for UUID navigation (called from HTML links)
-        new BrowserFunction(chatBrowser, "javaNavigate") {
+        javaNavigateFunc = new BrowserFunction(chatBrowser, "javaNavigate") {
             @Override
             public Object function(Object[] args) {
                 if (args.length > 0) {
@@ -235,7 +242,7 @@ public class ModelChatView extends ViewPart {
         };
 
         // Register Java callback for generic actions from the browser
-        new BrowserFunction(chatBrowser, "javaAction") {
+        javaActionFunc = new BrowserFunction(chatBrowser, "javaAction") {
             @Override
             public Object function(Object[] args) {
                 if (args.length >= 2) {
@@ -369,7 +376,7 @@ public class ModelChatView extends ViewPart {
         }
 
         // Prevent sending while a job is running
-        if (activeJob != null && activeJob.getResult() == null) {
+        if (jobInFlight) {
             return;
         }
 
@@ -395,7 +402,10 @@ public class ModelChatView extends ViewPart {
                 selectedProject,
                 this::appendAssistantMessage,
                 this::appendToolNotification,
-                () -> Display.getDefault().asyncExec(() -> setInputEnabled(true)),
+                () -> {
+                    jobInFlight = false;
+                    Display.getDefault().asyncExec(() -> setInputEnabled(true));
+                },
                 (toolName, category, fullResult) -> {
                     String html = renderer.renderToolResult(category, toolName, fullResult);
                     String escapedHtml = renderer.escapeJs(html);
@@ -408,6 +418,7 @@ public class ModelChatView extends ViewPart {
                 }
         );
         activeJob.setUser(false);
+        jobInFlight = true;
         activeJob.schedule();
     }
 
@@ -646,11 +657,50 @@ public class ModelChatView extends ViewPart {
         }
     }
 
+    /**
+     * Cancels the currently active ChatJob. Called by CancelJobHandler (ESC key).
+     * Re-enables input immediately since the job cancellation may take a moment.
+     */
+    public void cancelActiveJob() {
+        if (activeJob != null) {
+            activeJob.cancel();
+        }
+        jobInFlight = false;
+        Display.getDefault().asyncExec(() -> {
+            setInputEnabled(true);
+            appendSystemMessage("Job cancelled.");
+        });
+    }
+
+    /** Appends a system/info message (grey, italic styling) to the chat display. */
+    private void appendSystemMessage(String message) {
+        String html = "<div style=\"color:#888;font-style:italic;padding:4px 8px;"
+                + "margin:2px 0;border-left:3px solid #ccc;\">"
+                + message.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                + "</div>";
+        String escaped = renderer.escapeJs(html);
+        Display.getDefault().asyncExec(() -> {
+            if (chatBrowser != null && !chatBrowser.isDisposed()) {
+                chatBrowser.execute("appendMessage('" + escaped + "')");
+                detachSupport.executeOnFloating("appendMessage('" + escaped + "')");
+            }
+        });
+    }
+
     @Override
     public void dispose() {
         // Cancel any active job
         if (activeJob != null) {
             activeJob.cancel();
+        }
+        jobInFlight = false;
+
+        // Dispose BrowserFunction callbacks to prevent native handle leaks
+        if (javaNavigateFunc != null && !javaNavigateFunc.isDisposed()) {
+            javaNavigateFunc.dispose();
+        }
+        if (javaActionFunc != null && !javaActionFunc.isDisposed()) {
+            javaActionFunc.dispose();
         }
 
         // Dispose floating chat window

@@ -69,6 +69,9 @@ public final class ChatSessionController {
     /** Gate controlling write-tool approval. If null, no gating (legacy behavior). */
     private final WriteToolGate writeToolGate;
 
+    /** Optional history window for token-budgeted conversation truncation. */
+    private final com.capellaagent.core.llm.HistoryWindow historyWindow;
+
     /** Whether prompt injection defense is active (sanitize tool results). */
     private final boolean injectionDefenseEnabled;
 
@@ -127,6 +130,7 @@ public final class ChatSessionController {
         this.maxToolResultChars = b.maxToolResultChars;
         this.writeToolNames = b.writeToolNames != null ? b.writeToolNames : java.util.Set.of();
         this.writeToolGate = b.writeToolGate;
+        this.historyWindow = b.historyWindow;
         this.injectionDefenseEnabled = b.injectionDefenseEnabled;
     }
 
@@ -156,9 +160,14 @@ public final class ChatSessionController {
             while (!done && !cancel.isCancelled() && iterations < maxIterations) {
                 iterations++;
 
+                // Apply history window if configured — selects messages within token budget
+                java.util.List<LlmMessage> contextMessages = (historyWindow != null)
+                    ? historyWindow.select(session.getMessages())
+                    : session.getMessages();
+
                 LlmResponse response;
                 try {
-                    response = provider.chat(session.getMessages(), tools, requestConfig);
+                    response = provider.chat(contextMessages, tools, requestConfig);
                 } catch (LlmException e) {
                     LOG.fine("LlmException: " + e.getMessage());
                     listener.onError(formatError(e.getMessage()));
@@ -230,15 +239,14 @@ public final class ChatSessionController {
                                 continue;
                             }
                             if (decision == WriteToolGate.Decision.REQUIRES_CONSENT) {
-                                // For beta1 we log the consent request but still
-                                // allow the call — the UI consent card lands in
-                                // a later phase. The critical win here is that
-                                // destructive calls are now visibly flagged.
-                                LOG.warning("WriteToolGate: " + toolName
-                                    + " would require user consent in production "
-                                    + "(suspicious=" + suspiciousContextFound + ")");
+                                session.addToolResult(toolCallId, errorJson(
+                                    "This action requires user confirmation before proceeding. "
+                                    + "The AI proposed: " + toolName + ". "
+                                    + "To allow write operations in this context, rephrase your request "
+                                    + "and confirm explicitly (e.g. 'Yes, please create the element')."));
                                 listener.onToolExecutionStart("\u26A0 " + toolName
-                                    + " (requires consent in production)");
+                                    + " requires confirmation \u2014 blocked");
+                                continue;
                             }
                         }
 
@@ -415,6 +423,7 @@ public final class ChatSessionController {
         private int maxToolResultChars = DEFAULT_MAX_TOOL_RESULT_CHARS;
         private java.util.Set<String> writeToolNames;
         private WriteToolGate writeToolGate;
+        private com.capellaagent.core.llm.HistoryWindow historyWindow = null;
         private boolean injectionDefenseEnabled = true;
 
         public Builder session(ConversationSession session) {
@@ -479,6 +488,11 @@ public final class ChatSessionController {
          */
         public Builder writeToolGate(WriteToolGate gate) {
             this.writeToolGate = gate;
+            return this;
+        }
+
+        public Builder historyWindow(com.capellaagent.core.llm.HistoryWindow window) {
+            this.historyWindow = window;
             return this;
         }
 
