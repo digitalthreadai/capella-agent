@@ -994,10 +994,125 @@ td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-size: 12px; col
     <div class="step-header">
       <div class="step-badge">3</div>
       <h2 class="step-title">Install in Capella</h2>
-      <span class="step-time">~5 min</span>
+      <span class="step-time">~30 sec automated &middot; ~5 min manual</span>
     </div>
     <div class="step-content">
-      <p>Install the built plugins into your Eclipse Capella installation using the local update site.</p>
+      <p>There are two ways to get the built plugins into your Capella install. <strong>Use Path A (the automation script) for any iteration after the first install</strong> &mdash; it is faster, idempotent, and safe to re-run after every code change. Path B (the manual GUI flow) is what you do once if you have never used the script, or as a fallback when troubleshooting.</p>
+
+      <div class="callout callout-warn">
+        <span class="callout-icon">&#9888;</span>
+        <div>
+          <strong>Why the script matters.</strong> The manual GUI install writes into Capella&rsquo;s own <code>p2repo/</code> folder, which is the same folder Tycho uses as its target platform during <code>mvn clean verify</code>. Running both repeatedly poisons the local p2 metadata and breaks future builds with errors like <code>Could not mirror artifact com.capellaagent.core.ui ... file not found</code>. The script&rsquo;s default <em>dropins</em> mode never touches <code>p2repo/</code>, so it cannot cause this collision.
+        </div>
+      </div>
+
+      <h3 style="margin-top:24px;">Path A &mdash; Automated reinstall script <span style="font-size:12px;color:var(--green);font-weight:600;">RECOMMENDED</span></h3>
+      <p>The repo ships <code>tools/reinstall.ps1</code> and a Windows shim <code>tools/reinstall.bat</code>. The script is intentionally outside every OSGi bundle &mdash; it is dev infrastructure, never packaged into the feature, never shipped to end users.</p>
+
+      <h4 style="margin-top:16px;">One-time setup</h4>
+      <ol class="substeps">
+        <li>Tell the script where Capella lives (one of these &mdash; pick the most permanent option that works for you):
+          <ul style="margin-top:6px;">
+            <li><strong>Environment variable (recommended):</strong> <code>setx CAPELLA_HOME "C:\Apps\capella-7.0.1"</code> then open a new shell</li>
+            <li><strong>Edit the script:</strong> open <code>tools/reinstall.ps1</code> and change the <code>$DefaultCapellaHome</code> constant near the top</li>
+            <li><strong>Per-call flag:</strong> <code>tools\reinstall.bat -CapellaHome "C:\Apps\capella-7.0.1"</code></li>
+          </ul>
+        </li>
+        <li>(Optional) If PowerShell complains about execution policy on first run, the <code>.bat</code> shim already passes <code>-ExecutionPolicy Bypass</code>, so you should not need this. If it still fails: <code>Set-ExecutionPolicy -Scope CurrentUser RemoteSigned</code></li>
+      </ol>
+
+      <h4 style="margin-top:16px;">Day-to-day usage</h4>
+      <pre><code><span style="color:var(--muted);"># Default: dropins mode, build + refresh, do NOT launch</span>
+tools\reinstall.bat
+
+<span style="color:var(--muted);"># Same as above PLUS launch Capella when done (most common)</span>
+tools\reinstall.bat -Launch
+
+<span style="color:var(--muted);"># Skip the Maven build, just refresh from existing target/ jars</span>
+tools\reinstall.bat -SkipBuild -Launch
+
+<span style="color:var(--muted);"># Clean p2 reinstall via Eclipse director (matches the GUI wizard)</span>
+tools\reinstall.bat -Mode director -Launch
+
+<span style="color:var(--muted);"># Install a different feature branch's pre-built repository</span>
+tools\reinstall.bat -Mode director -Repository "C:\path\to\other-branch\com.capellaagent.site\target\repository" -Launch
+
+<span style="color:var(--muted);"># Install from a hosted update site (CI artifact, GitHub Pages)</span>
+tools\reinstall.bat -Mode director -Repository "https://example.com/p2/capella-agent/" -Launch</code></pre>
+
+      <h4 style="margin-top:16px;">What the two modes do</h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>&nbsp;</th><th>dropins (default)</th><th>director</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Speed</strong></td><td>~30 sec</td><td>~2 min</td></tr>
+            <tr><td><strong>Where jars land</strong></td><td><code>&lt;capella&gt;/dropins/capella-agent/plugins/</code></td><td><code>&lt;capella&gt;/p2repo/</code> + p2 metadata</td></tr>
+            <tr><td><strong>Touches Capella&rsquo;s target platform</strong></td><td>No</td><td>Yes</td></tr>
+            <tr><td><strong>Conflicts with Tycho builds</strong></td><td>No</td><td>Yes &mdash; can poison <code>p2repo/</code></td></tr>
+            <tr><td><strong>When to use</strong></td><td>Day-to-day Java edits</td><td>After <code>feature.xml</code> / <code>plugin.xml</code> / version changes, or anytime you want a clean p2 reinstall</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 style="margin-top:16px;">All script flags</h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Flag</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>-Mode dropins|director</code></td><td>Install mechanism (default <code>dropins</code>)</td></tr>
+            <tr><td><code>-SkipBuild</code></td><td>Skip Maven, reuse existing <code>target/</code> jars</td></tr>
+            <tr><td><code>-Launch</code></td><td>Start Capella after install completes</td></tr>
+            <tr><td><code>-CapellaHome &lt;path&gt;</code></td><td>Override the Capella install location for this call</td></tr>
+            <tr><td><code>-Repository &lt;path|url&gt;</code></td><td>Director mode only. Folder path, <code>file:/</code> URI, or <code>http(s)://</code> URL of an alternate p2 site to install from</td></tr>
+            <tr><td><code>-VerboseEclipse</code></td><td>Pass <code>-debug -consoleLog</code> to Eclipse for install debugging</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 style="margin-top:16px;">What each <code>tools\reinstall.bat</code> run actually does (dropins mode)</h4>
+      <ol class="substeps">
+        <li>Stops any running <code>capella.exe</code> process via <code>Stop-Process</code></li>
+        <li>Runs <code>mvn -pl &lt;plugin modules&gt; -am clean package -DskipTests</code></li>
+        <li>Wipes <code>&lt;capella&gt;\dropins\capella-agent\</code> for a clean slate</li>
+        <li>Copies the 8 freshly built plugin jars from each <code>target/</code> folder into <code>dropins\capella-agent\plugins\</code></li>
+        <li>Wipes <code>&lt;capella&gt;\configuration\org.eclipse.osgi\</code> so Capella picks up the new bundles instead of the cached old ones</li>
+        <li>Launches <code>capella.exe -clean</code> (only if <code>-Launch</code> was passed)</li>
+      </ol>
+
+      <h4 style="margin-top:16px;">Repository selection precedence (director mode)</h4>
+      <p>When you use <code>-Mode director</code>, the script picks the p2 repository to install from in this order:</p>
+      <ol class="substeps">
+        <li><code>-Repository &lt;path|url&gt;</code> command-line flag (highest priority)</li>
+        <li><code>$env:CAPELLA_AGENT_REPOSITORY</code> environment variable (per shell)</li>
+        <li><code>$DefaultRepository</code> constant near the top of <code>reinstall.ps1</code> (per machine)</li>
+        <li>Fallback: <code>&lt;repo-root&gt;/com.capellaagent.site/target/repository</code> &mdash; whichever worktree the script lives in</li>
+      </ol>
+      <p>Accepted values: an absolute folder path, a <code>file:/</code> URI, or an <code>http(s)://</code> URL. When an explicit repository is supplied, the local Maven build step is skipped automatically &mdash; you are installing somebody else&rsquo;s pre-built artifacts.</p>
+
+      <h4 style="margin-top:16px;">Troubleshooting the script</h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Symptom</th><th>Fix</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>capella.exe not found in &lt;path&gt;</code></td><td>Set <code>CAPELLA_HOME</code> correctly, or pass <code>-CapellaHome</code></td></tr>
+            <tr><td><code>Profile registry not found</code></td><td>Path points at the wrong folder. You want the inner Capella folder (the one with <code>capella.exe</code>), not the outer install root</td></tr>
+            <tr><td>Director-mode uninstall returns non-zero exit</td><td>Usually means &ldquo;feature was not installed&rdquo; &mdash; the script ignores this and continues</td></tr>
+            <tr><td>Director-mode install fails with <code>No repository found</code></td><td>Build the p2 site first: <code>mvn -pl com.capellaagent.site -am clean verify</code></td></tr>
+            <tr><td>Capella starts but the chat view is missing</td><td>Run <code>tools\reinstall.bat -Mode director</code> once for a clean p2 install. Dropins mode can collide with a previous p2 install on the same install</td></tr>
+            <tr><td>Stale <code>com.capellaagent.core-1.0.0.20260326*.jar</code> errors during build</td><td>Capella&rsquo;s own <code>p2repo</code> has been poisoned. Clear the Tycho cache: <code>rmdir /s /q "%USERPROFILE%\.m2\repository\p2\osgi\bundle\com.capellaagent.core"</code>, then rebuild</td></tr>
+            <tr><td><code>Set-ExecutionPolicy</code> errors</td><td>Use <code>tools\reinstall.bat</code> (the shim) instead of calling <code>reinstall.ps1</code> directly</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:32px;">Path B &mdash; Manual GUI install (one-time, fallback only)</h3>
+      <p>Use this only for your <em>very first</em> install if you have not set up the script yet, or as a last-resort fallback when troubleshooting an OSGi resolution problem.</p>
       <ol class="substeps">
         <li>Open Eclipse Capella</li>
         <li>Navigate to <strong>Help</strong> &gt; <strong>Install New Software...</strong></li>
@@ -1006,6 +1121,13 @@ td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-size: 12px; col
         <li>Click <strong>Next</strong> &gt; Accept license agreement &gt; <strong>Finish</strong></li>
         <li>Restart Capella when prompted</li>
       </ol>
+
+      <h3 style="margin-top:32px;">Uninstalling</h3>
+      <p>Two options depending on how it was installed:</p>
+      <ul>
+        <li><strong>If installed via Path A dropins:</strong> just delete <code>&lt;capella&gt;\dropins\capella-agent\</code> and restart Capella with <code>-clean</code></li>
+        <li><strong>If installed via Path A director or Path B:</strong> <code>Help</code> &gt; <code>About Capella</code> &gt; <code>Installation Details</code> &gt; <code>Installed Software</code> &gt; select <code>Capella Agent &mdash; AI Multi-Agent Ecosystem</code> &gt; <code>Uninstall</code> &gt; restart</li>
+      </ul>
     </div>
   </section>
 

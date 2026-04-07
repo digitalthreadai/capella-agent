@@ -82,11 +82,15 @@ public final class CapellaModelService {
                     "No open Capella sessions found. Please open a Capella project first.");
         }
 
-        // If a specific project name is requested, find it
+        // If a specific project name is requested, find it. We tolerate three
+        // possible name shapes because the chat view dropdown shows the
+        // workspace IProject.getName() while extractProjectName() returns the
+        // .capella model's root Project.getName() — usually but not always the
+        // same. We also accept a match against the session resource's URI
+        // first segment (the workspace folder name) as a final fallback.
         if (projectName != null && !projectName.isBlank()) {
             for (Session session : openSessions) {
-                String sessionProjectName = extractProjectName(session);
-                if (projectName.equalsIgnoreCase(sessionProjectName)) {
+                if (matchesProjectName(session, projectName)) {
                     return session;
                 }
             }
@@ -115,6 +119,40 @@ public final class CapellaModelService {
         throw new IllegalStateException(
                 "Multiple Capella projects are open. Please specify which project: "
                 + available);
+    }
+
+    /**
+     * Returns {@code true} if the given session matches the requested project
+     * name. Matching is case-insensitive and accepts any of:
+     * <ul>
+     *   <li>The Capella model's root {@code Project.getName()}</li>
+     *   <li>The session resource URI's first path segment (the workspace
+     *       IProject folder name when using the standard layout)</li>
+     *   <li>The session resource URI's last segment without extension</li>
+     * </ul>
+     * This tolerance keeps the chat view's project dropdown working whether
+     * the user named their workspace project the same as the model or not.
+     */
+    private boolean matchesProjectName(Session session, String requested) {
+        String modelName = extractProjectName(session);
+        if (requested.equalsIgnoreCase(modelName)) {
+            return true;
+        }
+        try {
+            org.eclipse.emf.common.util.URI uri = session.getSessionResource().getURI();
+            // Workspace path: platform:/resource/<projectName>/...
+            if (uri.segmentCount() > 0 && requested.equalsIgnoreCase(uri.segment(0))) {
+                return true;
+            }
+            // Last segment without extension (the .aird file name)
+            String last = uri.trimFileExtension().lastSegment();
+            if (last != null && requested.equalsIgnoreCase(last)) {
+                return true;
+            }
+        } catch (Exception e) {
+            LOG.log(Level.FINE, "Could not introspect session URI for matching", e);
+        }
+        return false;
     }
 
     /**

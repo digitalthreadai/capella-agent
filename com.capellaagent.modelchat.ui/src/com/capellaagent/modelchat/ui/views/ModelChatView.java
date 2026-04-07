@@ -12,6 +12,7 @@ import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
@@ -142,6 +143,30 @@ public class ModelChatView extends ViewPart {
         } catch (Exception e) {
             providerInfoLabel.setText("(not configured)");
         }
+    }
+
+    /**
+     * Returns the project name currently selected in the project dropdown,
+     * or {@code null} if nothing real is selected (e.g. the
+     * "(No Capella project found)" placeholder).
+     */
+    private String getSelectedProjectName() {
+        if (projectCombo == null || projectCombo.getControl().isDisposed()) {
+            return null;
+        }
+        IStructuredSelection sel = projectCombo.getStructuredSelection();
+        if (sel == null || sel.isEmpty()) {
+            return null;
+        }
+        Object first = sel.getFirstElement();
+        if (!(first instanceof String)) {
+            return null;
+        }
+        String name = (String) first;
+        if (name.isBlank() || name.startsWith("(No Capella project")) {
+            return null;
+        }
+        return name;
     }
 
     /**
@@ -358,11 +383,16 @@ public class ModelChatView extends ViewPart {
         // Get selected provider name
         String selectedProvider = getSelectedProvider();
 
+        // Read the project dropdown so the orchestration thread can resolve
+        // the right Sirius session when multiple Capella projects are open.
+        String selectedProject = getSelectedProjectName();
+
         // Create and schedule the chat job
         activeJob = new ChatJob(
                 session,
                 message,
                 selectedProvider,
+                selectedProject,
                 this::appendAssistantMessage,
                 this::appendToolNotification,
                 () -> Display.getDefault().asyncExec(() -> setInputEnabled(true)),

@@ -86,7 +86,13 @@
       margin-bottom: 3.5rem;
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
+      .card-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
       .card-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
@@ -142,6 +148,16 @@
     }
     .card-icon--gear svg { color: var(--green); }
 
+    .card-icon--check {
+      background: rgba(96, 165, 250, 0.12);
+    }
+    .card-icon--check svg { color: var(--blue); }
+
+    .card-icon--flask {
+      background: rgba(167, 139, 250, 0.12);
+    }
+    .card-icon--flask svg { color: var(--purple); }
+
     .card-title {
       font-size: 1.1rem;
       font-weight: 600;
@@ -152,6 +168,14 @@
       font-size: 0.875rem;
       color: var(--muted);
       line-height: 1.5;
+    }
+    .card-desc code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85em;
+      color: var(--primary);
+      background: rgba(var(--primary-rgb), 0.08);
+      padding: 1px 5px;
+      border-radius: 3px;
     }
 
     .card-link {
@@ -259,6 +283,40 @@
           <p class="card-desc">Build, install, configure LLM providers, Teamcenter, MATLAB, and Claude Code MCP</p>
           <span class="card-link">
             SITECONFIGURATIONS.html
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
+          </span>
+        </a>
+
+        <!-- Card 4: Smoke Test Checklist -->
+        <a href="SMOKE_TEST_CHECKLIST.html" class="card">
+          <div class="card-icon card-icon--check">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          </div>
+          <h2 class="card-title">Smoke Test Checklist</h2>
+          <p class="card-desc">Interactive 83-step manual QA pass for the 1.0.0.beta1 release. Progress saved in your browser.</p>
+          <span class="card-link">
+            SMOKE_TEST_CHECKLIST.html
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
+          </span>
+        </a>
+
+        <!-- Card 5: Tests Module -->
+        <a href="TESTS_MODULE.html" class="card">
+          <div class="card-icon card-icon--flask">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/>
+            </svg>
+          </div>
+          <h2 class="card-title">Tests Module</h2>
+          <p class="card-desc">What <code>com.capellaagent.core.tests</code> is, who runs it, and why it lives in its own bundle. 167 unit tests.</p>
+          <span class="card-link">
+            TESTS_MODULE.html
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
             </svg>

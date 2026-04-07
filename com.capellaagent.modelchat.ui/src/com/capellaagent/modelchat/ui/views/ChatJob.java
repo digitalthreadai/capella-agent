@@ -12,6 +12,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
+import com.capellaagent.core.capella.ActiveProjectContext;
 import com.capellaagent.core.config.AgentConfiguration;
 import com.capellaagent.core.llm.ILlmProvider;
 import com.capellaagent.core.llm.LlmException;
@@ -61,6 +62,14 @@ public class ChatJob extends Job {
     private final ConversationSession session;
     private final String userMessage;
     private final String providerName;
+    /**
+     * The Capella project name selected in the chat view's project dropdown.
+     * Threaded into {@link ActiveProjectContext} for the duration of the
+     * orchestration loop so tools resolve the correct Sirius session when
+     * multiple projects are open. May be {@code null} for single-project
+     * workspaces or when the dropdown has no selection.
+     */
+    private final String activeProjectName;
     private final Consumer<String> onTextResponse;
     private final Consumer<String> onToolExecution;
     private final Runnable onComplete;
@@ -75,39 +84,55 @@ public class ChatJob extends Job {
     }
 
     /**
-     * Constructs a new ChatJob (backward-compatible, no tool result callback).
-     *
-     * @param session         the conversation session maintaining message history
-     * @param userMessage     the new user message to process
-     * @param providerName    the name of the LLM provider to use
-     * @param onTextResponse  callback invoked with the assistant's text response
-     * @param onToolExecution callback invoked when a tool execution starts (receives tool name)
-     * @param onComplete      callback invoked when the job finishes (success or failure)
+     * Constructs a new ChatJob (backward-compatible, no tool result callback,
+     * no project disambiguation).
      */
     public ChatJob(ConversationSession session, String userMessage, String providerName,
                    Consumer<String> onTextResponse, Consumer<String> onToolExecution,
                    Runnable onComplete) {
-        this(session, userMessage, providerName, onTextResponse, onToolExecution, onComplete, null);
+        this(session, userMessage, providerName, null,
+                onTextResponse, onToolExecution, onComplete, null);
     }
 
     /**
-     * Constructs a new ChatJob with tool result callback.
-     *
-     * @param session         the conversation session maintaining message history
-     * @param userMessage     the new user message to process
-     * @param providerName    the name of the LLM provider to use
-     * @param onTextResponse  callback invoked with the assistant's text response
-     * @param onToolExecution callback invoked when a tool execution starts (receives tool name)
-     * @param onComplete      callback invoked when the job finishes (success or failure)
-     * @param onToolResult    callback invoked with full untruncated tool results for UI display
+     * Constructs a new ChatJob with tool result callback (no project
+     * disambiguation). Backward-compatible overload for callers that do not
+     * yet read the project dropdown.
      */
     public ChatJob(ConversationSession session, String userMessage, String providerName,
+                   Consumer<String> onTextResponse, Consumer<String> onToolExecution,
+                   Runnable onComplete, ToolResultCallback onToolResult) {
+        this(session, userMessage, providerName, null,
+                onTextResponse, onToolExecution, onComplete, onToolResult);
+    }
+
+    /**
+     * Constructs a new ChatJob with full context (project disambiguation +
+     * tool result callback). This is the canonical constructor used by
+     * {@code ModelChatView.sendMessage()}.
+     *
+     * @param session           the conversation session maintaining message history
+     * @param userMessage       the new user message to process
+     * @param providerName      the name of the LLM provider to use
+     * @param activeProjectName the Capella project name selected in the chat view's
+     *                          dropdown, or {@code null} if not applicable. Threaded
+     *                          into {@link ActiveProjectContext} for the orchestration
+     *                          loop so tools resolve the right session when multiple
+     *                          projects are open
+     * @param onTextResponse    callback invoked with the assistant's text response
+     * @param onToolExecution   callback invoked when a tool execution starts
+     * @param onComplete        callback invoked when the job finishes
+     * @param onToolResult      callback for full (untruncated) tool results for UI display
+     */
+    public ChatJob(ConversationSession session, String userMessage, String providerName,
+                   String activeProjectName,
                    Consumer<String> onTextResponse, Consumer<String> onToolExecution,
                    Runnable onComplete, ToolResultCallback onToolResult) {
         super(JOB_NAME);
         this.session = session;
         this.userMessage = userMessage;
         this.providerName = providerName;
+        this.activeProjectName = activeProjectName;
         this.onTextResponse = onTextResponse;
         this.onToolExecution = onToolExecution;
         this.onComplete = onComplete;
@@ -116,6 +141,12 @@ public class ChatJob extends Job {
 
     @Override
     protected IStatus run(IProgressMonitor monitor) {
+        // Publish the user-selected project to the orchestration thread so any
+        // tool that calls AbstractCapellaTool.getActiveSession() picks the right
+        // Sirius session when multiple Capella projects are open. Cleared in
+        // the finally below to avoid leaking state into the next job that
+        // reuses this Eclipse worker thread.
+        ActiveProjectContext.set(activeProjectName);
         try {
             monitor.beginTask("Processing chat message", IProgressMonitor.UNKNOWN);
 
@@ -139,7 +170,10 @@ public class ChatJob extends Job {
                 LlmResponse response = callLlmProvider(session, providerName);
 
                 if (response == null) {
-                    onTextResponse.accept(formatUserFriendlyError("no response"));
+                    // callLlmProvider() has already posted a specific
+                    // user-friendly error message via onTextResponse. Do NOT
+                    // post a second generic message — that just adds noise
+                    // (e.g. ⏳ rate-limit followed by ⚠ "something went wrong").
                     done = true;
                     continue;
                 }
@@ -249,6 +283,9 @@ public class ChatJob extends Job {
             return new Status(IStatus.ERROR, ModelChatUiActivator.PLUGIN_ID,
                     "Chat job failed", e);
         } finally {
+            // Always clear the thread-local active project so it does not leak
+            // into the next ChatJob that reuses this worker thread.
+            ActiveProjectContext.clear();
             if (onComplete != null) {
                 onComplete.run();
             }
@@ -343,35 +380,104 @@ public class ChatJob extends Job {
      * @return a friendly, actionable error message
      */
     private String formatUserFriendlyError(String rawError) {
-        if (rawError == null) rawError = "";
+        if (rawError == null || rawError.isBlank()) {
+            return "\u26A0 The AI provider returned an empty response. Please try again.";
+        }
         String lower = rawError.toLowerCase();
 
-        // Rate limit
-        if (lower.contains("rate_limit") || lower.contains("rate limit") || lower.contains("429") || lower.contains("too many")) {
-            return "\u23F3 The AI service is temporarily busy. Please wait a moment and try again.";
+        // ---- Rate limits (most specific patterns first) ----
+        if (lower.contains("requests per day") || lower.contains("rpd") || lower.contains("daily limit")) {
+            return "\u23F3 LLM daily request limit reached. Your free-tier quota for today is exhausted. "
+                 + "Wait until tomorrow, or switch providers in Window \u2192 Preferences \u2192 Capella Agent \u2192 LLM Providers.\n"
+                 + "Details: " + truncate(rawError, 200);
         }
-        // Token limit
-        if (lower.contains("token") && (lower.contains("limit") || lower.contains("exceeded") || lower.contains("too large"))) {
-            return "\uD83D\uDCDD The request was too large for the AI provider's limits. Try a simpler question or switch to a provider with higher limits in Preferences.";
+        if (lower.contains("requests per minute") || lower.contains("rpm")) {
+            return "\u23F3 LLM rate limit: too many requests per minute. Wait ~30 seconds and try again.\n"
+                 + "Details: " + truncate(rawError, 200);
         }
-        // Tool not found (from API)
+        if (lower.contains("tokens per minute") || lower.contains("tpm")) {
+            return "\u23F3 LLM rate limit: token throughput exceeded. Wait ~30 seconds, then send a shorter message.\n"
+                 + "Details: " + truncate(rawError, 200);
+        }
+        if (lower.contains("rate_limit") || lower.contains("rate limit") || lower.contains("429") || lower.contains("too many requests")) {
+            return "\u23F3 LLM rate limit hit. Wait a moment and try again, or switch providers in Preferences.\n"
+                 + "Details: " + truncate(rawError, 200);
+        }
+
+        // ---- Token / context limits ----
+        if (lower.contains("context_length_exceeded") || lower.contains("context length")
+                || (lower.contains("token") && (lower.contains("limit") || lower.contains("exceeded") || lower.contains("too large") || lower.contains("maximum")))) {
+            return "\uD83D\uDCDD LLM token / context window exceeded. The conversation is too long for this model. "
+                 + "Use the Clear History toolbar button to start fresh, ask a narrower question, "
+                 + "or switch to a provider with a larger context window in Preferences.\n"
+                 + "Details: " + truncate(rawError, 200);
+        }
+
+        // ---- Tool / function call validation ----
         if (lower.contains("tool") && (lower.contains("not in request") || lower.contains("validation failed") || lower.contains("not found"))) {
-            return "\u26A0 I wasn't able to perform that action. Try rephrasing your request, or ask me what I can help with.";
+            return "\u26A0 The AI tried to use a tool that isn't available. This usually means it hallucinated a tool name "
+                 + "(for example, asking for 'undo' or 'redo' \u2014 those are not chat tools in beta1; use Capella's "
+                 + "Edit \u2192 Undo / Ctrl+Z to roll back model changes). Try rephrasing your request, or type a specific action like "
+                 + "\"create a logical component named X\".\n"
+                 + "Details: " + truncate(rawError, 200);
         }
-        // Auth
-        if (lower.contains("unauthorized") || lower.contains("401") || lower.contains("invalid api") || lower.contains("authentication")) {
-            return "\uD83D\uDD11 Could not authenticate with the AI provider. Please check your API key in Window \u2192 Preferences \u2192 Capella Agent.";
+
+        // ---- Auth ----
+        if (lower.contains("unauthorized") || lower.contains("401") || lower.contains("invalid api") || lower.contains("invalid_api_key") || lower.contains("authentication")) {
+            return "\uD83D\uDD11 LLM authentication failed. Your API key is missing, invalid, or expired. "
+                 + "Set or update it in Window \u2192 Preferences \u2192 Capella Agent \u2192 LLM Providers.\n"
+                 + "Details: " + truncate(rawError, 200);
         }
-        // Network
-        if (lower.contains("connect") || lower.contains("timeout") || lower.contains("network") || lower.contains("resolve")) {
-            return "\uD83C\uDF10 Could not reach the AI provider. Please check your internet connection and try again.";
+        if (lower.contains("403") || lower.contains("forbidden") || lower.contains("permission")) {
+            return "\uD83D\uDD12 LLM access forbidden. Your account does not have permission for this model. "
+                 + "Check your provider plan or switch models in Preferences.\n"
+                 + "Details: " + truncate(rawError, 200);
         }
-        // Model not found
-        if (lower.contains("model") && lower.contains("not found")) {
-            return "\u26A0 The selected AI model is not available. Please check the model name in Preferences.";
+
+        // ---- Network ----
+        if (lower.contains("unknownhost") || lower.contains("resolve") || lower.contains("dns")) {
+            return "\uD83C\uDF10 LLM network error: cannot resolve provider hostname. Check your internet connection or DNS.\n"
+                 + "Details: " + truncate(rawError, 200);
         }
-        // Generic fallback
-        return "\u26A0 Something went wrong while processing your request. Please try again or check your settings in Preferences.";
+        if (lower.contains("timeout") || lower.contains("timed out")) {
+            return "\u23F1 LLM request timed out. The provider took too long to respond. Try again, or switch providers in Preferences.\n"
+                 + "Details: " + truncate(rawError, 200);
+        }
+        if (lower.contains("connect") || lower.contains("network") || lower.contains("ssl") || lower.contains("handshake")) {
+            return "\uD83C\uDF10 LLM connection error. Check your internet connection, proxy, or firewall settings.\n"
+                 + "Details: " + truncate(rawError, 200);
+        }
+
+        // ---- Model availability ----
+        if (lower.contains("model") && (lower.contains("not found") || lower.contains("does not exist") || lower.contains("unavailable") || lower.contains("decommissioned"))) {
+            return "\u26A0 The selected LLM model is not available on this provider. "
+                 + "Pick a different model in Window \u2192 Preferences \u2192 Capella Agent \u2192 LLM Providers.\n"
+                 + "Details: " + truncate(rawError, 200);
+        }
+
+        // ---- Server-side ----
+        if (lower.contains("500") || lower.contains("502") || lower.contains("503") || lower.contains("504")
+                || lower.contains("internal server") || lower.contains("bad gateway") || lower.contains("service unavailable")) {
+            return "\u26A0 LLM provider server error. The provider is having issues on their end. "
+                 + "Try again in a minute, or switch providers in Preferences.\n"
+                 + "Details: " + truncate(rawError, 200);
+        }
+        if (lower.contains("400") || lower.contains("bad request") || lower.contains("invalid_request")) {
+            return "\u26A0 LLM rejected the request as malformed. This may be a bug in the agent's request format. "
+                 + "Try a simpler question, or check the Error Log view (Window \u2192 Show View \u2192 Error Log) for details.\n"
+                 + "Details: " + truncate(rawError, 200);
+        }
+
+        // ---- Generic fallback ----
+        return "\u26A0 LLM call failed. Please try again or check your settings in Window \u2192 Preferences \u2192 Capella Agent.\n"
+             + "Details: " + truncate(rawError, 250);
+    }
+
+    /** Truncates a string to {@code max} characters with an ellipsis. */
+    private String truncate(String s, int max) {
+        if (s == null) return "";
+        if (s.length() <= max) return s;
+        return s.substring(0, max - 1) + "\u2026";
     }
 
     /**

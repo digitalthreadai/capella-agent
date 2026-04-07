@@ -22,15 +22,15 @@ This checklist combines the original 15-step test from the 6-week plan with 8 ad
 ## 1. First-launch experience
 
 - [ ] **1.1** Open the AI Model Chat view via `Window → Show View → Other → Capella Agent → AI Model Chat`
-- [ ] **1.2** *(Week 6 — once the wizard is wired)* First-launch welcome wizard appears automatically. Walk through it: provider pick → API key → test connection → finish
-- [ ] **1.3** On second launch, the wizard does NOT reappear
-- [ ] **1.4** `Help → Welcome to Capella Agent` re-opens the wizard on demand
+- [ ] **1.2** **N/A for beta1.** *(Welcome wizard SWT bindings deferred to beta2 — only the data-layer `WelcomeWizardModel` ships in beta1, see `KNOWN_LIMITATIONS.md`.)* Manual equivalent: `Window → Preferences → Capella Agent → LLM Providers` → pick provider → paste API key → **Test Connection** → **Apply and Close**
+- [ ] **1.3** **N/A for beta1.** *(Wizard not wired.)* Manual equivalent: relaunch Capella, confirm the Preferences setting persists
+- [ ] **1.4** **N/A for beta1.** *(Wizard not wired.)* Manual equivalent: re-open `Window → Preferences → Capella Agent` to reconfigure
 
 ## 2. Ready state and empty chat
 
-- [ ] **2.1** Status bar shows something like `🤖 Capella Agent · Ready · Claude Sonnet` *(Week 5 status bar)*
-- [ ] **2.2** Empty chat view shows the model context card: model name, layer count, element count *(Week 6 UI)*
-- [ ] **2.3** Empty chat offers starter prompts appropriate for the current mode
+- [ ] **2.1** **N/A for beta1.** *(Status bar SWT contribution deferred to beta2 — `TokenUsageTracker` data layer ships, no `org.eclipse.ui.menus` widget yet.)* Status bar shows `🤖 Capella Agent · Ready · Claude Sonnet`
+- [ ] **2.2** **N/A for beta1.** *(Empty-state composite deferred to beta2 — model introspection helpers ship, no SWT panel in the chat view yet.)* Empty chat shows model context card with model name, layer count, element count
+- [ ] **2.3** **N/A for beta1.** *(Starter-prompt chip row deferred to beta2 — `SlashCommandRegistry` + mode definitions ship, no SWT chip widgets yet.)* Empty chat offers mode-appropriate starter prompts
 
 ## 3. Basic tool execution
 
@@ -50,31 +50,39 @@ This checklist combines the original 15-step test from the 6-week plan with 8 ad
 
 - [ ] **5.1** CSV button on the result table copies data to clipboard
 - [ ] **5.2** Paste into a new text editor shows a valid CSV with headers
-- [ ] **5.3** `Ctrl+E` (or Export button) opens the HTML export dialog
+- [ ] **5.3** Export button (toolbar) opens the HTML export dialog *(no keyboard shortcut — `Ctrl+E` is already bound by Capella to "Quick Switch Editor")*
 - [ ] **5.4** Exported `.html` file opens in a browser and shows the conversation with formatting intact
 
 ## 6. Keyboard shortcuts and slash commands
 
 - [ ] **6.1** `Ctrl+Shift+M` opens the chat view from any perspective
 - [ ] **6.2** `Esc` cancels a running tool job (type a long query, hit Esc mid-execution)
-- [ ] **6.3** Typing `/` in the chat input shows the slash-command autocomplete *(Week 6)*
-- [ ] **6.4** `/clear` empties the conversation
-- [ ] **6.5** `/tools` shows the tool catalog
+- [ ] **6.3** ~~Typing `/` in the chat input shows the slash-command autocomplete~~ **N/A for beta1** *(SWT autocomplete popup deferred to beta2; `SlashCommandRegistry` data layer ships and is unit-tested)*
+- [ ] **6.4** ~~`/clear` empties the conversation~~ **N/A for beta1** — use the **Clear History** button in the chat view toolbar instead. Typing `/clear` in beta1 sends the literal text to the LLM, which may respond with a fake "cleared" message but does not actually clear history.
+- [ ] **6.5** ~~`/tools` shows the tool catalog~~ **N/A for beta1** — browse `docs/TOOLS.html` for the full catalog. Typing `/tools` in beta1 sends literal text to the LLM, which will list whatever tools it happens to remember (usually incomplete).
 
 ## 7. Sustainment mode (the Phase 2 demo)
 
-- [ ] **7.1** Mode dropdown (or `/sustainment`) switches to Sustainment Engineer
-- [ ] **7.2** System prompt change is visible via the mode pill badge
-- [ ] **7.3** The starter prompts change to IFE-compatible symptoms (see `demo/IFE_MODEL_INVENTORY.md`)
-- [ ] **7.4** Click the "Seat TV rebooting" starter, send
-- [ ] **7.5** Agent calls `classify_fault_ata`, `lookup_fault_symptom`, `get_functional_chain`, `impact_analysis` in sequence
-- [ ] **7.6** Final response cites UUIDs verbatim (spot-check one UUID exists in the model)
-- [ ] **7.7** Final response does NOT invent any UUIDs that aren't in the tool results (re-read the response, no unverifiable IDs)
+> **Entire section N/A for beta1.** The `AgentMode` data layer ships and is unit-tested, but
+> the SWT UI binding (mode dropdown, mode pill badge, starter-prompt swap) is deferred to
+> beta2. There is no in-UI way to switch modes in beta1 — typing `/sustainment` in the chat
+> sends literal text to the LLM, which interprets it as a request to explore the model and
+> may overflow the provider's context window when `get_element_details` returns the full
+> relationship graph. The Sustainment demo flow will be fully testable once the Week 6 UI
+> bindings land in beta2.
+
+- [ ] **7.1** ~~Mode dropdown (or `/sustainment`) switches to Sustainment Engineer~~ **N/A beta1**
+- [ ] **7.2** ~~System prompt change is visible via the mode pill badge~~ **N/A beta1**
+- [ ] **7.3** ~~Starter prompts change to IFE-compatible symptoms~~ **N/A beta1**
+- [ ] **7.4** ~~Click the "Seat TV rebooting" starter, send~~ **N/A beta1**
+- [ ] **7.5** ~~Agent calls `classify_fault_ata`, `lookup_fault_symptom`, `get_functional_chain`, `impact_analysis` in sequence~~ **N/A beta1** *(individual tools are unit-tested in `com.capellaagent.core.tests`; end-to-end demo deferred to beta2)*
+- [ ] **7.6** ~~Final response cites UUIDs verbatim~~ **N/A beta1**
+- [ ] **7.7** ~~Final response does NOT invent any UUIDs~~ **N/A beta1**
 
 ## 8. Token safety
 
 - [ ] **8.1** Paste a 50,000-character user message → friendly "too large" error BEFORE any API call
-- [ ] **8.2** With a short conversation (<2K tokens), send messages and confirm the status bar cost indicator updates *(Week 5 token strip)*
+- [ ] **8.2** ~~Status bar cost indicator updates~~ **N/A for beta1** — `TokenUsageTracker` data layer ships and is unit-tested, but the SWT status-line contribution that would display running cost is deferred to beta2. There is no visible cost indicator anywhere in the Capella UI in beta1.
 - [ ] **8.3** Groq or GitHub Models free tier does NOT return HTTP 400 "orphaned tool_result" after 3+ tool-calling turns (regression test for HistoryWindow orphan prevention)
 
 ## 9. Undo / redo
