@@ -9,10 +9,12 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.Separator;
+import org.eclipse.jface.fieldassist.ContentProposalAdapter;
+import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
-import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
@@ -29,6 +31,12 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.part.ViewPart;
 
 import com.capellaagent.core.config.AgentConfiguration;
+import com.capellaagent.core.session.AgentMode;
+import com.capellaagent.core.session.IAgentMode;
+import com.capellaagent.core.session.SlashCommandRegistry;
+import com.capellaagent.core.session.SlashCommandRegistry.SlashCommand;
+import com.capellaagent.core.tools.IToolDescriptor;
+import com.capellaagent.core.tools.ToolRegistry;
 import com.capellaagent.core.llm.ILlmProvider;
 import com.capellaagent.core.llm.LlmProviderRegistry;
 import com.capellaagent.core.session.ConversationSession;
@@ -82,6 +90,15 @@ public class ModelChatView extends ViewPart {
     /** Guards against sending a second message while a job is running. */
     private volatile boolean jobInFlight = false;
 
+    // Slash command registry for '/' autocomplete and dispatch
+    private final SlashCommandRegistry slashRegistry = SlashCommandRegistry.defaults();
+
+    // Current agent mode
+    private IAgentMode currentMode = AgentMode.GENERAL;
+
+    // Mode dropdown in toolbar
+    private ComboViewer modeCombo;
+
     @Override
     public void createPartControl(Composite parent) {
         // Initialize conversation session
@@ -113,7 +130,7 @@ public class ModelChatView extends ViewPart {
      */
     private void createToolbar(Composite parent) {
         Composite toolbar = new Composite(parent, SWT.NONE);
-        GridLayout toolbarLayout = new GridLayout(4, false);
+        GridLayout toolbarLayout = new GridLayout(6, false);
         toolbarLayout.marginWidth = 8;
         toolbarLayout.marginHeight = 4;
         toolbar.setLayout(toolbarLayout);
@@ -135,6 +152,30 @@ public class ModelChatView extends ViewPart {
         projectCombo.setContentProvider(ArrayContentProvider.getInstance());
         projectCombo.setLabelProvider(new LabelProvider());
         projectCombo.getControl().setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        // Mode picker dropdown
+        Label modeLabel = new Label(toolbar, SWT.NONE);
+        modeLabel.setText("Mode:");
+
+        modeCombo = new ComboViewer(toolbar, SWT.READ_ONLY | SWT.DROP_DOWN);
+        modeCombo.setContentProvider(ArrayContentProvider.getInstance());
+        modeCombo.setLabelProvider(new LabelProvider() {
+            @Override
+            public String getText(Object element) {
+                return element instanceof IAgentMode m ? m.displayName() : super.getText(element);
+            }
+        });
+        modeCombo.setInput(AgentMode.values());
+        modeCombo.setSelection(new StructuredSelection(currentMode));
+        modeCombo.getControl().setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
+        modeCombo.getControl().setToolTipText("Switch agent mode (forks a new session)");
+
+        modeCombo.addSelectionChangedListener(event -> {
+            IStructuredSelection sel = modeCombo.getStructuredSelection();
+            if (!sel.isEmpty() && sel.getFirstElement() instanceof IAgentMode selected) {
+                setMode(selected);
+            }
+        });
 
         // Populate from workspace Capella projects
         refreshProjectList();
@@ -295,6 +336,17 @@ public class ModelChatView extends ViewPart {
         buttonData.heightHint = 32;
         sendButton.setLayoutData(buttonData);
         sendButton.addListener(SWT.Selection, event -> sendMessage());
+
+        // Slash command autocomplete — triggered on '/'
+        SlashCommandProposalProvider proposalProvider =
+                new SlashCommandProposalProvider(slashRegistry);
+        ContentProposalAdapter proposalAdapter = new ContentProposalAdapter(
+                inputField,
+                new TextContentAdapter(),
+                proposalProvider,
+                null,
+                new char[]{'/'});
+        proposalAdapter.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
     }
 
     /**
@@ -372,6 +424,14 @@ public class ModelChatView extends ViewPart {
     public void sendMessage() {
         String message = inputField.getText().trim();
         if (message.isEmpty()) {
+            return;
+        }
+
+        // Check for slash command BEFORE sending to LLM
+        java.util.Optional<SlashCommand> slashCmd = slashRegistry.parse(message);
+        if (slashCmd.isPresent()) {
+            inputField.setText("");
+            handleSlashCommand(slashCmd.get(), message);
             return;
         }
 
@@ -685,6 +745,118 @@ public class ModelChatView extends ViewPart {
                 detachSupport.executeOnFloating("appendMessage('" + escaped + "')");
             }
         });
+    }
+
+    /**
+     * Handles a recognized slash command locally without sending it to the LLM.
+     * Covers all 9 commands registered in {@link SlashCommandRegistry#defaults()},
+     * including /undo and /diff which would otherwise fall through to the LLM
+     * and produce hallucinated responses (blocker B7).
+     */
+    private void handleSlashCommand(SlashCommand cmd, String rawMessage) {
+        switch (cmd.actionTag()) {
+            case "clear_chat" -> clearConversation();
+
+            case "export_chat" -> exportConversation();
+
+            case "show_help" -> {
+                StringBuilder help = new StringBuilder();
+                help.append("<b>Capella Agent — Slash Commands</b><br>");
+                for (SlashCommand c : slashRegistry.listAll()) {
+                    help.append("<code>").append(escapeHtml(c.name())).append("</code>");
+                    if (!c.aliases().isEmpty()) {
+                        help.append(" (").append(String.join(", ", c.aliases())).append(")");
+                    }
+                    help.append(" — ").append(escapeHtml(c.description())).append("<br>");
+                }
+                help.append("<br><b>Keyboard shortcuts</b><br>");
+                help.append("<code>Ctrl+Shift+M</code> — Open AI Model Chat<br>");
+                help.append("<code>ESC</code> — Cancel running job<br>");
+                help.append("<code>Ctrl+L</code> — Clear history<br>");
+                appendSystemHtml(help.toString());
+            }
+
+            case "list_tools" -> {
+                try {
+                    java.util.List<IToolDescriptor> tools = ToolRegistry.getInstance().getTools();
+                    StringBuilder sb = new StringBuilder("<b>Available Tools (" + tools.size() + ")</b><br>");
+                    for (IToolDescriptor tool : tools) {
+                        sb.append("<code>").append(escapeHtml(tool.getName())).append("</code>");
+                        sb.append(" [").append(escapeHtml(tool.getCategory() != null
+                                ? tool.getCategory() : "?")).append("]");
+                        if (tool.getDescription() != null) {
+                            sb.append(" — ").append(escapeHtml(tool.getDescription()));
+                        }
+                        sb.append("<br>");
+                    }
+                    appendSystemHtml(sb.toString());
+                } catch (Exception e) {
+                    appendSystemMessage("Could not list tools: " + e.getMessage());
+                }
+            }
+
+            case "mode_general" -> setMode(AgentMode.GENERAL);
+
+            case "mode_sustainment" -> setMode(AgentMode.SUSTAINMENT);
+
+            case "cancel" -> cancelActiveJob();
+
+            case "undo_last" -> appendSystemMessage(
+                    "Use Edit → Undo (Ctrl+Z) to undo model changes. "
+                    + "Chat undo is not available in this version.");
+
+            case "show_diff" -> appendSystemMessage(
+                    "Use Edit → Undo History to review recent model changes.");
+
+            default -> appendSystemMessage("Unknown command: " + escapeHtml(cmd.name()));
+        }
+    }
+
+    /**
+     * Appends a system/info message containing pre-formed HTML markup.
+     * Unlike {@link #appendSystemMessage(String)}, this method does NOT
+     * escape the content — use only with trusted, internally-generated HTML.
+     */
+    private void appendSystemHtml(String html) {
+        String wrapped = "<div style=\"color:#888;font-style:italic;padding:4px 8px;"
+                + "margin:2px 0;border-left:3px solid #ccc;\">"
+                + html
+                + "</div>";
+        String escaped = renderer.escapeJs(wrapped);
+        Display.getDefault().asyncExec(() -> {
+            if (chatBrowser != null && !chatBrowser.isDisposed()) {
+                chatBrowser.execute("appendMessage('" + escaped + "')");
+                detachSupport.executeOnFloating("appendMessage('" + escaped + "')");
+            }
+        });
+    }
+
+    /** HTML-escapes a string for safe embedding in browser content. */
+    private static String escapeHtml(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;");
+    }
+
+    /**
+     * Switches the agent to the given mode by forking a new ConversationSession.
+     * Mutating the existing session would corrupt its system-prompt history,
+     * so we always start a fresh session when the mode changes.
+     */
+    private void setMode(IAgentMode mode) {
+        if (mode == null || mode.equals(currentMode)) return;
+        currentMode = mode;
+
+        // Fork a new session — do NOT mutate the current one
+        session = new ConversationSession();
+
+        // Sync the combo if setMode was called programmatically (e.g. from slash cmd)
+        if (modeCombo != null && !modeCombo.getControl().isDisposed()) {
+            modeCombo.setSelection(new StructuredSelection(currentMode));
+        }
+
+        // Inform the user
+        appendSystemMessage("Switched to " + mode.displayName() + " mode. New session started.");
     }
 
     @Override
