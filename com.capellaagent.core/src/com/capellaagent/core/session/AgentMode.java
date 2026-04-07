@@ -23,7 +23,7 @@ import java.util.List;
  * More modes will be added in the roadmap (Requirements Analyst, Model Reviewer,
  * Architect, etc.).
  */
-public enum AgentMode {
+public enum AgentMode implements IAgentMode {
 
     /** General-purpose assistant with all tool categories available. */
     GENERAL(
@@ -73,6 +73,63 @@ public enum AgentMode {
             "During an airline-imposed safety video broadcast, audio is silent on the cabin terminal but video plays fine. What functions are involved in audio routing for imposed broadcasts?",
             "The Available VOD Movies List on the seat-back display shows yesterday's titles. The Applications Server was rebooted. Which functions feed that list?",
             "Which requirements does the Cabin Management Unit implement?"
+        )),
+
+    /**
+     * Requirements analyst mode. Two-phase workflow: import first, confirm,
+     * then link. Confidence threshold shown for every proposed trace link.
+     */
+    REQUIREMENTS_ANALYST(
+        "Requirements Analyst",
+        "Import requirements and build traceability to model elements.",
+        "You are a requirements analyst assistant for a Capella MBSE model. "
+        + "Follow this two-phase workflow:\n"
+        + "PHASE 1 — IMPORT: When asked to import, use import_reqif or "
+        + "import_requirements_excel with dry_run=true first. Show the count "
+        + "of requirements that would be imported and ask the user to confirm "
+        + "before calling with dry_run=false.\n"
+        + "PHASE 2 — LINK: When asked to link, use link_requirements_to_elements "
+        + "with dry_run=true first. For each requirement, show: "
+        + "  REQ ID | First 60 chars of text | Top candidate element | UUID | Confidence\n"
+        + "Flag links with confidence < 0.7 as uncertain. Ask for user confirmation "
+        + "before calling with dry_run=false.\n"
+        + "Use coverage_dashboard to show coverage percentage at any time.\n"
+        + "Never create links without first showing the user what will be linked. "
+        + "Cite element UUIDs verbatim from tool results; never invent them.",
+        List.of("model_read", "requirements"),
+        List.of(
+            "Import requirements from /path/to/requirements.reqif",
+            "Import requirements from /path/to/requirements.xlsx",
+            "Show the requirements coverage dashboard",
+            "Link REQ-001 to the Avionics System"
+        )),
+
+    /**
+     * Architect mode. Read-first, diff-preview-before-write, proposal limit 5/turn.
+     */
+    ARCHITECT(
+        "Architect",
+        "Propose and review architecture changes from requirements.",
+        "You are an architecture co-design assistant for a Capella MBSE model. "
+        + "Follow this strict workflow:\n"
+        + "1. READ FIRST: Before proposing anything, call list_requirements, "
+        + "   list_elements per layer, and identify gaps between them.\n"
+        + "2. DIFF FORMAT: Before any proposal, show this exact format:\n"
+        + "   + [CREATE] <type> \"<name>\" (parent: <uuid>) — Rationale: <req-ids>\n"
+        + "   ~ [MODIFY] <type> \"<old-name>\" → \"<new-name>\" — Rationale: <req-ids>\n"
+        + "   - [DELETE] <type> \"<name>\" — Rationale: <reason>\n"
+        + "3. HOLD: NEVER call create_element, update_element, delete_element, or "
+        + "   any write tool before the user explicitly says 'yes', 'apply', or 'proceed'.\n"
+        + "4. LIMIT: Propose at most 5 new elements per turn. Ask before proposing more.\n"
+        + "5. VALIDATION: Check that every proposed parent UUID resolves in the model "
+        + "   using get_element_details before including it in a proposal.\n"
+        + "Cite element UUIDs verbatim from tool results; never invent them.",
+        List.of("model_read", "model_write", "analysis", "requirements"),
+        List.of(
+            "Propose an architecture for the requirements in the SA layer",
+            "Find requirements with no implementation trace",
+            "Suggest how to decompose the In-Flight Entertainment System",
+            "Review the PA layer for ARCADIA compliance"
         ));
 
     private final String displayName;
@@ -94,16 +151,19 @@ public enum AgentMode {
     }
 
     /** Human-readable mode name for the UI dropdown (e.g. "Sustainment Engineer"). */
+    @Override
     public String displayName() {
         return displayName;
     }
 
     /** One-line description shown as a tooltip in the mode picker. */
+    @Override
     public String shortDescription() {
         return shortDescription;
     }
 
     /** The system prompt to prepend to any chat turn in this mode. */
+    @Override
     public String systemPrompt() {
         return systemPrompt;
     }
@@ -113,6 +173,7 @@ public enum AgentMode {
      * categories are available. The LLM can still call any registered tool —
      * this is a suggestion to the tool filter, not a hard restriction.
      */
+    @Override
     public List<String> preferredToolCategories() {
         return preferredToolCategories;
     }
@@ -121,6 +182,7 @@ public enum AgentMode {
      * Example prompts shown in the empty-state starter grid when this mode is
      * active. Clicking a starter fills the input (does not send).
      */
+    @Override
     public List<String> starterPrompts() {
         return starterPrompts;
     }

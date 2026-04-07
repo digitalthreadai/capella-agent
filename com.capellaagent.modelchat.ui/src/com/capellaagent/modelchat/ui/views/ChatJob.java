@@ -236,7 +236,24 @@ public class ChatJob extends Job {
 
                         // DISPLAY: Send FULL result to UI (no truncation)
                         if (onToolResult != null) {
-                            String category = "MODEL_READ"; // Default; tools self-report category via result JSON
+                            String category = "";
+                            if (resultObj.has("category") && resultObj.get("category").isJsonPrimitive()) {
+                                category = resultObj.get("category").getAsString();
+                            } else {
+                                // Try to get category from tool registry
+                                IToolDescriptor toolDesc = toolRegistry.getTools(
+                                        "model_read", "model_write", "diagram",
+                                        "analysis", "export", "transition",
+                                        "requirements", "ai_intelligence")
+                                    .stream()
+                                    .filter(t -> toolName.equals(t.getName()))
+                                    .findFirst()
+                                    .orElse(null);
+                                if (toolDesc != null) {
+                                    category = toolDesc.getCategory() != null
+                                            ? toolDesc.getCategory().name() : "";
+                                }
+                            }
                             onToolResult.onResult(toolCall.getName(), category, resultObj);
                         }
 
@@ -327,6 +344,30 @@ public class ChatJob extends Job {
         if (fullResult.has("message")) {
             String msg = fullResult.get("message").getAsString();
             summary.addProperty("message", msg.length() > 200 ? msg.substring(0, 200) + "..." : msg);
+        }
+
+        // Phase 2: requirements fields
+        if (fullResult.has("coverage_pct")) {
+            summary.addProperty("coverage_pct", fullResult.get("coverage_pct").getAsDouble());
+        }
+        if (fullResult.has("requirements_count")) {
+            summary.addProperty("requirements_count", fullResult.get("requirements_count").getAsInt());
+        }
+        if (fullResult.has("trace_count")) {
+            summary.addProperty("trace_count", fullResult.get("trace_count").getAsInt());
+        }
+        if (fullResult.has("total_requirements")) {
+            summary.addProperty("total_requirements", fullResult.get("total_requirements").getAsInt());
+        }
+        if (fullResult.has("traced_requirements")) {
+            summary.addProperty("traced_requirements", fullResult.get("traced_requirements").getAsInt());
+        }
+        // Phase 3: generative fields
+        if (fullResult.has("diff_id")) {
+            summary.addProperty("diff_id", fullResult.get("diff_id").getAsString());
+        }
+        if (fullResult.has("proposal_count")) {
+            summary.addProperty("proposal_count", fullResult.get("proposal_count").getAsInt());
         }
 
         summary.addProperty("note", "Full results already displayed to the user as an interactive table. Do NOT repeat or list individual elements. Just briefly confirm what was found (e.g. 'Found 103 Physical Functions.') and ask if they need anything else.");

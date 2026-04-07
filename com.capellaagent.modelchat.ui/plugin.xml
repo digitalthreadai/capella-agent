@@ -85,4 +85,59 @@
       </context>
    </extension>
 
+   <!-- Commands -->
+   <extension point="org.eclipse.ui.commands">
+      <category id="com.capellaagent" name="Capella Agent"/>
+      <command id="com.capellaagent.modelchat.ui.commands.openChatView"
+               name="Open AI Model Chat"
+               description="Opens the Capella Agent AI Model Chat view"
+               categoryId="com.capellaagent"/>
+      <command id="com.capellaagent.modelchat.ui.commands.cancelJob"
+               name="Cancel Agent Job"
+               description="Cancels the currently running agent tool job"
+               categoryId="com.capellaagent"/>
+   </extension>
+
+   <!-- Handlers -->
+   <extension point="org.eclipse.ui.handlers">
+      <handler commandId="com.capellaagent.modelchat.ui.commands.openChatView"
+               class="com.capellaagent.modelchat.ui.commands.OpenChatViewHandler"/>
+      <handler commandId="com.capellaagent.modelchat.ui.commands.cancelJob"
+               class="com.capellaagent.modelchat.ui.commands.CancelJobHandler">
+         <activeWhen>
+            <with variable="activePartId">
+               <equals value="com.capellaagent.modelchat.ui.views.ModelChatView"/>
+            </with>
+         </activeWhen>
+      </handler>
+   </extension>
+
+   <!-- Additional Key Bindings -->
+   <extension point="org.eclipse.ui.bindings">
+      <!-- Ctrl+Shift+M opens chat from anywhere (M1=Ctrl, M2=Shift) -->
+      <key commandId="com.capellaagent.modelchat.ui.commands.openChatView"
+           contextId="org.eclipse.ui.contexts.window"
+           schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+           sequence="M1+M2+M"/>
+      <!-- ESC cancels running job in chat view -->
+      <key commandId="com.capellaagent.modelchat.ui.commands.cancelJob"
+           contextId="com.capellaagent.modelchat.ui.views.ModelChatView"
+           schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+           sequence="ESC"/>
+      <!-- Ctrl+L clears chat history in chat view (scoped to view — no conflict with Eclipse "Go to Line") -->
+      <key commandId="com.capellaagent.modelchat.ui.commands.clearHistory"
+           contextId="com.capellaagent.modelchat.ui.views.ModelChatView"
+           schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+           sequence="M1+L"/>
+   </extension>
+
+   <!-- Status bar contribution -->
+   <extension point="org.eclipse.ui.menus">
+      <menuContribution locationURI="toolbar:org.eclipse.ui.trim.status2">
+         <control
+               class="com.capellaagent.modelchat.ui.statusbar.CapellaAgentStatusControl"
+               id="com.capellaagent.modelchat.ui.statusbar.control"/>
+      </menuContribution>
+   </extension>
+
 </plugin>

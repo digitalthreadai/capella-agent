@@ -39,6 +39,20 @@ import com.capellaagent.core.llm.LlmUsage;
  */
 public final class TokenUsageTracker {
 
+    // === Process-wide singleton ===
+    private static final TokenUsageTracker INSTANCE = new TokenUsageTracker();
+
+    /**
+     * Returns the process-wide singleton instance.
+     * <p>
+     * Used by the status bar widget to subscribe to token updates without
+     * requiring injection. The ChatJob and ChatSessionController continue to
+     * use injected instances for testability.
+     */
+    public static TokenUsageTracker getInstance() {
+        return INSTANCE;
+    }
+
     /** Where the usage record came from. */
     public enum Source {
         CHAT_VIEW, MCP_BRIDGE
