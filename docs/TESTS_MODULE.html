@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tests Module — Capella Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0A0A0F;
+      --surface: #12121A;
+      --surface-hover: #1E1E2E;
+      --terminal-bg: #1A1A2E;
+      --terminal-border: #2A2A3E;
+      --text: #E8E8ED;
+      --muted: #8888A0;
+      --muted-fg: #6E6E88;
+      --primary: #00BCD4;
+      --primary-light: #E0F7FA;
+      --primary-rgb: 0,188,212;
+      --secondary: #FF6D00;
+      --green: #4ADE80;
+      --blue: #60A5FA;
+      --purple: #A78BFA;
+      --red: #F87171;
+      --yellow: #FBBF24;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    code, pre, .mono { font-family: 'JetBrains Mono', monospace; }
+    code { background: #1d242c; padding: 1px 6px; border-radius: 4px; font-size: 0.9em; color: #d2e3f5; }
+    pre { background: var(--terminal-bg); border: 1px solid var(--terminal-border); border-radius: 8px; padding: 16px 20px; overflow-x: auto; font-size: 0.85em; line-height: 1.55; }
+    pre code { background: transparent; padding: 0; color: var(--text); }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .nav-bar {
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--terminal-border);
+      background: rgba(10, 10, 15, 0.8);
+      backdrop-filter: blur(8px);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .nav-bar a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .nav-bar a:hover { color: var(--primary); text-decoration: none; }
+
+    .container { max-width: 880px; margin: 0 auto; padding: 56px 32px 100px; }
+
+    header.hero { margin-bottom: 56px; }
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 14px;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .lede {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 700px;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin: 56px 0 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--terminal-border);
+    }
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 28px 0 10px;
+      color: var(--text);
+    }
+    p { margin-bottom: 16px; color: #c8ccd6; }
+    ul, ol { margin: 0 0 16px 24px; color: #c8ccd6; }
+    li { margin-bottom: 8px; }
+
+    .callout {
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-left: 3px solid var(--primary);
+      border-radius: 8px;
+      padding: 18px 22px;
+      margin: 24px 0;
+    }
+    .callout.warn { border-left-color: var(--yellow); }
+    .callout.green { border-left-color: var(--green); }
+    .callout strong { color: var(--text); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--terminal-border);
+    }
+    th {
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    td { color: #c8ccd6; }
+    tr:hover td { background: rgba(0, 188, 212, 0.04); }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin: 28px 0;
+    }
+    @media (max-width: 720px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4px;
+    }
+
+    .who-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: 24px 0;
+    }
+    @media (max-width: 720px) { .who-grid { grid-template-columns: 1fr; } }
+    .who {
+      background: var(--surface);
+      border: 1px solid var(--terminal-border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .who-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .who-icon svg { width: 20px; height: 20px; }
+    .who.you .who-icon { background: rgba(74, 222, 128, 0.12); }
+    .who.you .who-icon svg { color: var(--green); }
+    .who.ci .who-icon { background: rgba(0, 188, 212, 0.12); }
+    .who.ci .who-icon svg { color: var(--primary); }
+    .who.users .who-icon { background: rgba(248, 113, 113, 0.12); }
+    .who.users .who-icon svg { color: var(--red); }
+    .who h4 { font-size: 0.95rem; margin-bottom: 6px; }
+    .who p { font-size: 0.85rem; color: var(--muted); margin: 0; }
+    .who code { font-size: 0.8em; }
+
+    footer.page-footer {
+      margin-top: 80px;
+      padding-top: 24px;
+      border-top: 1px solid var(--terminal-border);
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--muted-fg);
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <a href="index.html">&larr; Back to Documentation</a>
+</nav>
+
+<div class="container">
+
+  <header class="hero">
+    <div class="eyebrow">Developer Infrastructure</div>
+    <h1>The Tests Module</h1>
+    <p class="lede">
+      What <code>com.capellaagent.core.tests</code> actually is, who runs it, and why
+      it lives in its own bundle instead of <code>src/test/java</code>.
+    </p>
+  </header>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-value">167</div><div class="stat-label">Unit tests</div></div>
+    <div class="stat"><div class="stat-value">12</div><div class="stat-label">Test classes</div></div>
+    <div class="stat"><div class="stat-value">35%</div><div class="stat-label">Coverage target</div></div>
+    <div class="stat"><div class="stat-value">0</div><div class="stat-label">Shipped to users</div></div>
+  </div>
+
+  <h2>The one-line answer</h2>
+  <p>
+    <code>com.capellaagent.core.tests</code> is a <strong>developer-only artifact</strong>.
+    End users never see it, never install it, never run it. It exists for one job:
+    prove the production code in <code>com.capellaagent.core</code> does what we say it does.
+  </p>
+
+  <h2>Who runs it, and when</h2>
+
+  <div class="who-grid">
+    <div class="who you">
+      <div class="who-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 7 9 18l-5-5"/>
+        </svg>
+      </div>
+      <h4>You, manually</h4>
+      <p>After any code change, before pushing.<br><code>mvn verify</code> from repo root.</p>
+    </div>
+    <div class="who ci">
+      <div class="who-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="m9 11 3 3L22 4"/>
+        </svg>
+      </div>
+      <h4>CI, automatically</h4>
+      <p>Every <code>git push</code> when CI is wired (GitHub Actions).</p>
+    </div>
+    <div class="who users">
+      <div class="who-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </div>
+      <h4>End users</h4>
+      <p><strong>Never.</strong> The test fragment is not in <code>feature.xml</code>, so the p2 install does not ship it.</p>
+    </div>
+  </div>
+
+  <h2>What it actually is</h2>
+  <p>
+    It's a Tycho <strong>eclipse-test-plugin</strong> (not an <code>eclipse-plugin</code>).
+    That packaging is special: when Maven/Tycho hits it during <code>mvn verify</code>,
+    it spins up a headless Eclipse OSGi container, loads the test fragment alongside
+    <code>com.capellaagent.core</code>, and runs JUnit&nbsp;5 tests against the
+    <strong>real</strong> OSGi-resolved classpath.
+  </p>
+  <p>
+    That matters because most of our code touches Eclipse APIs &mdash;
+    <code>TransactionalEditingDomain</code>, <code>IExtensionRegistry</code>,
+    <code>IPreferenceStore</code> &mdash; and those only behave correctly when an
+    OSGi container is wired up around them. A plain JVM unit test would fail to
+    resolve half the classes.
+  </p>
+
+  <h3>What's inside</h3>
+  <p>167 unit tests across 12 test classes covering things like:</p>
+  <ul>
+    <li><strong>TokenEstimator</strong> &mdash; does the <code>char/4</code> heuristic stay within 10% on real prompts?</li>
+    <li><strong>HistoryWindow</strong> &mdash; does it correctly evict orphaned <code>tool_result</code> messages so Groq does not 400?</li>
+    <li><strong>ToolResultSanitizer</strong> &mdash; does the prompt-injection wrap/detect/gate pattern actually catch payloads?</li>
+    <li><strong>WriteToolGate</strong> &mdash; does it correctly block destructive tools in read-only mode?</li>
+    <li><strong>JsonFileConversationStore</strong> &mdash; does session crash recovery survive a <code>kill -9</code>?</li>
+    <li><strong>ChatSessionController</strong> &mdash; does the tool-call loop terminate? Does it handle 6 retries without infinite-looping?</li>
+    <li><strong>WelcomeWizardModel</strong> &mdash; do all state transitions in the (deferred) wizard data layer behave?</li>
+  </ul>
+
+  <h2>How to run them</h2>
+
+  <pre><code># All tests across every module (the production way)
+mvn clean verify
+
+# Just the core test bundle
+mvn -pl com.capellaagent.core.tests -am verify
+
+# Skip tests during a packaging-only build
+mvn clean package -DskipTests</code></pre>
+
+  <p>
+    Tycho's surefire plugin reports go to
+    <code>com.capellaagent.core.tests/target/surefire-reports/</code>.
+    A green run looks like:
+  </p>
+  <pre><code>[INFO] Tests run: 167, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS</code></pre>
+
+  <h2>Why a separate module instead of <code>src/test/java</code>?</h2>
+  <p>
+    Standard Maven puts tests next to production code in <code>src/test/java</code>.
+    We can't, for three independent reasons:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Reason</th><th>Why it forces a separate bundle</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Tycho packaging</strong></td>
+        <td><code>eclipse-plugin</code> builds <em>one</em> OSGi bundle, period. To get tests, you need a <em>second</em> bundle &mdash; that's what the <code>.tests</code> fragment is.</td>
+      </tr>
+      <tr>
+        <td><strong>OSGi visibility</strong></td>
+        <td>The test bundle is declared as a <em>fragment</em> of <code>com.capellaagent.core</code>. Fragments share the host's classloader, which means tests can see package-private classes without us having to bump everything to public. (You may remember the <code>formatError</code> / <code>removeOrphans</code> &ldquo;Public for testing&rdquo; javadoc &mdash; those were the few places we couldn't avoid it.)</td>
+      </tr>
+      <tr>
+        <td><strong>Headless OSGi runtime</strong></td>
+        <td>Tycho's surefire plugin needs the test fragment to know how to bootstrap a real Eclipse runtime around the tests. A plain <code>src/test/java</code> folder cannot do that &mdash; it would fail the moment any test loads <code>org.eclipse.emf.transaction.*</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>What you'd lose without it</h2>
+
+  <div class="callout warn">
+    <ul style="margin-bottom:0">
+      <li>No safety net when refactoring <code>ChatSessionController</code>, <code>HistoryWindow</code>, or <code>TokenEstimator</code>.</li>
+      <li>No way to verify the prompt-injection defense actually fires before shipping a release.</li>
+      <li>No regression coverage for the Groq orphaned-<code>tool_result</code> bug that took a day to track down.</li>
+      <li>The smoke test checklist becomes the <em>only</em> QA &mdash; and a 30-minute manual loop cannot cover 167 edge cases.</li>
+    </ul>
+  </div>
+
+  <h2>How it relates to the smoke test</h2>
+  <p>
+    The <a href="SMOKE_TEST_CHECKLIST.html">smoke test checklist</a> and the tests
+    module are <strong>complementary</strong>, not redundant:
+  </p>
+  <table>
+    <thead>
+      <tr><th></th><th>Tests module</th><th>Smoke test checklist</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Where it runs</strong></td><td>Headless Maven build</td><td>Real Capella desktop</td></tr>
+      <tr><td><strong>What it catches</strong></td><td>Logic bugs, regressions, edge cases</td><td>UI bugs, install issues, integration bugs</td></tr>
+      <tr><td><strong>How long</strong></td><td>~90 seconds</td><td>20&ndash;30 minutes</td></tr>
+      <tr><td><strong>Who runs it</strong></td><td>Every developer, every CI run</td><td>Release manager, before tagging</td></tr>
+      <tr><td><strong>Coverage</strong></td><td>167 unit tests</td><td>83 manual checks</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout green">
+    <strong>Bottom line:</strong> the tests module is dev infrastructure &mdash; same
+    category as <code>tools/reinstall.ps1</code>. Invisible to users, indispensable
+    to anyone changing the code.
+  </div>
+
+  <footer class="page-footer">
+    <a href="index.html">&larr; Back to Documentation</a>
+  </footer>
+
+</div>
+
+</body>
+</html>

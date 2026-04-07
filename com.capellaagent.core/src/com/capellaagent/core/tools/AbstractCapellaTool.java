@@ -13,6 +13,7 @@ import org.eclipse.emf.transaction.RecordingCommand;
 import org.eclipse.emf.transaction.TransactionalEditingDomain;
 import org.eclipse.sirius.business.api.session.Session;
 
+import com.capellaagent.core.capella.ActiveProjectContext;
 import com.capellaagent.core.capella.CapellaModelService;
 import com.capellaagent.core.security.AuditLogger;
 import com.capellaagent.core.security.SecurityService;
@@ -339,14 +340,26 @@ public abstract class AbstractCapellaTool implements IToolDescriptor, IToolExecu
 
     /**
      * Gets the active Sirius session from the workspace.
+     * <p>
+     * Resolution order:
+     * <ol>
+     *   <li>The thread-local active project name set by {@code ChatJob} from
+     *       the chat view's project dropdown
+     *       (see {@link ActiveProjectContext})</li>
+     *   <li>If no project is selected and exactly one Capella session is open,
+     *       that session</li>
+     *   <li>Otherwise, an error asking the user to disambiguate</li>
+     * </ol>
      * Delegates to {@link CapellaModelService#getSession(String)}.
      *
      * @return the active Sirius Session
-     * @throws ToolExecutionException if no session is available
+     * @throws ToolExecutionException if no session is available or the
+     *         workspace has multiple projects open and none is selected
      */
     protected Session getActiveSession() throws ToolExecutionException {
         try {
-            return CapellaModelService.getInstance().getSession(null);
+            String activeProject = ActiveProjectContext.get();
+            return CapellaModelService.getInstance().getSession(activeProject);
         } catch (IllegalStateException e) {
             throw new ToolExecutionException(ToolExecutionException.ERR_EXECUTION,
                     e.getMessage());

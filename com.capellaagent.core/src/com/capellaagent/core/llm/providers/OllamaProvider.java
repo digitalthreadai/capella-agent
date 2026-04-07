@@ -33,6 +33,29 @@ public class OllamaProvider implements ILlmProvider {
 
     private static final Logger LOG = Logger.getLogger(OllamaProvider.class.getName());
 
+    /**
+     * Parses Ollama's flat usage fields.
+     * <p>
+     * Ollama shape: top-level {@code prompt_eval_count} and {@code eval_count}
+     * (no {@code usage} wrapper).
+     */
+    @Override
+    public com.capellaagent.core.llm.LlmUsage parseUsage(com.google.gson.JsonObject rawResponse) {
+        if (rawResponse == null) {
+            return com.capellaagent.core.llm.LlmUsage.empty();
+        }
+        int input = rawResponse.has("prompt_eval_count")
+            ? rawResponse.get("prompt_eval_count").getAsInt() : 0;
+        int output = rawResponse.has("eval_count")
+            ? rawResponse.get("eval_count").getAsInt() : 0;
+        if (input == 0 && output == 0) {
+            return com.capellaagent.core.llm.LlmUsage.empty();
+        }
+        return new com.capellaagent.core.llm.LlmUsage(
+            input, output, 0, 0,
+            com.capellaagent.core.llm.LlmUsage.Source.EXACT);
+    }
+
     private static final String DEFAULT_API_URL = "http://localhost:11434/api/chat";
     private static final String DEFAULT_MODEL = "llama3.1";
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(300);

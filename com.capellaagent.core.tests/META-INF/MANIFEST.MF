@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Capella Agent - Core Tests
+Bundle-SymbolicName: com.capellaagent.core.tests
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: CapellaAgent
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Fragment-Host: com.capellaagent.core;bundle-version="1.0.0"
+Require-Bundle: junit-jupiter-api;bundle-version="5.9.0",
+ junit-jupiter-engine;bundle-version="5.9.0",
+ junit-platform-commons;bundle-version="1.9.0",
+ junit-platform-engine;bundle-version="1.9.0",
+ junit-platform-launcher;bundle-version="1.9.0",
+ org.opentest4j;bundle-version="1.2.0"
+Automatic-Module-Name: com.capellaagent.core.tests

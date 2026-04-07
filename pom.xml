@@ -29,6 +29,8 @@
     <module>com.capellaagent.mcp</module>
     <module>com.capellaagent.feature</module>
     <module>com.capellaagent.site</module>
+    <!-- Test fragments (eclipse-test-plugin) - excluded from feature/site -->
+    <module>com.capellaagent.core.tests</module>
   </modules>
 
   <repositories>

@@ -51,6 +51,42 @@ public abstract class OpenAiCompatibleProvider implements ILlmProvider {
     private final HttpClient httpClient;
 
     /**
+     * Parses the {@code usage} block of an OpenAI-compatible chat completion
+     * response. Covers OpenAI, Groq, GitHub Models, DeepSeek, Mistral,
+     * OpenRouter (when {@code usage.include=true}) and any other provider
+     * that uses the same shape.
+     */
+    @Override
+    public com.capellaagent.core.llm.LlmUsage parseUsage(com.google.gson.JsonObject rawResponse) {
+        if (rawResponse == null || !rawResponse.has("usage")
+                || !rawResponse.get("usage").isJsonObject()) {
+            return com.capellaagent.core.llm.LlmUsage.empty();
+        }
+        com.google.gson.JsonObject u = rawResponse.getAsJsonObject("usage");
+        int prompt = u.has("prompt_tokens") && !u.get("prompt_tokens").isJsonNull()
+            ? u.get("prompt_tokens").getAsInt() : 0;
+        int completion = u.has("completion_tokens") && !u.get("completion_tokens").isJsonNull()
+            ? u.get("completion_tokens").getAsInt() : 0;
+        int cached = 0;
+        if (u.has("prompt_tokens_details") && u.get("prompt_tokens_details").isJsonObject()) {
+            com.google.gson.JsonObject details = u.getAsJsonObject("prompt_tokens_details");
+            if (details.has("cached_tokens")) {
+                cached = details.get("cached_tokens").getAsInt();
+            }
+        }
+        int reasoning = 0;
+        if (u.has("completion_tokens_details") && u.get("completion_tokens_details").isJsonObject()) {
+            com.google.gson.JsonObject details = u.getAsJsonObject("completion_tokens_details");
+            if (details.has("reasoning_tokens")) {
+                reasoning = details.get("reasoning_tokens").getAsInt();
+            }
+        }
+        return new com.capellaagent.core.llm.LlmUsage(
+            prompt, completion, cached, reasoning,
+            com.capellaagent.core.llm.LlmUsage.Source.EXACT);
+    }
+
+    /**
      * Creates a provider with a default HTTP client.
      */
     protected OpenAiCompatibleProvider() {
