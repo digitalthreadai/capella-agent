@@ -21,4 +21,6 @@ Require-Bundle: com.capellaagent.core;bundle-version="1.0.0",
  org.eclipse.ui.navigator
 Export-Package: com.capellaagent.modelchat.ui.views,
  com.capellaagent.modelchat.ui.commands,
- com.capellaagent.modelchat.ui.adapters
+ com.capellaagent.modelchat.ui.adapters,
+ com.capellaagent.modelchat.ui.statusbar,
+ com.capellaagent.modelchat.ui.dialogs
