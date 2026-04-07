@@ -92,4 +92,12 @@
          version="0.0.0"
          unpack="false"/>
 
+   <!-- Requirements roundtrip: ReqIF/Excel import, traceability, coverage -->
+   <plugin
+         id="com.capellaagent.requirements"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
 </feature>

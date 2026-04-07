@@ -28,6 +28,7 @@
     <module>com.capellaagent.simulation.ui</module>
     <module>com.capellaagent.mcp</module>
     <module>com.capellaagent.help</module>
+    <module>com.capellaagent.requirements</module>
     <module>com.capellaagent.feature</module>
     <module>com.capellaagent.site</module>
     <!-- Test fragments (eclipse-test-plugin) - excluded from feature/site -->
