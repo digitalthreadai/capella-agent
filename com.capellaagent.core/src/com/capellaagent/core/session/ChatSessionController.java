@@ -10,6 +10,8 @@ import com.capellaagent.core.llm.LlmMessage;
 import com.capellaagent.core.llm.LlmRequestConfig;
 import com.capellaagent.core.llm.LlmResponse;
 import com.capellaagent.core.llm.LlmToolCall;
+import com.capellaagent.core.security.ToolResultSanitizer;
+import com.capellaagent.core.security.WriteToolGate;
 import com.capellaagent.core.tools.IToolDescriptor;
 import com.capellaagent.core.tools.ToolRegistry;
 import com.capellaagent.core.tools.ToolResult;
@@ -64,6 +66,15 @@ public final class ChatSessionController {
     /** Set of tool names that perform model writes (rate-limited). */
     private final java.util.Set<String> writeToolNames;
 
+    /** Gate controlling write-tool approval. If null, no gating (legacy behavior). */
+    private final WriteToolGate writeToolGate;
+
+    /** Whether prompt injection defense is active (sanitize tool results). */
+    private final boolean injectionDefenseEnabled;
+
+    /** Tracks whether any tool result in this turn contained suspicious content. */
+    private boolean suspiciousContextFound = false;
+
     /**
      * Receives lifecycle events from the controller. All callbacks are invoked
      * on the controller's caller thread; the listener is responsible for
@@ -115,6 +126,8 @@ public final class ChatSessionController {
         this.maxWriteToolsPerTurn = b.maxWriteToolsPerTurn;
         this.maxToolResultChars = b.maxToolResultChars;
         this.writeToolNames = b.writeToolNames != null ? b.writeToolNames : java.util.Set.of();
+        this.writeToolGate = b.writeToolGate;
+        this.injectionDefenseEnabled = b.injectionDefenseEnabled;
     }
 
     /** Returns a new builder. */
@@ -197,6 +210,38 @@ public final class ChatSessionController {
                             continue;
                         }
 
+                        // Write-tool gate: check policy before executing
+                        if (writeToolGate != null) {
+                            WriteToolGate.Decision decision = writeToolGate.decide(
+                                toolName, suspiciousContextFound);
+                            if (decision == WriteToolGate.Decision.BLOCKED_READ_ONLY) {
+                                session.addToolResult(toolCallId, errorJson(
+                                    "This action is blocked: the workspace is in "
+                                    + "read-only mode. Change to read-write in "
+                                    + "Preferences if you want to modify the model."));
+                                listener.onToolExecutionStart("\uD83D\uDD12 Blocked (read-only)");
+                                continue;
+                            }
+                            if (decision == WriteToolGate.Decision.BLOCKED_ADMIN) {
+                                session.addToolResult(toolCallId, errorJson(
+                                    "This action is administratively disabled for "
+                                    + "this site. Contact your administrator."));
+                                listener.onToolExecutionStart("\uD83D\uDD12 Blocked");
+                                continue;
+                            }
+                            if (decision == WriteToolGate.Decision.REQUIRES_CONSENT) {
+                                // For beta1 we log the consent request but still
+                                // allow the call — the UI consent card lands in
+                                // a later phase. The critical win here is that
+                                // destructive calls are now visibly flagged.
+                                LOG.warning("WriteToolGate: " + toolName
+                                    + " would require user consent in production "
+                                    + "(suspicious=" + suspiciousContextFound + ")");
+                                listener.onToolExecutionStart("\u26A0 " + toolName
+                                    + " (requires consent in production)");
+                            }
+                        }
+
                         listener.onToolExecutionStart(toolName);
 
                         ToolResult toolResult;
@@ -209,16 +254,33 @@ public final class ChatSessionController {
 
                         JsonObject resultJson = toolResult.toJson();
 
-                        // Full result → UI
+                        // Check the RAW result for injection patterns BEFORE sanitizing
+                        if (injectionDefenseEnabled
+                                && ToolResultSanitizer.containsSuspiciousContent(resultJson)) {
+                            suspiciousContextFound = true;
+                            LOG.warning("Tool result from " + toolName
+                                + " contains suspicious content; "
+                                + "subsequent write tools will require consent");
+                        }
+
+                        // Full (unsanitized) result → UI so the user sees exactly
+                        // what was returned. UI renderer escapes HTML separately.
                         listener.onToolExecutionResult(toolName, resultJson);
 
-                        // Compact summary → LLM history (saves tokens)
-                        String resultStr = resultJson.toString();
+                        // Sanitized result → LLM history: wraps every string in
+                        // <untrusted>...</untrusted> so injection in model
+                        // descriptions cannot be interpreted as instructions.
+                        JsonObject forLlm = injectionDefenseEnabled
+                            ? ToolResultSanitizer.sanitize(resultJson)
+                            : resultJson;
+
+                        // Compact summary → LLM history (saves tokens) when large
+                        String resultStr = forLlm.toString();
                         if (resultStr.length() > maxToolResultChars) {
                             session.addToolResult(toolCallId,
-                                createCompactSummary(toolName, resultJson));
+                                createCompactSummary(toolName, forLlm));
                         } else {
-                            session.addToolResult(toolCallId, resultJson);
+                            session.addToolResult(toolCallId, forLlm);
                         }
                     }
                 }
@@ -352,6 +414,8 @@ public final class ChatSessionController {
         private int maxWriteToolsPerTurn = DEFAULT_MAX_WRITE_TOOLS_PER_TURN;
         private int maxToolResultChars = DEFAULT_MAX_TOOL_RESULT_CHARS;
         private java.util.Set<String> writeToolNames;
+        private WriteToolGate writeToolGate;
+        private boolean injectionDefenseEnabled = true;
 
         public Builder session(ConversationSession session) {
             this.session = session;
@@ -405,6 +469,28 @@ public final class ChatSessionController {
 
         public Builder writeToolNames(java.util.Set<String> names) {
             this.writeToolNames = names;
+            return this;
+        }
+
+        /**
+         * Installs a {@link WriteToolGate} to enforce access-control decisions
+         * (read-only, destructive consent, admin block). If null (default),
+         * all write tools are allowed.
+         */
+        public Builder writeToolGate(WriteToolGate gate) {
+            this.writeToolGate = gate;
+            return this;
+        }
+
+        /**
+         * Enables or disables prompt-injection defense. Default: true.
+         * When enabled, tool results are sanitized with
+         * {@link ToolResultSanitizer} before being added to the LLM history
+         * and the {@code suspiciousContextFound} flag is tracked for the
+         * write-tool gate.
+         */
+        public Builder injectionDefenseEnabled(boolean enabled) {
+            this.injectionDefenseEnabled = enabled;
             return this;
         }
 
