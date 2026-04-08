@@ -1,0 +1,605 @@
+[
+  {
+    "Req ID": "REQ-SYS-001",
+    "Title": "IFE System Availability",
+    "Statement": "The In-Flight Entertainment system shall achieve a minimum operational availability of 99.5% across all seat units during any given flight sector.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-SYS-002",
+    "Title": "Boot Time",
+    "Statement": "The IFE system shall complete its boot sequence and present the passenger welcome screen within 90 seconds of aircraft power-on.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-SYS-003",
+    "Title": "Graceful Degradation",
+    "Statement": "In the event of a single Seat Display Unit failure, the IFE system shall continue to operate all other seat units without interruption and without requiring a full system reboot.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-SYS-004",
+    "Title": "Cabin Crew Override",
+    "Statement": "The cabin crew shall be able to override any passenger-initiated playback and broadcast a safety video or PA announcement to all seat units within 3 seconds of initiating the command.",
+    "Category": "Operational",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-SYS-005",
+    "Title": "DO-160G Compliance",
+    "Statement": "All IFE hardware components installed on the aircraft shall comply with RTCA DO-160G environmental qualification requirements for the applicable installation category.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-SYS-006",
+    "Title": "Passenger Data Privacy",
+    "Statement": "The IFE system shall not retain any personally identifiable passenger data beyond the end of the flight sector. All session data shall be purged from seat unit volatile memory upon power-down.",
+    "Category": "Security",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-SYS-007",
+    "Title": "Multilingual UI",
+    "Statement": "The IFE passenger interface shall support a minimum of 10 languages, including the flight origin and destination country languages, switchable at the seat unit level.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-SYS-008",
+    "Title": "Power Budget",
+    "Statement": "Total IFE system power consumption shall not exceed 8 kW at peak load across a fully-populated wide-body aircraft cabin configuration.",
+    "Category": "Electrical",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-APP-001",
+    "Title": "Content Catalogue",
+    "Statement": "The Applications Server shall maintain a content catalogue of at least 300 audio-visual titles simultaneously accessible to all seat units without degradation in stream quality.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-APP-002",
+    "Title": "VOD Resume",
+    "Statement": "The VOD application shall bookmark the last playback position per passenger session and offer resume functionality upon re-selection of the same title within the same flight sector.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-APP-003",
+    "Title": "Live TV Streaming",
+    "Statement": "The Applications Server shall support live satellite TV channel streaming with an end-to-end latency not exceeding 8 seconds from broadcast source to seat display.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-APP-004",
+    "Title": "Content Update",
+    "Statement": "The content management system shall support ground-based content loading via airport high-speed link, allowing a full catalogue refresh within a 45-minute turnaround window.",
+    "Category": "Operational",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-APP-005",
+    "Title": "Moving Map Application",
+    "Statement": "The Applications Server shall provide a moving map application displaying real-time aircraft position, altitude, speed, origin, destination, and ETA, updated at intervals not exceeding 30 seconds.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-APP-006",
+    "Title": "Duty-Free Shopping",
+    "Statement": "The IFE applications platform shall host a duty-free retail application allowing passengers to browse, select, and purchase items with confirmation transmitted to cabin crew within 10 seconds.",
+    "Category": "Functional",
+    "Priority": "Low",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-APP-007",
+    "Title": "Games Platform",
+    "Statement": "The applications server shall support at least 15 interactive games playable on the seat display unit, with no additional GPU hardware beyond the standard SDU processing unit.",
+    "Category": "Functional",
+    "Priority": "Low",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-APP-008",
+    "Title": "Application Isolation",
+    "Statement": "A crash or hang in any individual IFE application (shopping, games, map) shall not affect VOD, audio, or the cabin crew override functions. Application isolation shall be enforced at the OS process level.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-SDU-001",
+    "Title": "Display Resolution",
+    "Statement": "The Seat Display Unit screen shall provide a minimum resolution of 1920×1080 pixels with a brightness of at least 450 nits to ensure readability in direct sunlight ingress conditions.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SDU-002",
+    "Title": "Touch Interface",
+    "Statement": "The SDU shall provide a capacitive multi-touch interface supporting a minimum of 5 simultaneous touch points, operable with gloved hands (glove thickness up to 0.5 mm).",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SDU-003",
+    "Title": "USB Charging",
+    "Statement": "Each SDU shall provide at least one USB-A (5W) and one USB-C (18W PD) passenger charging port, independently powered from the seat power circuit.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SDU-004",
+    "Title": "SDU Weight",
+    "Statement": "The Seat Display Unit assembly including mounting bracket shall not exceed 1.2 kg installed mass per seat to comply with aircraft weight and balance constraints.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SDU-005",
+    "Title": "SDU MTBF",
+    "Statement": "The Seat Display Unit shall have a Mean Time Between Failures of not less than 20,000 flight hours under normal operating conditions.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SDU-006",
+    "Title": "Headphone Jack",
+    "Statement": "Each SDU shall provide a 3.5 mm stereo audio output jack compatible with standard passenger headsets, with an output level of -10 dBV at 32 Ohm load.",
+    "Category": "Interface",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SDU-007",
+    "Title": "Screen Dimming",
+    "Statement": "Passengers shall be able to dim the SDU screen brightness to a minimum of 0 nits (screen off) without powering down the unit, to accommodate night flights.",
+    "Category": "Functional",
+    "Priority": "Low",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalFunction"
+  },
+  {
+    "Req ID": "REQ-SDU-008",
+    "Title": "FAR 25.853 Flammability",
+    "Statement": "All SDU enclosure materials shall meet FAR 25.853 flammability requirements for materials used in aircraft cabin interiors.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-CMU-001",
+    "Title": "CMU Seat Capacity",
+    "Statement": "A single Cabin Management Unit shall manage the IFE services for a minimum of 50 Seat Display Units without exceeding a 200 ms command response latency.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-CMU-002",
+    "Title": "CMU Redundancy",
+    "Statement": "The Cabin Management Unit shall support hot-standby redundancy. Failover to the standby CMU shall complete within 5 seconds with no visible interruption to active passenger sessions.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-CMU-003",
+    "Title": "Seat Call Function",
+    "Statement": "The CMU shall process passenger seat-call requests and route them to the nearest cabin crew attendant panel within 1 second of button activation.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-CMU-004",
+    "Title": "Reading Light Control",
+    "Statement": "The CMU shall support individual passenger reading light on/off/dim control from the SDU interface with a maximum actuation delay of 500 ms.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-CMU-005",
+    "Title": "CMU Diagnostics",
+    "Statement": "The CMU shall continuously monitor the health of all connected SDUs, report fault conditions to the ground maintenance system via ACARS within 60 seconds of detection, and log all events to a non-volatile fault log.",
+    "Category": "Operational",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-CMU-006",
+    "Title": "Zone Broadcast",
+    "Statement": "The CMU shall support independent audio/video broadcast to configurable cabin zones (e.g. Business, Economy front, Economy rear) simultaneously with different content per zone.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AUD-001",
+    "Title": "Audio Channel Count",
+    "Statement": "The audio subsystem shall support a minimum of 8 simultaneous independent audio channels per Seat Display Unit, covering movie, music, games, PA, and ambient noise channels.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AUD-002",
+    "Title": "PA Override Priority",
+    "Statement": "A PA announcement originating from the cockpit or cabin crew panel shall automatically mute all passenger-initiated audio streams and take full priority within 500 ms on all active seat units.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AUD-003",
+    "Title": "Audio Codec Support",
+    "Statement": "The audio processing subsystem shall support decoding of AAC-LC, MP3, AC3, and E-AC3 audio streams without additional external DSP hardware.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AUD-004",
+    "Title": "Noise Floor",
+    "Statement": "The audio output noise floor at the SDU headphone jack shall be no greater than -70 dBV (A-weighted) in the absence of an audio signal.",
+    "Category": "Performance",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-AUD-005",
+    "Title": "Active Noise Cancellation Support",
+    "Statement": "The SDU audio output shall be compatible with active noise-cancellation headsets conforming to the 3.5 mm CTIA standard without introducing feedback artefacts.",
+    "Category": "Interface",
+    "Priority": "Low",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SEB-001",
+    "Title": "Seat Electronics Box Mounting",
+    "Statement": "The Seat Electronics Box shall be installed under the passenger seat cushion structure and shall be accessible for line-maintenance replacement without removal of adjacent seat rows.",
+    "Category": "Operational",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SEB-002",
+    "Title": "SEB Operating Temperature",
+    "Statement": "The Seat Electronics Box shall operate within specification across an ambient temperature range of -20°C to +70°C to accommodate cargo-hold temperature extremes during ground operations.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SEB-003",
+    "Title": "SEB Power Conditioning",
+    "Statement": "The Seat Electronics Box shall accept 115 V AC 400 Hz aircraft power and provide regulated DC outputs (5V, 12V, 28V) to all connected seat peripherals with a transient suppression response time of under 10 ms.",
+    "Category": "Electrical",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SEB-004",
+    "Title": "SEB EMI",
+    "Statement": "The Seat Electronics Box shall comply with DO-160G Section 21 Category B radiated and conducted emission limits to prevent interference with aircraft navigation and communication systems.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SEB-005",
+    "Title": "SEB Connector Locking",
+    "Statement": "All external connectors on the Seat Electronics Box shall use locking mechanisms rated for a minimum of 500 mating cycles without degradation in electrical contact resistance.",
+    "Category": "Reliability",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-CDN-001",
+    "Title": "Network Topology",
+    "Statement": "The IFE cabin distribution network shall use a switched Ethernet topology with a minimum backbone bandwidth of 1 Gbps and per-seat access bandwidth of at least 100 Mbps.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-CDN-002",
+    "Title": "Network Fault Isolation",
+    "Statement": "A wiring fault on any single cabin distribution segment shall not propagate loss of service to more than one seat row. Fault isolation shall be automatic and shall not require crew intervention.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalFunction"
+  },
+  {
+    "Req ID": "REQ-CDN-003",
+    "Title": "Cabling Weight",
+    "Statement": "Total IFE cabin distribution cabling mass including connectors shall not exceed 2.5 kg per seat row on a wide-body aircraft layout.",
+    "Category": "Compliance",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-CDN-004",
+    "Title": "Network Security Isolation",
+    "Statement": "The IFE cabin distribution network shall be physically or cryptographically isolated from aircraft avionics networks in compliance with ARINC 664 Part 5 security domain separation requirements.",
+    "Category": "Security",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-CDN-005",
+    "Title": "Wireless Passenger Network",
+    "Statement": "The IFE system shall provide 802.11ac Wi-Fi connectivity to passenger personal electronic devices with a minimum aggregate throughput of 500 Mbps across the cabin.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-CDN-006",
+    "Title": "Satellite Uplink",
+    "Statement": "The cabin distribution network shall interface with the aircraft satellite communications unit to provide internet connectivity, with a minimum guaranteed downlink bandwidth of 25 Mbps during cruise phase.",
+    "Category": "Interface",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-MAP-001",
+    "Title": "Map Data Currency",
+    "Statement": "The moving map application shall use navigational chart data with a maximum age of 28 days, updated automatically during ground content loading operations.",
+    "Category": "Operational",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-MAP-002",
+    "Title": "Aircraft Position Source",
+    "Statement": "The moving map application shall receive aircraft position data from the Aircraft Data Gateway (ADG) via ARINC 429 bus at a minimum update rate of 1 Hz.",
+    "Category": "Interface",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-MAP-003",
+    "Title": "Map Zoom Levels",
+    "Statement": "The moving map shall provide at least 5 discrete zoom levels ranging from global view to regional 200 km radius view, selectable by the passenger.",
+    "Category": "Functional",
+    "Priority": "Low",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-MAP-004",
+    "Title": "ETA Display",
+    "Statement": "The moving map application shall display estimated time of arrival computed from current aircraft speed and great-circle distance to destination, updated every 60 seconds.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-MAP-005",
+    "Title": "Airspace Boundaries",
+    "Statement": "The moving map shall display FIR/UIR airspace boundary overlays sourced from current AIRAC data.",
+    "Category": "Functional",
+    "Priority": "Low",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-PER-001",
+    "Title": "SDU Frame Rate",
+    "Statement": "The Seat Display Unit shall render video content at a sustained frame rate of 60 fps for 1080p content and 30 fps for 4K content without dropped frames under normal operating conditions.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-PER-002",
+    "Title": "Channel Change Latency",
+    "Statement": "Live TV channel change response time from passenger input to first video frame display shall not exceed 3 seconds.",
+    "Category": "Performance",
+    "Priority": "Medium",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-PER-003",
+    "Title": "UI Response Time",
+    "Statement": "The IFE passenger UI shall respond to any touch input within 100 ms (from touch release to visual feedback) under any concurrent content streaming load.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-PER-004",
+    "Title": "Concurrent HD Streams",
+    "Statement": "The Applications Server shall support simultaneous independent 1080p H.265 video streams to all seats on a wide-body aircraft (up to 400 seats) without buffering artefacts.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-PER-005",
+    "Title": "Storage Capacity",
+    "Statement": "The Applications Server shall provide a minimum of 8 TB of non-volatile storage for content hosting, expandable to 16 TB without hardware architecture change.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-PER-006",
+    "Title": "Video Codec Support",
+    "Statement": "The IFE video pipeline shall support hardware-accelerated decoding of H.264, H.265/HEVC, and AV1 video streams at resolutions up to 4K (3840×2160) at 30 fps.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SAF-001",
+    "Title": "Safety Video Priority",
+    "Statement": "The IFE system shall interrupt all passenger-selected content and display the safety demonstration video on all seat units upon command from the cabin crew panel, with a maximum delay of 2 seconds.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-SAF-002",
+    "Title": "Seatbelt Sign",
+    "Statement": "The IFE system shall receive the fasten-seatbelt signal from the aircraft systems bus and automatically display the seatbelt-on reminder graphic on all seat unit screens within 1 second.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-SAF-003",
+    "Title": "Emergency Lighting Control",
+    "Statement": "The IFE Cabin Management Unit shall interface with the Emergency Lighting Controller and shall relinquish all cabin lighting control authority immediately upon receiving the EMER signal.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-SAF-004",
+    "Title": "No Avionics Interference",
+    "Statement": "The IFE system shall not generate electromagnetic emissions that interfere with any avionics system during any phase of flight, as verified by DO-160G Section 20 and Section 21 testing.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SAF-005",
+    "Title": "Cabin Pressure Data",
+    "Statement": "The IFE system shall receive cabin altitude data from the aircraft pressurisation controller and display a passenger oxygen mask deployment advisory on all screens if cabin altitude exceeds 14,000 ft.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-SAF-006",
+    "Title": "Software Integrity Level",
+    "Statement": "IFE software components that interface with aircraft avionics buses (ARINC 429 readers) shall be developed and verified to DAL D in accordance with DO-178C.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-SAF-007",
+    "Title": "AES-256 Content Encryption",
+    "Statement": "All premium and DRM-protected content stored on the Applications Server shall be encrypted at rest using AES-256-GCM. Decryption keys shall be provisioned per-flight via secure ground link and purged at sector end.",
+    "Category": "Security",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-SAF-008",
+    "Title": "Secure Boot",
+    "Statement": "All IFE server and seat-unit software shall use a hardware-rooted secure boot chain. Any image with an invalid cryptographic signature shall be rejected and an alert logged before power-on completes.",
+    "Category": "Security",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SAF-009",
+    "Title": "Passenger Network Firewall",
+    "Statement": "The IFE system shall enforce a stateful packet inspection firewall between the passenger Wi-Fi network and the IFE content distribution network, blocking all traffic not explicitly permitted by the airline operator policy.",
+    "Category": "Security",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-SAF-010",
+    "Title": "Crew Rest Cabin Blackout",
+    "Statement": "The IFE system shall support a cockpit-initiated cabin blackout command that extinguishes all SDU screens and reading lights simultaneously within 2 seconds, without affecting cabin emergency exit signs.",
+    "Category": "Operational",
+    "Priority": "Medium",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  }
+]
