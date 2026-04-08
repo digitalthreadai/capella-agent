@@ -220,10 +220,18 @@ public class CapellaAgentPreferencePage extends PreferencePage implements IWorkb
             providerCombo.select(0); // default to Claude
         }
 
-        // API Key - load from secure storage for current provider
-        String apiKey = config.getApiKey(providerId);
-        if (apiKey != null && !apiKey.isEmpty()) {
-            apiKeyText.setText(apiKey);
+        // API Key — SECURITY (A5): never pre-populate the password field with
+        // the stored key. Even SWT.PASSWORD widgets keep the plaintext in the
+        // widget's internal buffer, and the value lingers in JVM heap dumps,
+        // screen-reader accessibility APIs, and copy/paste buffers. Show a
+        // placeholder hint instead; only write on performOk() if the user
+        // actually typed something.
+        String storedKey = config.getApiKey(providerId);
+        apiKeyText.setText("");
+        if (storedKey != null && !storedKey.isEmpty()) {
+            apiKeyText.setMessage("\u2022\u2022\u2022\u2022\u2022\u2022 (saved — leave blank to keep)");
+        } else {
+            apiKeyText.setMessage("Paste your API key");
         }
 
         // Model
@@ -328,9 +336,13 @@ public class CapellaAgentPreferencePage extends PreferencePage implements IWorkb
                     "Connection established but no response received.");
             }
         } catch (Exception e) {
+            // SECURITY (A3): do not echo raw exception messages — they can
+            // contain echoed prompts, stack frame data, or credential fragments
+            // leaked from the provider's error body. ErrorMessageFilter logs
+            // the full exception at SEVERE and returns a safe short string.
             MessageDialog.openError(getShell(), "Test Connection Failed",
                 "Could not connect to LLM provider.\n\n"
-                + "Error: " + e.getMessage());
+                + com.capellaagent.core.security.ErrorMessageFilter.safeUserMessage(e));
         }
     }
 }

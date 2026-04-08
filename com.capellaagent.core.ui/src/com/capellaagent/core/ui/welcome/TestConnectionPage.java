@@ -77,17 +77,37 @@ public class TestConnectionPage extends WizardPage {
                     // Quick ping — send a 1-token "ping" message using factory method
                     java.util.List<com.capellaagent.core.llm.LlmMessage> ping = java.util.List.of(
                         com.capellaagent.core.llm.LlmMessage.user("ping"));
-                    provider.sendMessages(ping, null, null);
+                    com.capellaagent.core.llm.LlmRequestConfig cfg =
+                        new com.capellaagent.core.llm.LlmRequestConfig(null, 0.1, 16, null);
+                    provider.chat(ping, java.util.Collections.emptyList(), cfg);
                     result = ConnectionTestResult.SUCCESS;
                 }
             } catch (Exception ex) {
-                String msg = ex.getMessage() != null ? ex.getMessage().toLowerCase() : "";
-                if (msg.contains("401") || msg.contains("auth") || msg.contains("key")) {
-                    result = ConnectionTestResult.FAILURE_AUTH;
-                } else if (msg.contains("connect") || msg.contains("timeout") || msg.contains("network")) {
-                    result = ConnectionTestResult.FAILURE_NETWORK;
-                } else {
-                    result = ConnectionTestResult.FAILURE_OTHER;
+                // SECURITY (A3): classify based on exception *type*, not raw
+                // getMessage() substring matching — message text can contain
+                // echoed prompts and credential fragments, and it's also
+                // fragile (a provider rewording "auth" breaks detection).
+                // ErrorMessageFilter logs the full exception at SEVERE.
+                com.capellaagent.core.security.ErrorMessageFilter.safeUserMessage(ex);
+                Throwable cursor = ex;
+                result = ConnectionTestResult.FAILURE_OTHER;
+                while (cursor != null) {
+                    if (cursor instanceof com.capellaagent.core.llm.LlmException le) {
+                        String code = le.getErrorCode();
+                        if (com.capellaagent.core.llm.LlmException.ERR_AUTHENTICATION.equals(code)) {
+                            result = ConnectionTestResult.FAILURE_AUTH;
+                        } else if (com.capellaagent.core.llm.LlmException.ERR_CONNECTION.equals(code)) {
+                            result = ConnectionTestResult.FAILURE_NETWORK;
+                        }
+                        break;
+                    }
+                    if (cursor instanceof java.net.UnknownHostException
+                            || cursor instanceof java.net.http.HttpTimeoutException
+                            || cursor instanceof java.io.IOException) {
+                        result = ConnectionTestResult.FAILURE_NETWORK;
+                        break;
+                    }
+                    cursor = cursor.getCause();
                 }
             }
             final ConnectionTestResult finalResult = result;
