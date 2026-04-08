@@ -13,7 +13,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.capellaagent.core.config.AgentConfiguration;
+import com.capellaagent.core.llm.AuthToken;
 import com.capellaagent.core.llm.ILlmProvider;
+import com.capellaagent.core.security.ProviderErrorExtractor;
 import com.capellaagent.core.llm.LlmException;
 import com.capellaagent.core.llm.LlmMessage;
 import com.capellaagent.core.llm.LlmRequestConfig;
@@ -164,8 +166,8 @@ public abstract class OpenAiCompatibleProvider implements ILlmProvider {
     public LlmResponse chat(List<LlmMessage> messages, List<IToolDescriptor> tools,
                              LlmRequestConfig config) throws LlmException {
 
-        String apiKey = AgentConfiguration.getInstance().getApiKey(getApiKeyId());
-        if (requiresApiKey() && (apiKey == null || apiKey.isBlank())) {
+        AuthToken apiKey = AgentConfiguration.getInstance().getApiKeyToken(getApiKeyId());
+        if (requiresApiKey() && !apiKey.isPresent()) {
             throw new LlmException(LlmException.ERR_AUTHENTICATION,
                     getDisplayName() + " API key not configured. "
                     + "Set it in Preferences > Capella Agent > LLM Provider.");
@@ -183,9 +185,9 @@ public abstract class OpenAiCompatibleProvider implements ILlmProvider {
                     .timeout(REQUEST_TIMEOUT)
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()));
 
-            // Auth header
-            if (apiKey != null && !apiKey.isBlank()) {
-                builder.header(getAuthHeaderName(), getAuthHeaderValue(apiKey));
+            // Auth header — call value() only here, at the point of immediate use.
+            if (apiKey.isPresent()) {
+                builder.header(getAuthHeaderName(), getAuthHeaderValue(apiKey.value()));
             }
 
             // Extra headers (provider-specific)
@@ -324,8 +326,12 @@ public abstract class OpenAiCompatibleProvider implements ILlmProvider {
                     getDisplayName() + " server error (HTTP " + statusCode + ")");
         }
         if (statusCode != 200) {
+            // SECURITY (A4): never embed the raw response body — it can
+            // echo prompts, requirement text, and credential fragments.
+            String code = ProviderErrorExtractor.extractErrorCode(responseBody);
             throw new LlmException(LlmException.ERR_INVALID_REQUEST,
-                    getDisplayName() + " returned HTTP " + statusCode + ": " + responseBody);
+                    getDisplayName() + " returned HTTP " + statusCode
+                    + (code != null ? " (" + code + ")" : ""));
         }
 
         try {
@@ -367,9 +373,12 @@ public abstract class OpenAiCompatibleProvider implements ILlmProvider {
         } catch (LlmException e) {
             throw e;
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to parse " + getDisplayName() + " response: " + responseBody, e);
+            // SECURITY (A4): never log full response body.
+            LOG.log(Level.SEVERE,
+                "Failed to parse " + getDisplayName() + " response (status=" + statusCode
+                + ", bodyLen=" + (responseBody == null ? 0 : responseBody.length()) + ")", e);
             throw new LlmException(LlmException.ERR_PARSE,
-                    "Failed to parse " + getDisplayName() + " response: " + e.getMessage(), e);
+                    "Failed to parse " + getDisplayName() + " response", e);
         }
     }
 }

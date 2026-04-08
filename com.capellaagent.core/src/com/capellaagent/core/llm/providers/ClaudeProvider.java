@@ -11,7 +11,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.capellaagent.core.config.AgentConfiguration;
+import com.capellaagent.core.llm.AuthToken;
 import com.capellaagent.core.llm.ILlmProvider;
+import com.capellaagent.core.security.ProviderErrorExtractor;
 import com.capellaagent.core.llm.LlmException;
 import com.capellaagent.core.llm.LlmMessage;
 import com.capellaagent.core.llm.LlmRequestConfig;
@@ -96,8 +98,8 @@ public class ClaudeProvider implements ILlmProvider {
     public LlmResponse chat(List<LlmMessage> messages, List<IToolDescriptor> tools,
                              LlmRequestConfig config) throws LlmException {
 
-        String apiKey = AgentConfiguration.getInstance().getApiKey("anthropic");
-        if (apiKey == null || apiKey.isBlank()) {
+        AuthToken apiKey = AgentConfiguration.getInstance().getApiKeyToken("anthropic");
+        if (!apiKey.isPresent()) {
             throw new LlmException(LlmException.ERR_AUTHENTICATION,
                     "Anthropic API key not configured. Set it in Agent preferences.");
         }
@@ -111,7 +113,7 @@ public class ClaudeProvider implements ILlmProvider {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(API_URL))
                     .header("Content-Type", "application/json")
-                    .header("x-api-key", apiKey)
+                    .header("x-api-key", apiKey.value())
                     .header("anthropic-version", ANTHROPIC_VERSION)
                     .timeout(REQUEST_TIMEOUT)
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
@@ -255,8 +257,13 @@ public class ClaudeProvider implements ILlmProvider {
                     "Anthropic API server error (HTTP " + statusCode + ")");
         }
         if (statusCode != 200) {
+            // SECURITY (A4): Do not embed raw response bodies in error messages.
+            // They contain echoed prompts, requirement text, and sometimes
+            // credential fragments. Expose only the provider error *code*.
+            String code = ProviderErrorExtractor.extractErrorCode(responseBody);
             throw new LlmException(LlmException.ERR_INVALID_REQUEST,
-                    "Anthropic API returned HTTP " + statusCode + ": " + responseBody);
+                    "Anthropic API returned HTTP " + statusCode
+                    + (code != null ? " (" + code + ")" : ""));
         }
 
         try {
@@ -288,9 +295,13 @@ public class ClaudeProvider implements ILlmProvider {
             return new LlmResponse(text, toolCalls, stopReason);
 
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to parse Anthropic response: " + responseBody, e);
+            // SECURITY (A4): Never log full response body — it can contain
+            // echoed prompts and user data. Log only status + length.
+            LOG.log(Level.SEVERE,
+                "Failed to parse Anthropic response (status=" + statusCode
+                + ", bodyLen=" + (responseBody == null ? 0 : responseBody.length()) + ")", e);
             throw new LlmException(LlmException.ERR_PARSE,
-                    "Failed to parse Anthropic API response: " + e.getMessage(), e);
+                    "Failed to parse Anthropic API response", e);
         }
     }
 }

@@ -252,8 +252,9 @@ public class OllamaProvider implements ILlmProvider {
                     "Ollama model not found. Pull it first with 'ollama pull <model>'.");
         }
         if (statusCode != 200) {
+            // SECURITY (A4): never embed raw response body in errors.
             throw new LlmException(LlmException.ERR_INVALID_REQUEST,
-                    "Ollama returned HTTP " + statusCode + ": " + responseBody);
+                    "Ollama returned HTTP " + statusCode);
         }
 
         try {
@@ -305,7 +306,10 @@ public class OllamaProvider implements ILlmProvider {
         } catch (LlmException e) {
             throw e;
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to parse Ollama response: " + responseBody, e);
+            // SECURITY (A4): never log full body.
+            LOG.log(Level.SEVERE,
+                "Failed to parse Ollama response (status=" + statusCode
+                + ", bodyLen=" + (responseBody == null ? 0 : responseBody.length()) + ")", e);
             throw new LlmException(LlmException.ERR_PARSE,
                     "Failed to parse Ollama response: " + e.getMessage(), e);
         }

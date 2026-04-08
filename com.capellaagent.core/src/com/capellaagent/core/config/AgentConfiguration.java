@@ -295,10 +295,33 @@ public final class AgentConfiguration {
     }
 
     /**
+     * Retrieves the API key for the specified LLM provider wrapped in an
+     * {@link com.capellaagent.core.llm.AuthToken}.
+     * <p>
+     * Prefer this over {@link #getApiKey(String)} in new code: the wrapper's
+     * {@code toString()} is redacted, so accidental logging
+     * ({@code LOG.info("key=" + token)}) can no longer leak the plaintext.
+     *
+     * @param providerId the provider ID (e.g., "anthropic", "openai")
+     * @return a non-null token; {@code token.isPresent()} is false if unset
+     */
+    public com.capellaagent.core.llm.AuthToken getApiKeyToken(String providerId) {
+        return com.capellaagent.core.llm.AuthToken.of(getApiKey(providerId));
+    }
+
+    /**
      * Stores the API key for the specified LLM provider in secure storage.
+     * <p>
+     * <b>Security sprint I9/N9:</b> on failure, this method now throws an
+     * unchecked exception so the caller (typically the preferences page)
+     * can surface the error to the user. Previously the failure was
+     * swallowed, which let users believe a key was saved when it had
+     * actually been lost — in the worst case leading them to paste the
+     * key into the chat as a fallback.
      *
      * @param providerId the provider ID
      * @param apiKey     the API key to store
+     * @throws RuntimeException if the key could not be persisted
      */
     public void setApiKey(String providerId, String apiKey) {
         try {
@@ -308,6 +331,9 @@ public final class AgentConfiguration {
             node.flush();
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to store API key for provider: " + providerId, e);
+            throw new RuntimeException(
+                "Failed to save API key to secure storage. "
+                + "Check your Eclipse secure storage master password and try again.", e);
         }
     }
 

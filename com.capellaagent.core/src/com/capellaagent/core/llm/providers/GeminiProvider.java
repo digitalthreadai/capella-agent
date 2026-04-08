@@ -11,7 +11,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.capellaagent.core.config.AgentConfiguration;
+import com.capellaagent.core.llm.AuthToken;
 import com.capellaagent.core.llm.ILlmProvider;
+import com.capellaagent.core.security.ProviderErrorExtractor;
 import com.capellaagent.core.llm.LlmException;
 import com.capellaagent.core.llm.LlmMessage;
 import com.capellaagent.core.llm.LlmRequestConfig;
@@ -65,8 +67,8 @@ public class GeminiProvider implements ILlmProvider {
     public LlmResponse chat(List<LlmMessage> messages, List<IToolDescriptor> tools,
                              LlmRequestConfig config) throws LlmException {
 
-        String apiKey = AgentConfiguration.getInstance().getApiKey("gemini");
-        if (apiKey == null || apiKey.isBlank()) {
+        AuthToken apiKey = AgentConfiguration.getInstance().getApiKeyToken("gemini");
+        if (!apiKey.isPresent()) {
             throw new LlmException(LlmException.ERR_AUTHENTICATION,
                     "Gemini API key not configured. Set it in Preferences > Capella Agent > LLM Provider.");
         }
@@ -74,13 +76,18 @@ public class GeminiProvider implements ILlmProvider {
         String model = (config.getModelId() != null && !config.getModelId().isBlank())
                 ? config.getModelId() : DEFAULT_MODEL;
 
-        String url = API_BASE + model + ":generateContent?key=" + apiKey;
+        // SECURITY (A1): Do NOT embed the API key in the URL query string.
+        // URLs are logged by proxies, written to browser history, and routinely
+        // leak into server access logs. Gemini accepts the key as an HTTP header
+        // (x-goog-api-key), which stays out of URL logs.
+        String url = API_BASE + model + ":generateContent";
         JsonObject requestBody = buildRequestBody(messages, tools, config);
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json")
+                    .header("x-goog-api-key", apiKey.value())
                     .timeout(REQUEST_TIMEOUT)
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
                     .build();
@@ -187,9 +194,12 @@ public class GeminiProvider implements ILlmProvider {
         int statusCode = httpResponse.statusCode();
         String responseBody = httpResponse.body();
 
+        // SECURITY (A4): never embed the raw response body in error messages.
+        String errorCode = ProviderErrorExtractor.extractErrorCode(responseBody);
         if (statusCode == 400) {
             throw new LlmException(LlmException.ERR_INVALID_REQUEST,
-                    "Gemini API bad request: " + responseBody);
+                    "Gemini API bad request"
+                    + (errorCode != null ? " (" + errorCode + ")" : ""));
         }
         if (statusCode == 403) {
             throw new LlmException(LlmException.ERR_AUTHENTICATION,
@@ -201,7 +211,8 @@ public class GeminiProvider implements ILlmProvider {
         }
         if (statusCode != 200) {
             throw new LlmException(LlmException.ERR_INVALID_REQUEST,
-                    "Gemini API returned HTTP " + statusCode + ": " + responseBody);
+                    "Gemini API returned HTTP " + statusCode
+                    + (errorCode != null ? " (" + errorCode + ")" : ""));
         }
 
         try {
@@ -245,9 +256,12 @@ public class GeminiProvider implements ILlmProvider {
         } catch (LlmException e) {
             throw e;
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to parse Gemini response: " + responseBody, e);
+            // SECURITY (A4): never log full response body.
+            LOG.log(Level.SEVERE,
+                "Failed to parse Gemini response (status=" + statusCode
+                + ", bodyLen=" + (responseBody == null ? 0 : responseBody.length()) + ")", e);
             throw new LlmException(LlmException.ERR_PARSE,
-                    "Failed to parse Gemini response: " + e.getMessage(), e);
+                    "Failed to parse Gemini response", e);
         }
     }
 }
