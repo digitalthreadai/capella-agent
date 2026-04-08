@@ -1,0 +1,380 @@
+[
+  {
+    "Req ID": "REQ-LDR-SYS-001",
+    "Title": "Detection Range",
+    "Statement": "The LIDAR system shall detect objects with a minimum radar cross-section equivalent to a passenger vehicle at a range of not less than 200 metres under clear atmospheric conditions (visibility > 10 km).",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-SYS-002",
+    "Title": "Field of View",
+    "Statement": "The LIDAR system shall provide a minimum horizontal field of view of 360° and a vertical field of view of ±15° relative to the horizontal mounting plane.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-SYS-003",
+    "Title": "Angular Resolution",
+    "Statement": "The LIDAR system shall achieve an angular resolution of ≤ 0.1° horizontally and ≤ 0.2° vertically across the full field of view at ranges up to 100 metres.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-SYS-004",
+    "Title": "Range Accuracy",
+    "Statement": "The LIDAR system shall measure target range with an accuracy of ±3 cm (1σ) for distances from 1 m to 100 m, and ±10 cm (1σ) for distances from 100 m to 200 m, under nominal temperature conditions.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-SYS-005",
+    "Title": "Point Cloud Rate",
+    "Statement": "The LIDAR system shall generate a full 360° point cloud at a minimum scan rate of 20 Hz, delivering at least 300,000 points per second across the complete field of view.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-SYS-006",
+    "Title": "Eye Safety",
+    "Statement": "The LIDAR system shall operate at laser emission levels classified as Class 1 eye-safe in accordance with IEC 60825-1:2014 under all operating conditions, including fault states.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-SYS-007",
+    "Title": "Operating Temperature",
+    "Statement": "The LIDAR system shall maintain specified detection and accuracy performance across an operating ambient temperature range of -40°C to +85°C without requiring active cooling.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-SYS-008",
+    "Title": "ISO 26262 Safety Integrity",
+    "Statement": "LIDAR processing functions that feed ADAS path planning shall be classified and developed to ASIL-B in accordance with ISO 26262, with FMEA and FTA provided as part of the safety case.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-SCAN-001",
+    "Title": "Laser Wavelength",
+    "Statement": "The LIDAR scanning subsystem shall use a laser wavelength of 905 nm or 1550 nm. The selected wavelength shall be consistent across all beam emitters in the array to avoid inter-channel interference.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-SCAN-002",
+    "Title": "Scanning Mechanism",
+    "Statement": "The LIDAR scanning mechanism shall complete a full 360° azimuthal scan within 50 ms using a solid-state, MEMS, or rotating mirror architecture. The chosen mechanism shall have no single-point mechanical failure that disables more than 90° of the FOV.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-SCAN-003",
+    "Title": "Multi-Return Detection",
+    "Statement": "The scanning subsystem shall support at least 3 returns per laser pulse to enable detection of partially occluded objects (e.g. pedestrian behind a fence) and atmospheric scattering characterisation.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-SCAN-004",
+    "Title": "Beam Divergence",
+    "Statement": "Each laser beam emitter shall have a beam divergence of ≤ 3 mrad (full angle) to maintain angular resolution performance at maximum detection range.",
+    "Category": "Performance",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-DET-001",
+    "Title": "Minimum Detectable Reflectivity",
+    "Statement": "The detection subsystem shall detect targets with a Lambertian reflectivity of ≥ 10% (equivalent to a dark asphalt road surface) at a minimum range of 80 metres.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-DET-002",
+    "Title": "False Positive Rate",
+    "Statement": "The detection subsystem shall produce fewer than 1 false positive detection per 10,000 scan frames under clear atmospheric conditions on a representative open-road driving dataset.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-DET-003",
+    "Title": "Adverse Weather Performance",
+    "Statement": "The LIDAR shall maintain object detection at a minimum range of 50 metres in rain with an intensity of up to 50 mm/hr and in fog with a meteorological optical range down to 100 metres.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-DET-004",
+    "Title": "Sunlight Immunity",
+    "Statement": "The receiver optical subsystem shall incorporate background light rejection such that direct solar illumination at the sensor aperture does not degrade detection performance by more than 10% relative to night-time operation.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-DET-005",
+    "Title": "Interference Rejection",
+    "Statement": "The LIDAR system shall not produce false detections or suffer range degradation when operating in proximity to up to 5 other LIDAR systems emitting at the same wavelength within a 20-metre radius.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-PROC-001",
+    "Title": "Processing Latency",
+    "Statement": "The LIDAR processing pipeline shall produce a labelled point cloud output, including object detection bounding boxes and classification labels, with an end-to-end latency of ≤ 50 ms from the midpoint of the scan frame.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-PROC-002",
+    "Title": "Object Classification",
+    "Statement": "The perception algorithm shall classify detected objects into at minimum the following categories: pedestrian, cyclist, passenger vehicle, truck/van, motorcycle, stationary obstacle, and road surface, with a classification accuracy ≥ 92% at 50 m range in clear conditions.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-PROC-003",
+    "Title": "Velocity Estimation",
+    "Statement": "The processing pipeline shall estimate the 3D velocity vector of each tracked object using scan-to-scan point cloud association, with a velocity accuracy of ±0.5 m/s (1σ) for objects moving at up to 120 km/h.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-PROC-004",
+    "Title": "Free Space Estimation",
+    "Statement": "The LIDAR processing system shall output a drivable free-space boundary polygon at 20 Hz, encompassing all directions within the sensor field of view, for consumption by the path planning module.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-PROC-005",
+    "Title": "Processing Hardware Platform",
+    "Statement": "Point cloud processing shall execute on an embedded SoC or FPGA platform with a maximum power draw of 15 W TDP, without requiring an external workstation or GPU.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-CALIB-001",
+    "Title": "Factory Calibration",
+    "Statement": "Each LIDAR unit shall be factory-calibrated to an angular accuracy of ≤ 0.05° and a range bias of ≤ 5 mm before delivery. Calibration certificates shall be stored in non-volatile memory on the unit.",
+    "Category": "Operational",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-CALIB-002",
+    "Title": "In-Field Self-Calibration",
+    "Statement": "The LIDAR system shall perform continuous self-calibration using ground plane returns and static environment features, correcting sensor-to-vehicle extrinsic calibration drift of up to 0.5° without requiring a workshop visit.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-CALIB-003",
+    "Title": "Multi-Sensor Synchronisation",
+    "Statement": "The LIDAR system shall synchronise its scan frame timestamps with the vehicle's IEEE 1588v2 (PTP) hardware clock to an accuracy of ≤ 1 µs for data fusion with camera and radar sensors.",
+    "Category": "Interface",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-COMMS-001",
+    "Title": "Output Interface",
+    "Statement": "The LIDAR system shall transmit point cloud data and perception outputs over a 1000BASE-T1 automotive Ethernet interface (OPEN Alliance TC10) using UDP with a maximum frame transmission latency of 1 ms.",
+    "Category": "Interface",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-COMMS-002",
+    "Title": "Data Format",
+    "Statement": "Point cloud data shall be encoded in the PCAP or MCAP format with each point record containing: X, Y, Z (metres), intensity (8-bit), return number, ring ID, and GPS timestamp.",
+    "Category": "Interface",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-COMMS-003",
+    "Title": "ROS 2 Driver",
+    "Statement": "The LIDAR manufacturer shall provide a certified ROS 2 Humble driver publishing to sensor_msgs/PointCloud2 and a custom perception_msgs/ObjectList topic at the native scan rate.",
+    "Category": "Interface",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-COMMS-004",
+    "Title": "Health Status Reporting",
+    "Statement": "The LIDAR unit shall continuously broadcast a health status message over the vehicle CAN or Ethernet bus at 1 Hz, including: laser power level, internal temperature, rotation speed (if applicable), and diagnostic fault flags.",
+    "Category": "Operational",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-POWER-001",
+    "Title": "Power Supply",
+    "Statement": "The LIDAR unit shall operate from a nominal 12 V vehicle supply rail (9 V to 16 V operating range) with a maximum steady-state current draw of 3.5 A, and shall tolerate 12 V load dump transients as defined in ISO 7637-2 Pulse 5a.",
+    "Category": "Electrical",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-POWER-002",
+    "Title": "Power-On Readiness",
+    "Statement": "The LIDAR system shall reach full operational scan output within 30 seconds of power being applied from cold start at -40°C.",
+    "Category": "Operational",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-MOUNT-001",
+    "Title": "Mechanical Interface",
+    "Statement": "The LIDAR unit mounting interface shall conform to a standardised 4-bolt flange pattern on a 50 mm PCD to allow interchangeability between approved vendor units without vehicle body modification.",
+    "Category": "Interface",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-MOUNT-002",
+    "Title": "Vibration Resistance",
+    "Statement": "The LIDAR assembly shall withstand automotive random vibration profiles as defined in ISO 16750-3 Category III (engine compartment) without degradation in range accuracy or angular calibration.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-MOUNT-003",
+    "Title": "Ingress Protection",
+    "Statement": "The LIDAR enclosure shall achieve a minimum ingress protection rating of IP67 per IEC 60529, allowing full immersion in water up to 1 m depth for 30 minutes without ingress affecting performance.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-MOUNT-004",
+    "Title": "Window Contamination Detection",
+    "Statement": "The LIDAR system shall detect contamination (mud, ice, condensation) on the protective optical window that degrades detection performance by more than 20%, and shall transmit a 'Window Blocked' fault flag within 2 scan cycles of detection.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-ENV-001",
+    "Title": "Storage Temperature",
+    "Statement": "The LIDAR unit shall survive storage at temperatures from -55°C to +105°C without requiring re-calibration upon return to operating temperature range.",
+    "Category": "Reliability",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-ENV-002",
+    "Title": "Humidity Resistance",
+    "Statement": "The LIDAR system shall operate without performance degradation at relative humidity levels up to 95% non-condensing at 40°C, in accordance with ISO 16750-4.",
+    "Category": "Reliability",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-SAFE-001",
+    "Title": "Fail-Safe Output",
+    "Statement": "Upon detection of any internal fault that could degrade detection coverage by more than 10%, the LIDAR shall set a LIDAR_DEGRADED flag in its status output and continue operating in a reduced-confidence mode rather than shutting down, unless the fault is laser-safety critical.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-SAFE-002",
+    "Title": "Laser Shutdown on Fault",
+    "Statement": "If any hardware fault in the laser driver circuit results in a condition that would cause emission levels to exceed Class 1 limits, the system shall perform a hardware-enforced laser shutdown within 1 ms independent of software.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-CERT-001",
+    "Title": "UN ECE R151 Compliance",
+    "Statement": "LIDAR systems used for ADAS functions requiring type approval shall comply with UNECE Regulation No. 151 (ACSF Category C and above) performance and data recording requirements.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-LDR-CERT-002",
+    "Title": "EMC — Automotive Standard",
+    "Statement": "The LIDAR unit shall comply with CISPR 25 Class 5 radiated emission limits and ISO 11452-2 RF immunity requirements across the 30 MHz to 2.5 GHz frequency range.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-LDR-CERT-003",
+    "Title": "MTBF",
+    "Statement": "The LIDAR unit shall demonstrate a Mean Time Between Failures of not less than 100,000 operating hours, validated by accelerated life testing in accordance with MIL-HDBK-217.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  }
+]

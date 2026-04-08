@@ -1,0 +1,335 @@
+[
+  {
+    "Req ID": "REQ-BRK-SYS-001",
+    "Title": "Stopping Distance — Dry Road",
+    "Statement": "The brake system shall bring the vehicle to a complete stop from 100 km/h on a dry asphalt surface (peak friction coefficient μ ≥ 0.9) within 36 metres, measured from the point of initial brake pedal contact, in compliance with FMVSS 135.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-SYS-002",
+    "Title": "Stopping Distance — Wet Road",
+    "Statement": "The brake system shall bring the vehicle to a complete stop from 80 km/h on a wet asphalt surface (peak friction coefficient μ ≥ 0.45) within 55 metres, measured from the point of initial brake pedal contact.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-SYS-003",
+    "Title": "ISO 26262 ASIL-D for ABS ECU",
+    "Statement": "The Anti-lock Braking System Electronic Control Unit shall be developed and verified to Automotive Safety Integrity Level D (ASIL-D) in accordance with ISO 26262-5 for hardware and ISO 26262-6 for software.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-SYS-004",
+    "Title": "Brake Fade Resistance",
+    "Statement": "After 10 successive full-stop brake applications from 100 km/h at 30-second intervals, the brake system stopping distance shall not increase by more than 20% compared to the first application.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-SYS-005",
+    "Title": "Brake System Availability",
+    "Statement": "The primary hydraulic brake circuit shall maintain braking capability following a single-point failure in any one hydraulic circuit, providing at least 50% of nominal deceleration force on the remaining circuit.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-SYS-006",
+    "Title": "Pedal Feel and Travel",
+    "Statement": "Under normal braking conditions, the brake pedal shall not travel more than 115 mm from the at-rest position to achieve full system pressure. Pedal effort at maximum deceleration shall not exceed 500 N.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-SYS-007",
+    "Title": "Warning Lamp Activation",
+    "Statement": "The brake system shall illuminate the brake warning lamp on the instrument cluster within 2 seconds of detecting any of the following: low brake fluid level, hydraulic pressure loss in either circuit, or loss of ABS/ESC ECU communication.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-SYS-008",
+    "Title": "Operating Temperature Range",
+    "Statement": "All brake system components shall operate within specification across an ambient temperature range of -40°C to +85°C for electronics and -40°C to +400°C for brake disc and caliper assemblies.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-HYD-001",
+    "Title": "Dual-Circuit Hydraulic Layout",
+    "Statement": "The hydraulic brake circuit shall be configured in a diagonal split (X-split) layout, with each circuit serving one front wheel and the diagonally opposite rear wheel, ensuring deceleration is maintained upon loss of either circuit.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-HYD-002",
+    "Title": "Master Cylinder Pressure",
+    "Statement": "The brake master cylinder shall generate a maximum hydraulic line pressure of 170 bar under panic braking (pedal force ≥ 450 N), measured at the ABS modulator inlet port.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-HYD-003",
+    "Title": "Hydraulic Fluid Specification",
+    "Statement": "The brake hydraulic system shall be designed for DOT 4 glycol-ether brake fluid with a dry boiling point of at least 230°C and a wet boiling point of at least 155°C.",
+    "Category": "Compliance",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-HYD-004",
+    "Title": "Vacuum Brake Booster",
+    "Statement": "The vacuum brake booster shall provide a minimum boost ratio of 4:1 at an inlet vacuum of 600 mbar, and shall maintain at least two full-power brake applications following engine stall without engine vacuum assist.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-HYD-005",
+    "Title": "Brake Line Burst Pressure",
+    "Statement": "All hydraulic brake lines and fittings shall withstand a hydrostatic burst pressure of not less than 700 bar without rupture or permanent deformation, as verified by component qualification testing.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-ABS-001",
+    "Title": "ABS Activation Threshold",
+    "Statement": "The Anti-lock Braking System shall detect incipient wheel lock-up by monitoring individual wheel deceleration and shall activate pressure modulation within 15 ms of the wheel slip ratio exceeding 15%.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-ABS-002",
+    "Title": "ABS Wheel Speed Sensor Accuracy",
+    "Statement": "The wheel speed sensors shall provide speed measurements accurate to within ±0.5 km/h across the vehicle speed range of 5 km/h to 250 km/h, at signal update rates of not less than 100 Hz.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-ABS-003",
+    "Title": "ABS Steering Retention",
+    "Statement": "During ABS intervention, the system shall retain sufficient steering authority to allow the driver to navigate around obstacles while maintaining maximum achievable deceleration.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-ABS-004",
+    "Title": "ABS Deactivation Conditions",
+    "Statement": "The ABS system shall automatically deactivate and revert to standard braking at vehicle speeds below 5 km/h to avoid excessive brake torque oscillation at near-stop conditions.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-ABS-005",
+    "Title": "ABS ECU Fault Detection",
+    "Statement": "The ABS ECU shall perform a self-diagnostic cycle at every ignition-on event. Any detected fault in a wheel speed sensor, solenoid valve, or ECU internal memory shall be stored as a DTC and reported over CAN within 500 ms.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-EBD-001",
+    "Title": "Electronic Brake-Force Distribution",
+    "Statement": "The EBD function shall dynamically apportion braking force between front and rear axles based on measured vehicle deceleration, maintaining rear wheel slip ratio below front wheel slip ratio under all loading conditions.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-EBD-002",
+    "Title": "EBD Load Adaptation",
+    "Statement": "The EBD function shall adapt brake-force distribution in response to changes in vehicle laden mass from kerb weight to maximum permissible gross vehicle mass without requiring driver input.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-ESC-001",
+    "Title": "Electronic Stability Control Yaw Correction",
+    "Statement": "The ESC system shall detect vehicle yaw rate deviation exceeding 5 deg/s from the driver-intended path and apply selective individual wheel braking within 20 ms to restore directional stability.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-ESC-002",
+    "Title": "ESC Traction Control Integration",
+    "Statement": "The ESC controller shall share wheel speed sensor data, yaw rate sensor, and lateral accelerometer inputs with the Traction Control System via a shared CAN message. Data refresh cycle shall not exceed 10 ms.",
+    "Category": "Interface",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-ESC-003",
+    "Title": "ESC UN Regulation R13-H Compliance",
+    "Statement": "The Electronic Stability Control system shall comply with UNECE Regulation No. 13-H for passenger vehicles, as mandatory for all markets of vehicle sale.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-PARK-001",
+    "Title": "Electric Parking Brake Hold Force",
+    "Statement": "The Electric Parking Brake shall generate a clamping force sufficient to hold the vehicle stationary on a 30% gradient (16.7°) at maximum permissible gross vehicle mass under both nose-up and nose-down orientations.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-PARK-002",
+    "Title": "Auto Park Apply",
+    "Statement": "The EPB system shall automatically apply the parking brake when the vehicle ignition is switched off with the transmission in park or neutral, vehicle stationary, and driver door open, completing application within 1 second.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-PARK-003",
+    "Title": "Emergency Braking via EPB",
+    "Statement": "When activated by the driver at vehicle speed above 10 km/h, the EPB shall apply a progressive ramp of rear axle braking force to achieve deceleration of not less than 3.0 m/s², without triggering ESC intervention.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-SENS-001",
+    "Title": "Wheel Speed Sensor Type",
+    "Statement": "All four wheel speed sensors shall use active magnetoresistive technology providing a digital frequency output signal from 0 km/h (active standstill detection) with a minimum air gap tolerance of 0 to 2.5 mm.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-SENS-002",
+    "Title": "Yaw Rate and Lateral g Sensor",
+    "Statement": "The combined yaw rate and lateral acceleration sensor shall measure yaw rate over ±100 deg/s and lateral acceleration over ±1.5 g with a resolution of 0.1 deg/s and 0.01 g respectively, at an output rate of 100 Hz.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-SENS-003",
+    "Title": "Brake Fluid Level Sensor",
+    "Statement": "The master cylinder reservoir shall incorporate a fluid level sensor that triggers a warning flag on the CAN bus within 500 ms of the fluid level dropping below the minimum mark.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-SENS-004",
+    "Title": "Brake Wear Indicator",
+    "Statement": "A contact-type brake pad wear indicator shall be fitted to the inner pad of each front axle. The indicator shall trigger a warning CAN signal when pad thickness reaches 2.5 mm (approximately 20% remaining life).",
+    "Category": "Operational",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-COMMS-001",
+    "Title": "CAN Bus Interface",
+    "Statement": "The ABS/ESC ECU shall communicate with the Engine Management, Transmission Control, and Body Control Module ECUs over a dedicated chassis CAN bus operating at 500 kbit/s, conforming to ISO 11898-2.",
+    "Category": "Interface",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-COMMS-002",
+    "Title": "OBD-II Diagnostic Access",
+    "Statement": "The brake system ECU shall expose all fault codes, live data parameters, and calibration functions via the OBD-II diagnostic port using ISO 15765-4 (CAN) transport protocol, compliant with SAE J1979.",
+    "Category": "Compliance",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-COMMS-003",
+    "Title": "Brake Signal to ADAS",
+    "Statement": "The ABS/ESC ECU shall transmit a 'Brakes Active' boolean flag and current estimated deceleration value to the ADAS Domain Controller over the chassis CAN bus at a cycle time of 10 ms.",
+    "Category": "Interface",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-CERT-001",
+    "Title": "FMVSS 135 Certification",
+    "Statement": "The complete brake system shall pass all tests defined in FMVSS 135 (Light Vehicle Brake Systems), including fade, recovery, spike, and cold effectiveness tests, before series production release.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-BRK-CERT-002",
+    "Title": "Corrosion Protection",
+    "Statement": "All external brake system metallic components, including calipers, brackets, and hydraulic lines, shall withstand 240 hours of neutral salt spray testing (ISO 9227) without base metal corrosion that impairs function.",
+    "Category": "Reliability",
+    "Priority": "Medium",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-CERT-003",
+    "Title": "Electromagnetic Compatibility",
+    "Statement": "The ABS/ESC ECU and all associated wiring harnesses shall comply with ISO 11452 (component-level RF immunity) and CISPR 25 (radiated emissions) for automotive applications.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-BRK-CERT-004",
+    "Title": "Brake System Service Life",
+    "Statement": "The brake master cylinder, ABS modulator, and ESC ECU shall have a designed service life of not less than 200,000 km or 15 years (whichever occurs first) under normal vehicle usage profiles.",
+    "Category": "Reliability",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  }
+]

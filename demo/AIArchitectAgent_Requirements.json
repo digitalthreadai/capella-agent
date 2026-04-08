@@ -1,0 +1,344 @@
+[
+  {
+    "Req ID": "REQ-AIA-SYS-001",
+    "Title": "Requirements Ingestion",
+    "Statement": "The AI Architecture Agent shall ingest natural-language software requirements provided as free-form text, structured documents (ReqIF, Word, Excel), or API payloads, and produce a normalised internal requirements model without loss of semantic content.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-SYS-002",
+    "Title": "Architecture Proposal Generation",
+    "Statement": "Given an ingested requirements model, the AI Architecture Agent shall generate a candidate software architecture comprising components, interfaces, data flows, and deployment topology within 120 seconds for requirements sets of up to 500 items.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-SYS-003",
+    "Title": "Human-in-the-Loop Confirmation",
+    "Statement": "The agent shall not apply any persistent change to an architecture model without first presenting a diff preview and receiving explicit written confirmation ('yes', 'apply', or 'proceed') from an authorised human reviewer.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-SYS-004",
+    "Title": "Multi-Level Architecture Output",
+    "Statement": "Architecture proposals shall be expressed at System, Logical, and Physical levels following the ARCADIA method, with explicit allocation links between each level of abstraction.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-SYS-005",
+    "Title": "Requirement Traceability Coverage",
+    "Statement": "Every proposed architecture element shall trace to at least one source requirement. The agent shall flag any requirement that has no corresponding architecture element and present it as a gap for human resolution.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-SYS-006",
+    "Title": "Session Context Window",
+    "Statement": "The agent shall maintain coherent multi-turn conversation context for sessions lasting up to 4 hours and containing up to 200 user messages without degradation in architecture proposal consistency.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-SYS-007",
+    "Title": "Explainability",
+    "Statement": "For every architecture decision made, the agent shall provide a human-readable rationale citing the specific requirement IDs, design patterns, and trade-off criteria that motivated the decision.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-SYS-008",
+    "Title": "Undo and Rollback",
+    "Statement": "Any applied architecture change shall be reversible via a single undo operation that restores the model to its exact pre-change state. Undo history shall be preserved for the duration of the user session.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-NLP-001",
+    "Title": "Requirement Extraction Accuracy",
+    "Statement": "The NLP requirements parser shall extract individual atomic requirements from unstructured text with a precision of ≥ 0.90 and recall of ≥ 0.85, measured against a curated benchmark corpus of 2,000 labelled requirements.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-NLP-002",
+    "Title": "Ambiguity Detection",
+    "Statement": "The NLP pipeline shall detect linguistically ambiguous requirements (e.g. vague quantifiers, passive constructions without a subject, undefined acronyms) and flag them with a structured warning message before architecture generation proceeds.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-NLP-003",
+    "Title": "Requirement Classification",
+    "Statement": "Each parsed requirement shall be automatically classified into one of the following categories: Functional, Performance, Safety, Security, Reliability, Compliance, Interface, or Operational, with a classification confidence score reported alongside.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-NLP-004",
+    "Title": "Duplicate Detection",
+    "Statement": "The agent shall detect semantically equivalent or conflicting requirements across an ingested set and notify the user before architecture generation, including the IDs and text of the suspected duplicates or conflicts.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-NLP-005",
+    "Title": "Multilingual Requirements Input",
+    "Statement": "The NLP pipeline shall accept requirements written in English, German, French, and Japanese, normalising them to English for internal processing while preserving the original language in the source record.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-AGENT-001",
+    "Title": "Tool-Use Chain Length",
+    "Statement": "The agent shall support autonomous tool-call chains of up to 40 sequential steps per user turn when executing multi-phase architecture workflows (read requirements → gap analysis → propose → validate → stage).",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-AGENT-002",
+    "Title": "Hallucination Prevention",
+    "Statement": "The agent shall never invent element identifiers (UUIDs), requirement IDs, or model element names. All identifiers cited in tool calls or responses must originate from tool results returned in the same session.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-AGENT-003",
+    "Title": "Proposal Batch Size Limit",
+    "Statement": "The agent shall propose at most 5 new architecture elements per conversation turn. If more elements are required, it shall pause and ask the user to confirm before continuing to the next batch.",
+    "Category": "Operational",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-AGENT-004",
+    "Title": "Read Before Write",
+    "Statement": "Before proposing any new element, the agent shall call the model read tools (list_elements, list_requirements) to verify current model state. Proposals shall never be based on assumed or remembered state.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-AGENT-005",
+    "Title": "Mode Switching",
+    "Statement": "The agent shall support switching between operating modes (General, Requirements Analyst, Architect, Sustainment) within a session. Each mode switch shall fork a new conversation context without mutating the prior session's history.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-VALID-001",
+    "Title": "Parent UUID Existence Check",
+    "Statement": "Before staging any create-element proposal, the agent shall verify that the proposed parent element UUID resolves to a real model element via get_element_details. Any proposal with an unresolved parent UUID shall be rejected with a clear error.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-VALID-002",
+    "Title": "Layer-Type Containment Legality",
+    "Statement": "The architecture validation function shall enforce ARCADIA containment rules: a LogicalComponent may not be proposed under a PhysicalComponent, and a SystemFunction may not be proposed under a LogicalFunction. Illegal proposals shall be rejected before staging.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-VALID-003",
+    "Title": "Architecture Quality Metrics",
+    "Statement": "For each proposed architecture, the agent shall compute and report: average afferent coupling per component, maximum fan-out, decomposition balance ratio, and naming convention compliance percentage.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-VALID-004",
+    "Title": "Alternative Comparison",
+    "Statement": "When requested, the agent shall generate up to 3 alternative architecture candidates for the same requirement set and present a structured trade-off table comparing coupling, complexity, requirement coverage, and reuse potential.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-COLLAB-001",
+    "Title": "Export to Capella",
+    "Statement": "Approved architecture proposals shall be applied to the open Eclipse Capella MBSE model via the Capella EMF API, creating or modifying model elements within a single transactional Recording Command to support atomic undo.",
+    "Category": "Interface",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-COLLAB-002",
+    "Title": "ReqIF Export",
+    "Statement": "The agent shall export the final requirements model with traceability links to a standards-compliant ReqIF 1.0 file importable by Capella, IBM DOORS, PTC Integrity, and Siemens Polarion.",
+    "Category": "Interface",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-COLLAB-003",
+    "Title": "Chat History Export",
+    "Statement": "Users shall be able to export the full agent conversation history, including tool calls and results, to an HTML file preserving all formatting, code blocks, and diff previews for audit and review purposes.",
+    "Category": "Operational",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-SEC-001",
+    "Title": "API Key Storage",
+    "Statement": "LLM provider API keys entered by the user shall be stored in the host operating system's secure credential store (Windows Credential Manager, macOS Keychain, or Linux SecretService) and shall never be written to plain-text configuration files.",
+    "Category": "Security",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-AIA-SEC-002",
+    "Title": "Model Data Isolation",
+    "Statement": "Architecture model data, requirement text, and project names shall not be transmitted to any third-party service other than the configured LLM inference endpoint. No telemetry, analytics, or training data collection shall occur without explicit opt-in by the user.",
+    "Category": "Security",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-SEC-003",
+    "Title": "LLM Provider Authentication",
+    "Statement": "All requests to the LLM inference API shall be authenticated via TLS 1.3 or higher with server certificate validation. Certificate pinning shall be configurable for enterprise environments with private CA infrastructure.",
+    "Category": "Security",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-AIA-SEC-004",
+    "Title": "Offline / Air-Gapped Mode",
+    "Statement": "The agent shall support fully offline operation using locally hosted Ollama-compatible LLM endpoints, with no mandatory internet connectivity required for core architecture generation functionality.",
+    "Category": "Security",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-AUDIT-001",
+    "Title": "Audit Log",
+    "Statement": "All architecture proposals, approvals, rejections, and model write operations shall be recorded to a tamper-evident structured audit log including timestamp, user identity, session ID, and the full diff applied.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-AUDIT-002",
+    "Title": "Token Usage Metering",
+    "Statement": "The agent shall track LLM token consumption per session, per user, and per project, and report input and output token counts in the UI status bar and in the exported audit log.",
+    "Category": "Operational",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-AUDIT-003",
+    "Title": "Proposal TTL Enforcement",
+    "Statement": "A staged architecture diff proposal shall expire automatically 10 minutes after creation. Any attempt to apply an expired proposal shall be rejected with a clear error message directing the user to re-generate.",
+    "Category": "Safety",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-PERF-001",
+    "Title": "UI Input Responsiveness",
+    "Statement": "The agent UI shall accept and echo user text input within 50 ms of keystroke. Slash command autocomplete suggestions shall appear within 100 ms of the '/' character being typed.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-AIA-PERF-002",
+    "Title": "LLM First Token Latency",
+    "Statement": "The time from user message submission to the first streaming token appearing in the chat view shall not exceed 3 seconds for Claude and OpenAI providers under normal network conditions.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "System",
+    "Traced Element Type": "SystemFunction"
+  },
+  {
+    "Req ID": "REQ-AIA-PERF-003",
+    "Title": "Memory Footprint",
+    "Statement": "The agent Eclipse plugin shall not increase the Capella workbench heap usage by more than 256 MB during idle state and no more than 512 MB during an active architecture generation session with a 500-requirement dataset.",
+    "Category": "Performance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-AIA-INTG-001",
+    "Title": "Multi-Provider LLM Support",
+    "Statement": "The agent shall support at minimum the following LLM inference providers without requiring code changes: Anthropic Claude, OpenAI GPT, Google Gemini, Mistral, Groq, and local Ollama. Provider selection shall be configurable in the preferences dialog.",
+    "Category": "Functional",
+    "Priority": "High",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalComponent"
+  },
+  {
+    "Req ID": "REQ-AIA-INTG-002",
+    "Title": "Capella Version Compatibility",
+    "Statement": "The agent plugin shall be compatible with Eclipse Capella versions 6.0 and 7.0, running on Java 17 or later, without requiring modifications to the Capella platform installation.",
+    "Category": "Compliance",
+    "Priority": "High",
+    "Capella Layer": "Physical",
+    "Traced Element Type": "PhysicalComponent"
+  },
+  {
+    "Req ID": "REQ-AIA-INTG-003",
+    "Title": "Tool Registry Extensibility",
+    "Statement": "Third-party developers shall be able to register additional agent tools via an Eclipse extension point without modifying the core agent bundle, following the tool descriptor interface contract.",
+    "Category": "Functional",
+    "Priority": "Medium",
+    "Capella Layer": "Logical",
+    "Traced Element Type": "LogicalComponent"
+  }
+]
