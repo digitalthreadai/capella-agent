@@ -6,6 +6,8 @@
 [![Eclipse Capella 7.0](https://img.shields.io/badge/Capella-7.0-green.svg)](https://www.eclipse.org/capella/)
 [![License: EPL-2.0](https://img.shields.io/badge/License-EPL--2.0-orange.svg)](https://www.eclipse.org/legal/epl-2.0/)
 
+**[Documentation](https://digitalthreadai.github.io/capella-agent/)** · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+
 ## Why This Exists
 
 Systems engineers working in Capella spend significant time on repetitive model queries, cross-tool traceability lookups, manual data exports, and context-switching between simulation tools. Capella Agent places AI assistants directly inside the Capella workbench so you can ask questions about your model in natural language, run architecture analysis, export reports, automate ARCADIA layer transitions, import PLM data from Teamcenter, and run what-if simulations -- all without leaving Eclipse.
