@@ -36,7 +36,7 @@ public class CoverageDashboardTool extends AbstractCapellaTool {
             + "and lists the IDs of untraced requirements.";
 
     public CoverageDashboardTool() {
-        super(TOOL_NAME, DESCRIPTION, ToolCategory.MODEL_READ);
+        super(TOOL_NAME, DESCRIPTION, ToolCategory.REQUIREMENTS);
     }
 
     @Override
@@ -104,13 +104,18 @@ public class CoverageDashboardTool extends AbstractCapellaTool {
         }
     }
 
-    /** Returns true if the requirement has at least one child that is a trace relation. */
+    /**
+     * Returns true if the requirement has at least one containment-owned child
+     * that is a trace relation with a non-null target reference.
+     * <p>
+     * Only checks containment-owned children to avoid false positives from
+     * cross-reference metamodel edges that are not user-created trace links.
+     */
     private boolean hasTraceLink(EObject requirement) {
-        // Check owned children for relation objects
         for (EObject child : requirement.eContents()) {
             String cn = child.eClass().getName();
             if (cn.contains("Relation") || cn.contains("Link") || cn.contains("Trace")) {
-                // Check it has a non-null target reference
+                // Verify the relation points to at least one non-null non-self target
                 for (EReference ref : child.eClass().getEAllReferences()) {
                     if (ref.isContainment()) continue;
                     try {
@@ -119,19 +124,6 @@ public class CoverageDashboardTool extends AbstractCapellaTool {
                         if (val instanceof List<?> list && !list.isEmpty()) return true;
                     } catch (Exception ignored) {}
                 }
-            }
-        }
-        // Also check non-containment refs on the requirement itself
-        for (EReference ref : requirement.eClass().getEAllReferences()) {
-            if (ref.isContainment()) continue;
-            String refName = ref.getName();
-            if (refName != null && (refName.contains("linked") || refName.contains("trace")
-                    || refName.contains("related") || refName.contains("satisfy"))) {
-                try {
-                    Object val = requirement.eGet(ref);
-                    if (val instanceof EObject) return true;
-                    if (val instanceof List<?> list && !list.isEmpty()) return true;
-                } catch (Exception ignored) {}
             }
         }
         return false;

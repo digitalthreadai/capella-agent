@@ -461,6 +461,7 @@ public class ModelChatView extends ViewPart {
                 message,
                 selectedProvider,
                 selectedProject,
+                currentMode,
                 this::appendAssistantMessage,
                 this::appendToolNotification,
                 () -> {
@@ -469,7 +470,7 @@ public class ModelChatView extends ViewPart {
                 },
                 (toolName, category, fullResult) -> {
                     String html = renderer.renderToolResult(category, toolName, fullResult);
-                    String escapedHtml = renderer.escapeJs(html);
+                    String escapedHtml = sanitizeAndEscapeForAppend(html);
                     Display.getDefault().asyncExec(() -> {
                         if (chatBrowser != null && !chatBrowser.isDisposed()) {
                             chatBrowser.execute("appendMessage('" + escapedHtml + "')");
@@ -491,7 +492,7 @@ public class ModelChatView extends ViewPart {
     private void appendUserMessage(String message) {
         String timestamp = LocalTime.now().format(TIME_FORMAT);
         String html = renderer.renderUserMessage(message, timestamp);
-        String escapedHtml = renderer.escapeJs(html);
+        String escapedHtml = sanitizeAndEscapeForAppend(html);
 
         Display.getDefault().asyncExec(() -> {
             if (chatBrowser != null && !chatBrowser.isDisposed()) {
@@ -509,7 +510,7 @@ public class ModelChatView extends ViewPart {
     private void appendAssistantMessage(String message) {
         String timestamp = LocalTime.now().format(TIME_FORMAT);
         String html = renderer.renderAssistantMessage(message, timestamp);
-        String escapedHtml = renderer.escapeJs(html);
+        String escapedHtml = sanitizeAndEscapeForAppend(html);
 
         Display.getDefault().asyncExec(() -> {
             if (chatBrowser != null && !chatBrowser.isDisposed()) {
@@ -526,7 +527,7 @@ public class ModelChatView extends ViewPart {
      */
     private void appendToolNotification(String toolName) {
         String html = renderer.renderToolNotification(toolName, "");
-        String escapedHtml = renderer.escapeJs(html);
+        String escapedHtml = sanitizeAndEscapeForAppend(html);
 
         Display.getDefault().asyncExec(() -> {
             if (chatBrowser != null && !chatBrowser.isDisposed()) {
@@ -545,7 +546,7 @@ public class ModelChatView extends ViewPart {
      */
     private void appendToolResult(String toolName, String category, com.google.gson.JsonObject data) {
         String html = renderer.renderToolResult(category, toolName, data);
-        String escapedHtml = renderer.escapeJs(html);
+        String escapedHtml = sanitizeAndEscapeForAppend(html);
 
         Display.getDefault().asyncExec(() -> {
             if (chatBrowser != null && !chatBrowser.isDisposed()) {
@@ -699,10 +700,15 @@ public class ModelChatView extends ViewPart {
         if (chatBrowser != null && !chatBrowser.isDisposed()) {
             chatBrowser.setText(renderer.getBaseHtmlTemplate());
         }
+        // SECURITY (I8/N8): avoid innerHTML assignment entirely. Remove all
+        // children of chat-container; preserve welcome-msg by re-appending
+        // it after the wipe. This closes the second innerHTML site flagged
+        // in the adversarial audit.
         detachSupport.executeOnFloating(
-                "document.getElementById('chat-container').innerHTML = "
-                + "document.getElementById('welcome-msg') "
-                + "? document.getElementById('welcome-msg').outerHTML : ''");
+                "(function(){var c=document.getElementById('chat-container');"
+                + "if(!c)return;var w=document.getElementById('welcome-msg');"
+                + "while(c.firstChild)c.removeChild(c.firstChild);"
+                + "if(w)c.appendChild(w);})();");
     }
 
     /**
@@ -790,7 +796,7 @@ public class ModelChatView extends ViewPart {
                 + "margin:2px 0;border-left:3px solid #ccc;\">"
                 + message.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
                 + "</div>";
-        String escaped = renderer.escapeJs(html);
+        String escaped = sanitizeAndEscapeForAppend(html);
         Display.getDefault().asyncExec(() -> {
             if (chatBrowser != null && !chatBrowser.isDisposed()) {
                 chatBrowser.execute("appendMessage('" + escaped + "')");
@@ -849,7 +855,11 @@ public class ModelChatView extends ViewPart {
 
             case "mode_general" -> setMode(AgentMode.GENERAL);
 
-            case "mode_sustainment" -> setMode(AgentMode.SUSTAINMENT);
+            case "mode_sustainment"  -> setMode(AgentMode.SUSTAINMENT);
+
+            case "mode_requirements" -> setMode(AgentMode.REQUIREMENTS_ANALYST);
+
+            case "mode_architect"    -> setMode(AgentMode.ARCHITECT);
 
             case "cancel" -> cancelActiveJob();
 
@@ -874,7 +884,7 @@ public class ModelChatView extends ViewPart {
                 + "margin:2px 0;border-left:3px solid #ccc;\">"
                 + html
                 + "</div>";
-        String escaped = renderer.escapeJs(wrapped);
+        String escaped = sanitizeAndEscapeForAppend(wrapped);
         Display.getDefault().asyncExec(() -> {
             if (chatBrowser != null && !chatBrowser.isDisposed()) {
                 chatBrowser.execute("appendMessage('" + escaped + "')");
@@ -888,6 +898,20 @@ public class ModelChatView extends ViewPart {
         if (s == null) return "";
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
                 .replace("\"", "&quot;");
+    }
+
+    /**
+     * SECURITY (B2): single choke point for all content that eventually
+     * reaches {@code Browser.innerHTML} via {@code appendMessage()}. Every
+     * HTML fragment produced by {@link ChatHtmlRenderer} is first passed
+     * through {@link com.capellaagent.core.security.HtmlSanitizer#sanitize}
+     * to strip any surviving script/iframe/event-handler that a renderer
+     * bug (or a forgotten escape in a tool result renderer) may have let
+     * through, then JS-escaped for the {@code execute()} string literal.
+     */
+    private String sanitizeAndEscapeForAppend(String html) {
+        String sanitized = com.capellaagent.core.security.HtmlSanitizer.sanitize(html);
+        return renderer.escapeJs(sanitized);
     }
 
     /**

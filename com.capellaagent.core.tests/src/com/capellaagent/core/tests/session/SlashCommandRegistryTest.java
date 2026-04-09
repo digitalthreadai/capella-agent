@@ -16,7 +16,7 @@ import com.capellaagent.core.session.SlashCommandRegistry.SlashCommand;
 class SlashCommandRegistryTest {
 
     @Test
-    @DisplayName("defaults() provides the 9 standard commands")
+    @DisplayName("defaults() provides the 11 standard commands")
     void defaultsProvidesStandardCommands() {
         SlashCommandRegistry r = SlashCommandRegistry.defaults();
         assertTrue(r.lookup("/help").isPresent());
@@ -25,6 +25,8 @@ class SlashCommandRegistryTest {
         assertTrue(r.lookup("/export").isPresent());
         assertTrue(r.lookup("/general").isPresent());
         assertTrue(r.lookup("/sustainment").isPresent());
+        assertTrue(r.lookup("/requirements").isPresent());
+        assertTrue(r.lookup("/architect").isPresent());
         assertTrue(r.lookup("/diff").isPresent());
         assertTrue(r.lookup("/undo").isPresent());
         assertTrue(r.lookup("/cancel").isPresent());
@@ -89,11 +91,11 @@ class SlashCommandRegistryTest {
     }
 
     @Test
-    @DisplayName("listAll returns 9 canonical commands")
+    @DisplayName("listAll returns 11 canonical commands")
     void listAllReturnsCanonical() {
         SlashCommandRegistry r = SlashCommandRegistry.defaults();
         List<SlashCommand> all = r.listAll();
-        assertEquals(9, all.size(), "defaults should have exactly 9 canonical commands");
+        assertEquals(11, all.size(), "defaults should have exactly 11 canonical commands");
     }
 
     @Test

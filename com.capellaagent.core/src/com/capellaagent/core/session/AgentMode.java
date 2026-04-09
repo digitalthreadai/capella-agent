@@ -96,7 +96,7 @@ public enum AgentMode implements IAgentMode {
         + "Use coverage_dashboard to show coverage percentage at any time.\n"
         + "Never create links without first showing the user what will be linked. "
         + "Cite element UUIDs verbatim from tool results; never invent them.",
-        List.of("model_read", "requirements"),
+        List.of("model_read", "requirements", "ai_intelligence"),
         List.of(
             "Import requirements from /path/to/requirements.reqif",
             "Import requirements from /path/to/requirements.xlsx",
@@ -124,13 +124,16 @@ public enum AgentMode implements IAgentMode {
         + "5. VALIDATION: Check that every proposed parent UUID resolves in the model "
         + "   using get_element_details before including it in a proposal.\n"
         + "Cite element UUIDs verbatim from tool results; never invent them.",
-        List.of("model_read", "model_write", "analysis", "requirements"),
+        List.of("model_read", "model_write", "analysis", "requirements", "ai_intelligence"),
         List.of(
             "Propose an architecture for the requirements in the SA layer",
             "Find requirements with no implementation trace",
             "Suggest how to decompose the In-Flight Entertainment System",
             "Review the PA layer for ARCADIA compliance"
-        ));
+        )) {
+        @Override
+        public int maxToolIterations() { return 40; }
+    };
 
     private final String displayName;
     private final String shortDescription;

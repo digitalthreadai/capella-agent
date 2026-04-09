@@ -39,6 +39,9 @@ public final class ToolCategory {
     /** AI intelligence tools (explain, generate, Q&A) */
     public static final String AI_INTELLIGENCE = "ai_intelligence";
 
+    /** Requirements management tools (import, link, coverage) */
+    public static final String REQUIREMENTS = "requirements";
+
     private ToolCategory() {
         // Constants only
     }

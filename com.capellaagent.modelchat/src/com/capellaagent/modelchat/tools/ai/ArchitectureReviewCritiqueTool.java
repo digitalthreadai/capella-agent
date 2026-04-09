@@ -143,7 +143,12 @@ public class ArchitectureReviewCritiqueTool extends AbstractCapellaTool {
         long totalRefs = 0;
         for (EObject comp : components) {
             for (EReference ref : comp.eClass().getEAllReferences()) {
-                if (!ref.isContainment()) totalRefs++;
+                if (ref.isContainment()) continue;
+                try {
+                    Object val = comp.eGet(ref);
+                    if (val instanceof java.util.Collection<?> c) totalRefs += c.size();
+                    else if (val != null) totalRefs++;
+                } catch (Exception ignored) {}
             }
         }
         return (double) totalRefs / components.size();

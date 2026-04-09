@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import com.capellaagent.core.capella.CapellaModelService;
 import com.capellaagent.core.security.InputValidator;
@@ -38,6 +39,8 @@ import org.polarsys.capella.core.data.oa.OperationalAnalysis;
  * Creates realization traces between the pairs.
  */
 public class TransitionOaToSaTool extends AbstractCapellaTool {
+
+    private static final Logger LOG = Logger.getLogger(TransitionOaToSaTool.class.getName());
 
     private static final String TOOL_NAME = "transition_oa_to_sa";
     private static final String DESCRIPTION =
@@ -127,81 +130,89 @@ public class TransitionOaToSaTool extends AbstractCapellaTool {
                 @Override
                 protected void doExecute() {
                     for (EObject obj : toTransition) {
-                        if (obj instanceof OperationalActivity) {
-                            OperationalActivity oaFn = (OperationalActivity) obj;
+                        try {
+                            if (obj instanceof OperationalActivity) {
+                                OperationalActivity oaFn = (OperationalActivity) obj;
 
-                            // Create SA function
-                            SystemFunction saFn = CtxFactory.eINSTANCE.createSystemFunction();
-                            saFn.setName(oaFn.getName());
-                            if (oaFn.getDescription() != null) {
-                                saFn.setDescription(oaFn.getDescription());
-                            }
-
-                            // Add to SA function package
-                            EObject saFnPkg = sa.getOwnedFunctionPkg();
-                            try {
-                                java.lang.reflect.Method method =
-                                        saFnPkg.getClass().getMethod("getOwnedSystemFunctions");
-                                Object result = method.invoke(saFnPkg);
-                                if (result instanceof List) {
-                                    ((List<EObject>) result).add(saFn);
+                                // Create SA function
+                                SystemFunction saFn = CtxFactory.eINSTANCE.createSystemFunction();
+                                saFn.setName(oaFn.getName());
+                                if (oaFn.getDescription() != null) {
+                                    saFn.setDescription(oaFn.getDescription());
                                 }
-                            } catch (Exception e) {
-                                // Fallback: skip this element
-                                return;
-                            }
 
-                            // Create realization trace
-                            try {
-                                FunctionRealization realization = FaFactory.eINSTANCE.createFunctionRealization();
-                                realization.setSourceElement(saFn);
-                                realization.setTargetElement(oaFn);
-                                saFn.getOwnedFunctionRealizations().add(realization);
-                            } catch (Exception e) {
-                                // Realization API may vary; continue without trace
-                            }
-
-                            JsonObject entry = new JsonObject();
-                            entry.addProperty("source_name", oaFn.getName());
-                            entry.addProperty("source_type", "OperationalActivity");
-                            entry.addProperty("target_name", saFn.getName());
-                            entry.addProperty("target_type", "SystemFunction");
-                            entry.addProperty("target_id", getElementId(saFn));
-                            transitioned.add(entry);
-                            counts[0]++;
-
-                        } else if (obj instanceof Entity) {
-                            Entity oaEntity = (Entity) obj;
-
-                            // Create SA component
-                            SystemComponent saComp = CtxFactory.eINSTANCE.createSystemComponent();
-                            saComp.setName(oaEntity.getName());
-                            saComp.setActor(oaEntity.isActor());
-                            if (oaEntity.getDescription() != null) {
-                                saComp.setDescription(oaEntity.getDescription());
-                            }
-
-                            // Add to SA component package
-                            EObject saCompPkg = sa.getOwnedSystemComponentPkg();
-                            try {
-                                java.lang.reflect.Method method =
-                                        saCompPkg.getClass().getMethod("getOwnedSystemComponents");
-                                Object result = method.invoke(saCompPkg);
-                                if (result instanceof List) {
-                                    ((List<EObject>) result).add(saComp);
+                                // Add to SA function package
+                                EObject saFnPkg = sa.getOwnedFunctionPkg();
+                                try {
+                                    java.lang.reflect.Method method =
+                                            saFnPkg.getClass().getMethod("getOwnedSystemFunctions");
+                                    Object result = method.invoke(saFnPkg);
+                                    if (result instanceof List) {
+                                        ((List<EObject>) result).add(saFn);
+                                    }
+                                } catch (Exception e) {
+                                    LOG.warning("Could not add SA function for '"
+                                            + oaFn.getName() + "': " + e.getMessage());
+                                    continue;
                                 }
-                            } catch (Exception e) {
-                                return;
-                            }
 
-                            JsonObject entry = new JsonObject();
-                            entry.addProperty("source_name", oaEntity.getName());
-                            entry.addProperty("source_type", "Entity");
-                            entry.addProperty("target_name", saComp.getName());
-                            entry.addProperty("target_type", "SystemComponent");
-                            entry.addProperty("target_id", getElementId(saComp));
-                            transitioned.add(entry);
-                            counts[1]++;
+                                // Create realization trace
+                                try {
+                                    FunctionRealization realization = FaFactory.eINSTANCE.createFunctionRealization();
+                                    realization.setSourceElement(saFn);
+                                    realization.setTargetElement(oaFn);
+                                    saFn.getOwnedFunctionRealizations().add(realization);
+                                } catch (Exception e) {
+                                    // Realization API may vary; continue without trace
+                                }
+
+                                JsonObject entry = new JsonObject();
+                                entry.addProperty("source_name", oaFn.getName());
+                                entry.addProperty("source_type", "OperationalActivity");
+                                entry.addProperty("target_name", saFn.getName());
+                                entry.addProperty("target_type", "SystemFunction");
+                                entry.addProperty("target_id", getElementId(saFn));
+                                transitioned.add(entry);
+                                counts[0]++;
+
+                            } else if (obj instanceof Entity) {
+                                Entity oaEntity = (Entity) obj;
+
+                                // Create SA component
+                                SystemComponent saComp = CtxFactory.eINSTANCE.createSystemComponent();
+                                saComp.setName(oaEntity.getName());
+                                saComp.setActor(oaEntity.isActor());
+                                if (oaEntity.getDescription() != null) {
+                                    saComp.setDescription(oaEntity.getDescription());
+                                }
+
+                                // Add to SA component package
+                                EObject saCompPkg = sa.getOwnedSystemComponentPkg();
+                                try {
+                                    java.lang.reflect.Method method =
+                                            saCompPkg.getClass().getMethod("getOwnedSystemComponents");
+                                    Object result = method.invoke(saCompPkg);
+                                    if (result instanceof List) {
+                                        ((List<EObject>) result).add(saComp);
+                                    }
+                                } catch (Exception e) {
+                                    LOG.warning("Could not add SA component for '"
+                                            + oaEntity.getName() + "': " + e.getMessage());
+                                    continue;
+                                }
+
+                                JsonObject entry = new JsonObject();
+                                entry.addProperty("source_name", oaEntity.getName());
+                                entry.addProperty("source_type", "Entity");
+                                entry.addProperty("target_name", saComp.getName());
+                                entry.addProperty("target_type", "SystemComponent");
+                                entry.addProperty("target_id", getElementId(saComp));
+                                transitioned.add(entry);
+                                counts[1]++;
+                            }
+                        } catch (Exception e) {
+                            LOG.warning("Skipping element during OA→SA transition: "
+                                    + e.getMessage());
                         }
                     }
                 }

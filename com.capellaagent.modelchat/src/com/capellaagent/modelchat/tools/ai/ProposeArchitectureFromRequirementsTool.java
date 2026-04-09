@@ -104,6 +104,10 @@ public class ProposeArchitectureFromRequirementsTool extends AbstractCapellaTool
             for (int i = 0; i < limit; i++) {
                 RequirementSummary req = untracedReqs.get(i);
                 String componentName = deriveComponentName(req.text(), componentType, i);
+                String rationale = req.id() + ": "
+                        + (req.text() != null && req.text().length() > 60
+                                ? req.text().substring(0, 60) + "…"
+                                : (req.text() != null ? req.text() : ""));
                 changes.add(new ProposedChange(
                         "CREATE",
                         layer,
@@ -111,7 +115,7 @@ public class ProposeArchitectureFromRequirementsTool extends AbstractCapellaTool
                         componentName,
                         parentUuid != null ? parentUuid : "",
                         null,
-                        req.id()
+                        rationale
                 ));
             }
 
@@ -208,7 +212,7 @@ public class ProposeArchitectureFromRequirementsTool extends AbstractCapellaTool
                 if (++wordCount >= 3) break;
             }
         }
-        return name.length() > 0 ? name.toString() + "Function" : type + "_" + (index + 1);
+        return name.length() > 0 ? name.toString() : type + "_" + (index + 1);
     }
 
     private record RequirementSummary(String id, String text) {}

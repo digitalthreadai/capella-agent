@@ -22,7 +22,10 @@ import com.capellaagent.core.llm.LlmRequestConfig;
 import com.capellaagent.core.llm.LlmResponse;
 import com.capellaagent.core.llm.LlmToolCall;
 import com.capellaagent.core.llm.LlmToolResult;
+import com.capellaagent.core.session.AgentMode;
 import com.capellaagent.core.session.ConversationSession;
+import com.capellaagent.core.session.IAgentMode;
+import com.capellaagent.core.session.ChatSessionController;
 import com.capellaagent.core.tools.IToolDescriptor;
 import com.capellaagent.core.tools.ToolRegistry;
 import com.capellaagent.core.tools.ToolResult;
@@ -52,7 +55,8 @@ import com.capellaagent.modelchat.ui.ModelChatUiActivator;
 public class ChatJob extends Job {
 
     private static final String JOB_NAME = "AI Model Chat";
-    private static final int MAX_TOOL_ITERATIONS = 20;
+    /** Hard ceiling shared with ChatSessionController — cannot be exceeded by any mode. */
+    private static final int HARD_ITERATION_CEILING = ChatSessionController.HARD_ITERATION_CEILING;
     private static final int MAX_WRITE_TOOLS_PER_TURN = 5;
     /** Max messages to send to LLM (sliding window). 8 = ~4 user/assistant turns. */
     private static final int MAX_HISTORY_MESSAGES = 8;
@@ -70,6 +74,7 @@ public class ChatJob extends Job {
      * workspaces or when the dropdown has no selection.
      */
     private final String activeProjectName;
+    private final IAgentMode agentMode;
     private final Consumer<String> onTextResponse;
     private final Consumer<String> onToolExecution;
     private final Runnable onComplete;
@@ -85,47 +90,43 @@ public class ChatJob extends Job {
 
     /**
      * Constructs a new ChatJob (backward-compatible, no tool result callback,
-     * no project disambiguation).
+     * no project disambiguation). Defaults to {@link AgentMode#GENERAL}.
      */
     public ChatJob(ConversationSession session, String userMessage, String providerName,
                    Consumer<String> onTextResponse, Consumer<String> onToolExecution,
                    Runnable onComplete) {
-        this(session, userMessage, providerName, null,
+        this(session, userMessage, providerName, null, AgentMode.GENERAL,
                 onTextResponse, onToolExecution, onComplete, null);
     }
 
     /**
      * Constructs a new ChatJob with tool result callback (no project
-     * disambiguation). Backward-compatible overload for callers that do not
-     * yet read the project dropdown.
+     * disambiguation). Defaults to {@link AgentMode#GENERAL}.
      */
     public ChatJob(ConversationSession session, String userMessage, String providerName,
                    Consumer<String> onTextResponse, Consumer<String> onToolExecution,
                    Runnable onComplete, ToolResultCallback onToolResult) {
-        this(session, userMessage, providerName, null,
+        this(session, userMessage, providerName, null, AgentMode.GENERAL,
                 onTextResponse, onToolExecution, onComplete, onToolResult);
     }
 
     /**
      * Constructs a new ChatJob with full context (project disambiguation +
-     * tool result callback). This is the canonical constructor used by
-     * {@code ModelChatView.sendMessage()}.
+     * agent mode + tool result callback). This is the canonical constructor
+     * used by {@code ModelChatView.sendMessage()}.
      *
      * @param session           the conversation session maintaining message history
      * @param userMessage       the new user message to process
      * @param providerName      the name of the LLM provider to use
-     * @param activeProjectName the Capella project name selected in the chat view's
-     *                          dropdown, or {@code null} if not applicable. Threaded
-     *                          into {@link ActiveProjectContext} for the orchestration
-     *                          loop so tools resolve the right session when multiple
-     *                          projects are open
+     * @param activeProjectName the Capella project name, or {@code null}
+     * @param agentMode         the active agent mode (determines system prompt and tool categories)
      * @param onTextResponse    callback invoked with the assistant's text response
      * @param onToolExecution   callback invoked when a tool execution starts
      * @param onComplete        callback invoked when the job finishes
      * @param onToolResult      callback for full (untruncated) tool results for UI display
      */
     public ChatJob(ConversationSession session, String userMessage, String providerName,
-                   String activeProjectName,
+                   String activeProjectName, IAgentMode agentMode,
                    Consumer<String> onTextResponse, Consumer<String> onToolExecution,
                    Runnable onComplete, ToolResultCallback onToolResult) {
         super(JOB_NAME);
@@ -133,6 +134,7 @@ public class ChatJob extends Job {
         this.userMessage = userMessage;
         this.providerName = providerName;
         this.activeProjectName = activeProjectName;
+        this.agentMode = agentMode != null ? agentMode : AgentMode.GENERAL;
         this.onTextResponse = onTextResponse;
         this.onToolExecution = onToolExecution;
         this.onComplete = onComplete;
@@ -155,16 +157,14 @@ public class ChatJob extends Job {
 
             // Get available tools from the registry
             ToolRegistry toolRegistry = ToolRegistry.getInstance();
-            List<String> toolCategories = List.of(
-                    "model_read", "model_write", "diagram",
-                    "analysis", "export", "transition");
 
-            // Orchestration loop
+            // Orchestration loop — iteration limit is mode-specific, clamped to hard ceiling
+            int maxIter = Math.min(agentMode.maxToolIterations(), HARD_ITERATION_CEILING);
             boolean done = false;
             int iterations = 0;
             int writeToolCount = 0;
 
-            while (!done && !monitor.isCanceled() && iterations < MAX_TOOL_ITERATIONS) {
+            while (!done && !monitor.isCanceled() && iterations < maxIter) {
                 iterations++;
 
                 LlmResponse response = callLlmProvider(session, providerName);
@@ -183,10 +183,14 @@ public class ChatJob extends Job {
                     // Add the assistant message with tool calls to session
                     session.addAssistantToolCalls(response.getToolCalls());
 
-                    for (LlmToolCall toolCall : response.getToolCalls()) {
+                    List<LlmToolCall> pendingCalls = response.getToolCalls();
+                    for (int callIdx = 0; callIdx < pendingCalls.size(); callIdx++) {
+                        LlmToolCall toolCall = pendingCalls.get(callIdx);
                         if (monitor.isCanceled()) {
                             break;
                         }
+                        // Defensive null guard — providers should never return null elements
+                        if (toolCall == null || toolCall.getName() == null) continue;
 
                         String toolName = toolCall.getName();
                         String toolArgs = toolCall.getArguments();
@@ -203,6 +207,16 @@ public class ChatJob extends Job {
                                         + " write operations in a single turn. "
                                         + "Please review the changes made so far "
                                         + "before continuing.]");
+                                // Emit synthetic denied results for all remaining tool calls so
+                                // the provider sees every tool_use matched by a tool_result,
+                                // preventing "tool_use_id not matched" errors on the next turn.
+                                for (int remaining = callIdx; remaining < pendingCalls.size(); remaining++) {
+                                    LlmToolCall skipped = pendingCalls.get(remaining);
+                                    if (skipped != null && skipped.getId() != null) {
+                                        session.addToolResult(skipped.getId(),
+                                            createErrorResult("Aborted: write-rate limit per turn exceeded"));
+                                    }
+                                }
                                 done = true;
                                 break;
                             }
@@ -227,8 +241,14 @@ public class ChatJob extends Job {
                         try {
                             toolResult = toolRegistry.executeTool(toolName, toolArgs);
                         } catch (Exception e) {
+                            // SECURITY (A3): do not pass raw exception text back
+                            // to the LLM as a tool result — exception messages
+                            // routinely echo file paths, prompt fragments, and
+                            // provider response bodies. ErrorMessageFilter logs
+                            // the full exception at SEVERE.
                             toolResult = ToolResult.error(
-                                    "Tool execution failed: " + e.getMessage());
+                                    com.capellaagent.core.security.ErrorMessageFilter
+                                            .safeToolResultMessage(e));
                         }
 
                         // Execute tool result handling: display full, store compact
@@ -251,7 +271,7 @@ public class ChatJob extends Job {
                                     .orElse(null);
                                 if (toolDesc != null) {
                                     category = toolDesc.getCategory() != null
-                                            ? toolDesc.getCategory().name() : "";
+                                            ? toolDesc.getCategory() : "";
                                 }
                             }
                             onToolResult.onResult(toolCall.getName(), category, resultObj);
@@ -288,15 +308,20 @@ public class ChatJob extends Job {
                 return Status.CANCEL_STATUS;
             }
 
-            if (iterations >= MAX_TOOL_ITERATIONS) {
+            if (iterations >= maxIter) {
                 onTextResponse.accept("[Reached maximum tool iteration limit ("
-                        + MAX_TOOL_ITERATIONS + "). Stopping.]");
+                        + maxIter + "). Stopping.]");
             }
 
             return Status.OK_STATUS;
 
         } catch (Exception e) {
-            onTextResponse.accept(formatUserFriendlyError(e.getMessage()));
+            // SECURITY (A3): route non-LlmException through ErrorMessageFilter
+            // so uncategorized exceptions never leak raw getMessage() text.
+            String friendly = (e instanceof LlmException)
+                ? formatUserFriendlyError(e.getMessage())
+                : com.capellaagent.core.security.ErrorMessageFilter.safeUserMessage(e);
+            onTextResponse.accept(friendly);
             return new Status(IStatus.ERROR, ModelChatUiActivator.PLUGIN_ID,
                     "Chat job failed", e);
         } finally {
@@ -376,28 +401,18 @@ public class ChatJob extends Job {
 
     /**
      * Determines whether a tool name corresponds to a write operation.
-     * Write tools modify the Capella model and are subject to rate limiting.
+     * Uses the tool registry to check category rather than a hardcoded list,
+     * so any future write tools are automatically covered.
      *
      * @param toolName the tool name to check
-     * @return true if the tool performs write operations
+     * @return true if the tool is registered under a write-capable category
      */
     private boolean isWriteToolName(String toolName) {
         if (toolName == null) return false;
-        return toolName.equals("create_element")
-                || toolName.equals("update_element")
-                || toolName.equals("delete_element")
-                || toolName.equals("allocate_function")
-                || toolName.equals("create_capability")
-                || toolName.equals("create_exchange")
-                || toolName.equals("update_diagram")
-                || toolName.equals("create_interface")
-                || toolName.equals("create_functional_chain")
-                || toolName.equals("create_physical_link")
-                || toolName.equals("batch_rename")
-                || toolName.equals("create_diagram")
-                || toolName.equals("transition_oa_to_sa")
-                || toolName.equals("transition_sa_to_la")
-                || toolName.equals("transition_la_to_pa");
+        return ToolRegistry.getInstance()
+                .getTools("model_write", "transition", "requirements")
+                .stream()
+                .anyMatch(t -> toolName.equals(t.getName()));
     }
 
     /**
@@ -535,24 +550,30 @@ public class ChatJob extends Job {
         try {
             ILlmProvider provider = LlmProviderRegistry.getInstance().getActiveProvider();
 
-            // Smart tool selection: pick only relevant tools based on query keywords
-            // This keeps request under 8K tokens for free-tier providers
+            // Tool selection: use mode-specific categories, bypass keyword filter for focused modes
+            List<String> cats = agentMode.preferredToolCategories().isEmpty()
+                    ? List.of("model_read", "model_write", "diagram",
+                              "analysis", "export", "transition", "ai_intelligence")
+                    : agentMode.preferredToolCategories();
             List<IToolDescriptor> allTools = ToolRegistry.getInstance()
-                    .getTools("model_read", "model_write", "diagram",
-                              "analysis", "export", "transition", "ai_intelligence");
-            List<IToolDescriptor> tools = selectRelevantTools(userMessage, allTools);
+                    .getTools(cats.toArray(new String[0]));
+            // Bypass keyword filter for non-GENERAL modes — the category list is already focused
+            List<IToolDescriptor> tools = agentMode.preferredToolCategories().isEmpty()
+                    ? selectRelevantTools(userMessage, allTools)
+                    : allTools;
 
             java.util.logging.Logger.getLogger("ChatJob").info(
                     "LLM call with " + tools.size() + "/" + allTools.size()
-                    + " tools selected for query, provider: " + provider.getDisplayName());
+                    + " tools selected for query [mode=" + agentMode.displayName()
+                    + "], provider: " + provider.getDisplayName());
             if (tools.isEmpty()) {
                 onTextResponse.accept("[Warning: No tools registered. "
                         + "Please close and reopen the AI Model Chat view.]");
             }
 
             AgentConfiguration config = AgentConfiguration.getInstance();
-            String systemPrompt = "You are a Capella MBSE assistant. "
-                    + "Use tools to query/modify the model. Never guess — call tools for real data.";
+            // System prompt comes from the active agent mode
+            String systemPrompt = agentMode.systemPrompt();
 
             LlmRequestConfig requestConfig = new LlmRequestConfig(
                     config.getLlmModelId().isEmpty() ? null : config.getLlmModelId(),
@@ -572,10 +593,13 @@ public class ChatJob extends Job {
             return provider.chat(windowedMessages, tools, requestConfig);
 
         } catch (LlmException e) {
+            // A4-scrubbed in provider layer — safe to categorize for UX.
             onTextResponse.accept(formatUserFriendlyError(e.getMessage()));
             return null;
         } catch (Exception e) {
-            onTextResponse.accept(formatUserFriendlyError(e.getMessage()));
+            // SECURITY (A3): uncategorized exceptions go through the filter.
+            onTextResponse.accept(
+                com.capellaagent.core.security.ErrorMessageFilter.safeUserMessage(e));
             return null;
         }
     }
@@ -710,8 +734,9 @@ public class ChatJob extends Job {
 
     /**
      * Returns a sliding window of the most recent messages, keeping the total
-     * under the specified limit. Always keeps the first message (if it's a system
-     * prompt) and the last N messages.
+     * under the specified limit. Always preserves the first message (the
+     * session anchor / first user turn) so the LLM retains original context,
+     * then appends the most recent (maxMessages - 1) messages.
      *
      * @param messages all messages in the conversation
      * @param maxMessages maximum number of messages to return
@@ -721,8 +746,11 @@ public class ChatJob extends Job {
         if (messages.size() <= maxMessages) {
             return messages;
         }
-        // Keep the last maxMessages messages
-        int start = messages.size() - maxMessages;
-        return new ArrayList<>(messages.subList(start, messages.size()));
+        // Always keep messages[0] (first-user / session-anchor), then the last (max-1) messages
+        List<LlmMessage> result = new ArrayList<>(maxMessages);
+        result.add(messages.get(0));
+        int tail = messages.size() - (maxMessages - 1);
+        result.addAll(messages.subList(tail, messages.size()));
+        return result;
     }
 }

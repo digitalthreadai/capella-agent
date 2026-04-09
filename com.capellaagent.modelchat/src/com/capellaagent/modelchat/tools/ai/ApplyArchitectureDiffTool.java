@@ -149,9 +149,14 @@ public class ApplyArchitectureDiffTool extends AbstractCapellaTool {
             result.add("failed", failedArr);
         }
 
-        result.addProperty("message",
-                applied.size() + " change(s) applied successfully. "
-                + "Use Ctrl+Z (Edit \u2192 Undo) to undo all changes at once.");
+        String message = applied.size() + " change(s) applied successfully. "
+                + "Use Ctrl+Z (Edit \u2192 Undo) to undo all changes at once.";
+        if (!failed.isEmpty()) {
+            message += " Warning: model is in a partially applied state ("
+                    + failed.size() + " change(s) failed). "
+                    + "Use Ctrl+Z to undo the entire operation and start over.";
+        }
+        result.addProperty("message", message);
 
         return ToolResult.success(result);
     }

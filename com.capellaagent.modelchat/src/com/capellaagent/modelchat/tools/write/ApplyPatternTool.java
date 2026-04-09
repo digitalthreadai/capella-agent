@@ -23,6 +23,7 @@ import org.polarsys.capella.core.data.cs.BlockArchitecture;
 import org.polarsys.capella.core.data.cs.Component;
 import org.polarsys.capella.core.data.cs.Interface;
 import org.polarsys.capella.core.data.cs.CsFactory;
+import org.polarsys.capella.core.data.ctx.CtxFactory;
 import org.polarsys.capella.core.data.fa.ComponentPort;
 import org.polarsys.capella.core.data.fa.FaFactory;
 import org.polarsys.capella.core.data.fa.FunctionPort;
@@ -36,6 +37,8 @@ import org.polarsys.capella.core.data.la.LaFactory;
 import org.polarsys.capella.core.data.la.LogicalComponent;
 import org.polarsys.capella.core.data.la.LogicalArchitecture;
 import org.polarsys.capella.core.data.la.LogicalFunction;
+import org.polarsys.capella.core.data.pa.PaFactory;
+import org.polarsys.capella.core.data.pa.PhysicalComponent;
 
 /**
  * Applies a predefined architecture pattern to a target component or layer.
@@ -119,12 +122,12 @@ public class ApplyPatternTool extends AbstractCapellaTool {
                     return applyStandardInterfacePattern(session, modelService, arch,
                             targetComponent, namePrefix);
                 case "observer":
-                    return applyObserverPattern(session, modelService, arch, namePrefix);
+                    return applyObserverPattern(session, modelService, arch, layer, namePrefix);
                 case "mediator":
-                    return applyMediatorPattern(session, modelService, arch, namePrefix);
+                    return applyMediatorPattern(session, modelService, arch, layer, namePrefix);
                 case "layered":
                     return applyLayeredPattern(session, modelService, arch,
-                            targetComponent, namePrefix);
+                            targetComponent, layer, namePrefix);
                 default:
                     return ToolResult.error("Unknown pattern: " + patternName);
             }
@@ -132,6 +135,18 @@ public class ApplyPatternTool extends AbstractCapellaTool {
         } catch (Exception e) {
             return ToolResult.error("Failed to apply pattern: " + e.getMessage());
         }
+    }
+
+    /**
+     * Creates the appropriate component instance for the given layer.
+     * SA → SystemComponent, PA → PhysicalComponent, LA (default) → LogicalComponent.
+     */
+    private Component createComponentForLayer(String layer) {
+        return switch (layer == null ? "la" : layer.toLowerCase()) {
+            case "sa" -> CtxFactory.eINSTANCE.createSystemComponent();
+            case "pa" -> PaFactory.eINSTANCE.createPhysicalComponent();
+            default   -> LaFactory.eINSTANCE.createLogicalComponent();
+        };
     }
 
     /**
@@ -243,7 +258,7 @@ public class ApplyPatternTool extends AbstractCapellaTool {
     @SuppressWarnings("unchecked")
     private ToolResult applyObserverPattern(Session session,
             CapellaModelService modelService, BlockArchitecture arch,
-            String namePrefix) {
+            String layer, String namePrefix) {
 
         final JsonArray created = new JsonArray();
 
@@ -271,31 +286,19 @@ public class ApplyPatternTool extends AbstractCapellaTool {
                 EObject compPkg = compPkgFeature != null ? (EObject) arch.eGet(compPkgFeature) : null;
                 if (compPkg == null) return;
 
-                // Create publisher component
-                LogicalComponent publisher = LaFactory.eINSTANCE.createLogicalComponent();
+                // Create layer-appropriate components
+                Component publisher = createComponentForLayer(layer);
                 publisher.setName(namePrefix + "_EventPublisher");
 
-                // Create subscriber component
-                LogicalComponent subscriber = LaFactory.eINSTANCE.createLogicalComponent();
+                Component subscriber = createComponentForLayer(layer);
                 subscriber.setName(namePrefix + "_EventSubscriber");
 
-                // Add to component package
-                try {
-                    java.lang.reflect.Method method =
-                            compPkg.getClass().getMethod("getOwnedLogicalComponents");
-                    Object result = method.invoke(compPkg);
-                    if (result instanceof List) {
-                        ((List<EObject>) result).add(publisher);
-                        ((List<EObject>) result).add(subscriber);
-                    }
-                } catch (Exception e) {
-                    // Try generic approach
-                    for (EReference ref : compPkg.eClass().getEAllContainments()) {
-                        if (ref.isMany() && ref.getEReferenceType().isInstance(publisher)) {
-                            ((List<EObject>) compPkg.eGet(ref)).add(publisher);
-                            ((List<EObject>) compPkg.eGet(ref)).add(subscriber);
-                            break;
-                        }
+                // Add to component package via generic containment scan
+                for (EReference ref : compPkg.eClass().getEAllContainments()) {
+                    if (ref.isMany() && ref.getEReferenceType().isInstance(publisher)) {
+                        ((List<EObject>) compPkg.eGet(ref)).add((EObject) publisher);
+                        ((List<EObject>) compPkg.eGet(ref)).add((EObject) subscriber);
+                        break;
                     }
                 }
 
@@ -317,17 +320,17 @@ public class ApplyPatternTool extends AbstractCapellaTool {
                 publisher.getOwnedComponentExchanges().add(exchange);
 
                 JsonObject pubEntry = new JsonObject();
-                pubEntry.addProperty("type", "LogicalComponent");
+                pubEntry.addProperty("type", publisher.eClass().getName());
                 pubEntry.addProperty("name", publisher.getName());
                 pubEntry.addProperty("role", "EventPublisher");
-                pubEntry.addProperty("id", getElementId(publisher));
+                pubEntry.addProperty("id", getElementId((EObject) publisher));
                 created.add(pubEntry);
 
                 JsonObject subEntry = new JsonObject();
-                subEntry.addProperty("type", "LogicalComponent");
+                subEntry.addProperty("type", subscriber.eClass().getName());
                 subEntry.addProperty("name", subscriber.getName());
                 subEntry.addProperty("role", "EventSubscriber");
-                subEntry.addProperty("id", getElementId(subscriber));
+                subEntry.addProperty("id", getElementId((EObject) subscriber));
                 created.add(subEntry);
 
                 JsonObject exchEntry = new JsonObject();
@@ -354,7 +357,7 @@ public class ApplyPatternTool extends AbstractCapellaTool {
     @SuppressWarnings("unchecked")
     private ToolResult applyMediatorPattern(Session session,
             CapellaModelService modelService, BlockArchitecture arch,
-            String namePrefix) {
+            String layer, String namePrefix) {
 
         final JsonArray created = new JsonArray();
 
@@ -383,8 +386,8 @@ public class ApplyPatternTool extends AbstractCapellaTool {
                 "Apply mediator pattern") {
             @Override
             protected void doExecute() {
-                // Create mediator component
-                LogicalComponent mediator = LaFactory.eINSTANCE.createLogicalComponent();
+                // Create layer-appropriate mediator component
+                Component mediator = createComponentForLayer(layer);
                 mediator.setName(namePrefix + "_Mediator");
                 mediator.setDescription("Mediator component: centralizes communication "
                         + "between " + existingComponents.size() + " components");
@@ -395,7 +398,7 @@ public class ApplyPatternTool extends AbstractCapellaTool {
                     EReference containmentRef = existingComponents.get(0).eContainmentFeature();
                     if (containmentRef != null && containmentRef.isMany()) {
                         try {
-                            ((List<EObject>) container.eGet(containmentRef)).add(mediator);
+                            ((List<EObject>) container.eGet(containmentRef)).add((EObject) mediator);
                         } catch (Exception e) {
                             return;
                         }
@@ -403,10 +406,10 @@ public class ApplyPatternTool extends AbstractCapellaTool {
                 }
 
                 JsonObject medEntry = new JsonObject();
-                medEntry.addProperty("type", "LogicalComponent");
+                medEntry.addProperty("type", mediator.eClass().getName());
                 medEntry.addProperty("name", mediator.getName());
                 medEntry.addProperty("role", "Mediator");
-                medEntry.addProperty("id", getElementId(mediator));
+                medEntry.addProperty("id", getElementId((EObject) mediator));
                 created.add(medEntry);
 
                 // Create exchange to each existing component
@@ -456,7 +459,7 @@ public class ApplyPatternTool extends AbstractCapellaTool {
     @SuppressWarnings("unchecked")
     private ToolResult applyLayeredPattern(Session session,
             CapellaModelService modelService, BlockArchitecture arch,
-            EObject targetComponent, String namePrefix) {
+            EObject targetComponent, String layer, String namePrefix) {
 
         final JsonArray created = new JsonArray();
 
@@ -475,8 +478,8 @@ public class ApplyPatternTool extends AbstractCapellaTool {
                 // Determine parent for new sub-components
                 EObject parent = targetComponent;
                 if (parent == null) {
-                    // Create a container component
-                    LogicalComponent container = LaFactory.eINSTANCE.createLogicalComponent();
+                    // Create a layer-appropriate container component
+                    Component container = createComponentForLayer(layer);
                     container.setName(namePrefix + "_System");
 
                     EStructuralFeature compPkgFeature =
@@ -484,23 +487,26 @@ public class ApplyPatternTool extends AbstractCapellaTool {
                     if (compPkgFeature == null) {
                         compPkgFeature = arch.eClass().getEStructuralFeature("ownedSystemComponentPkg");
                     }
+                    if (compPkgFeature == null) {
+                        compPkgFeature = arch.eClass().getEStructuralFeature("ownedPhysicalComponentPkg");
+                    }
                     EObject compPkg = compPkgFeature != null
                             ? (EObject) arch.eGet(compPkgFeature) : null;
                     if (compPkg != null) {
                         for (EReference ref : compPkg.eClass().getEAllContainments()) {
                             if (ref.isMany() && ref.getEReferenceType().isInstance(container)) {
-                                ((List<EObject>) compPkg.eGet(ref)).add(container);
+                                ((List<EObject>) compPkg.eGet(ref)).add((EObject) container);
                                 break;
                             }
                         }
                     }
 
-                    parent = container;
+                    parent = (EObject) container;
                     JsonObject containerEntry = new JsonObject();
-                    containerEntry.addProperty("type", "LogicalComponent");
+                    containerEntry.addProperty("type", container.eClass().getName());
                     containerEntry.addProperty("name", container.getName());
                     containerEntry.addProperty("role", "Container");
-                    containerEntry.addProperty("id", getElementId(container));
+                    containerEntry.addProperty("id", getElementId((EObject) container));
                     created.add(containerEntry);
                 }
 
@@ -512,31 +518,34 @@ public class ApplyPatternTool extends AbstractCapellaTool {
                         "Manages data persistence and retrieval"
                 };
 
-                List<LogicalComponent> layers = new ArrayList<>();
+                List<Component> subComps = new ArrayList<>();
                 for (int i = 0; i < layerNames.length; i++) {
-                    LogicalComponent subComp = LaFactory.eINSTANCE.createLogicalComponent();
+                    Component subComp = createComponentForLayer(layer);
                     subComp.setName(namePrefix + "_" + layerNames[i]);
                     subComp.setDescription(layerDescs[i]);
 
-                    // Add as sub-component
-                    if (parent instanceof LogicalComponent) {
-                        ((LogicalComponent) parent).getOwnedLogicalComponents().add(subComp);
+                    // Add as sub-component via generic containment
+                    for (EReference ref : parent.eClass().getEAllContainments()) {
+                        if (ref.isMany() && ref.getEReferenceType().isInstance(subComp)) {
+                            ((List<EObject>) parent.eGet(ref)).add((EObject) subComp);
+                            break;
+                        }
                     }
 
-                    layers.add(subComp);
+                    subComps.add(subComp);
 
                     JsonObject entry = new JsonObject();
-                    entry.addProperty("type", "LogicalComponent");
+                    entry.addProperty("type", subComp.eClass().getName());
                     entry.addProperty("name", subComp.getName());
                     entry.addProperty("role", layerNames[i]);
-                    entry.addProperty("id", getElementId(subComp));
+                    entry.addProperty("id", getElementId((EObject) subComp));
                     created.add(entry);
                 }
 
                 // Create exchanges between adjacent layers
-                for (int i = 0; i < layers.size() - 1; i++) {
-                    LogicalComponent upper = layers.get(i);
-                    LogicalComponent lower = layers.get(i + 1);
+                for (int i = 0; i < subComps.size() - 1; i++) {
+                    Component upper = subComps.get(i);
+                    Component lower = subComps.get(i + 1);
 
                     ComponentPort upperPort = FaFactory.eINSTANCE.createComponentPort();
                     upperPort.setName("To_" + lower.getName());
@@ -553,8 +562,9 @@ public class ApplyPatternTool extends AbstractCapellaTool {
                     exchange.setSource(upperPort);
                     exchange.setTarget(lowerPort);
 
-                    if (parent instanceof Component) {
-                        ((Component) parent).getOwnedComponentExchanges().add(exchange);
+                    // Add exchange to parent component
+                    if (parent instanceof Component parentComp) {
+                        parentComp.getOwnedComponentExchanges().add(exchange);
                     }
 
                     JsonObject exchEntry = new JsonObject();

@@ -47,7 +47,7 @@ public class LinkRequirementsToElementsTool extends AbstractCapellaTool {
             + "Confidence scores below 0.7 are flagged as uncertain.";
 
     public LinkRequirementsToElementsTool() {
-        super(TOOL_NAME, DESCRIPTION, ToolCategory.MODEL_WRITE);
+        super(TOOL_NAME, DESCRIPTION, ToolCategory.REQUIREMENTS);
     }
 
     @Override
@@ -159,10 +159,11 @@ public class LinkRequirementsToElementsTool extends AbstractCapellaTool {
         }
     }
 
-    /** Finds a requirement EObject by its ReqIF identifier. */
+    /** Finds a requirement EObject by its ReqIF identifier. Returns null if not found or no session. */
     private EObject findRequirementById(String requirementId) {
         try {
             Session session = getActiveSession();
+            if (session == null) return null;
             for (Resource resource : session.getSemanticResources()) {
                 org.eclipse.emf.common.util.TreeIterator<EObject> it = resource.getAllContents();
                 while (it.hasNext()) {
@@ -209,6 +210,7 @@ public class LinkRequirementsToElementsTool extends AbstractCapellaTool {
 
         try {
             Session session = getActiveSession();
+            if (session == null) return all;
             for (Resource resource : session.getSemanticResources()) {
                 org.eclipse.emf.common.util.TreeIterator<EObject> it = resource.getAllContents();
                 while (it.hasNext()) {

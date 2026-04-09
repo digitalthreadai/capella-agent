@@ -82,6 +82,14 @@ public final class SlashCommandRegistry {
             "Switch to the Sustainment Engineer mode",
             "mode_sustainment",
             List.of("/sust", "/sustain")));
+        r.register(new SlashCommand("/requirements",
+            "Switch to the Requirements Analyst mode",
+            "mode_requirements",
+            List.of("/req", "/reqs")));
+        r.register(new SlashCommand("/architect",
+            "Switch to the Architect mode",
+            "mode_architect",
+            List.of("/arch")));
         r.register(new SlashCommand("/diff",
             "Show changes made in the current turn",
             "show_diff",

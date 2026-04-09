@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
@@ -123,8 +124,11 @@ public final class ToolRegistry {
      */
     public ToolResult executeTool(String name, String argsJson) {
         try {
-            JsonObject args = argsJson != null && !argsJson.isBlank()
-                    ? com.google.gson.JsonParser.parseString(argsJson).getAsJsonObject()
+            JsonElement parsed = (argsJson != null && !argsJson.isBlank())
+                    ? com.google.gson.JsonParser.parseString(argsJson)
+                    : null;
+            JsonObject args = (parsed != null && parsed.isJsonObject())
+                    ? parsed.getAsJsonObject()
                     : new JsonObject();
             JsonObject result = execute(name, args);
             return ToolResult.success(result);
