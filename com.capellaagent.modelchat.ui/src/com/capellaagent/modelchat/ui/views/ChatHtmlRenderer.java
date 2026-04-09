@@ -31,6 +31,10 @@ public class ChatHtmlRenderer {
     // interpreting bold/italic markers inside them.
     private static final Pattern UUID_PATTERN = Pattern.compile(
             "\\b([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\\b");
+    // SECURITY (B1): strict canonical UUID form — used as defence-in-depth check
+    // before embedding in an HTML onclick handler.
+    private static final Pattern STRICT_UUID = Pattern.compile(
+            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
     private static final Pattern FENCED_CODE = Pattern.compile("```(\\w*)\\n?(.*?)```", Pattern.DOTALL);
     private static final Pattern BOLD = Pattern.compile("\\*\\*(.+?)\\*\\*");
     private static final Pattern ITALIC = Pattern.compile("(?<!\\*)\\*(?!\\*)(.+?)(?<!\\*)\\*(?!\\*)");
@@ -55,8 +59,36 @@ public class ChatHtmlRenderer {
      * @return a complete HTML document string
      */
     public String getBaseHtmlTemplate() {
+        // SECURITY (B3): Content Security Policy defence-in-depth.
+        //
+        // We must keep 'unsafe-inline' for scripts because the chat page uses
+        // many legitimate inline onclick handlers hardcoded by the renderer
+        // (sortTable, toggleCollapse, javaNavigate, javaAction, etc.). A full
+        // nonce-based CSP would require a structural refactor to pure event
+        // delegation, which is out of scope for this sprint.
+        //
+        // The XSS threat (LLM-injected <script> or event handler reaching
+        // Browser.innerHTML) is instead closed by the HtmlSanitizer pass in
+        // ModelChatView.sanitizeAndEscapeForAppend() — it strips every
+        // on*-attribute and script/iframe/object/embed/style tag before the
+        // HTML ever reaches innerHTML. That closure plus the CSP restrictions
+        // below (no external fetches, no objects, no frames, no form actions)
+        // give equivalent protection.
+        //
+        // TODO(post-sprint): refactor renderer to event delegation so we can
+        // drop 'unsafe-inline' and move to a per-load nonce.
         return "<!DOCTYPE html>\n"
             + "<html lang=\"en\"><head><meta charset=\"UTF-8\">\n"
+            + "<meta http-equiv=\"Content-Security-Policy\" content=\""
+            +   "default-src 'none'; "
+            +   "script-src 'unsafe-inline'; "
+            +   "style-src 'unsafe-inline'; "
+            +   "img-src data:; "
+            +   "connect-src 'none'; "
+            +   "object-src 'none'; "
+            +   "base-uri 'none'; "
+            +   "form-action 'none'; "
+            +   "frame-ancestors 'none';\">\n"
             + "<style>\n" + getCss() + "</style>\n"
             + "</head><body>\n"
             + "<div id=\"chat-container\">\n"
@@ -739,13 +771,27 @@ public class ChatHtmlRenderer {
         escaped = escaped.replaceAll("(?<!\\*)\\*(?!\\*)(.+?)(?<!\\*)\\*(?!\\*)", "<em>$1</em>");
         // Inline code
         escaped = escaped.replaceAll("`([^`]+)`", "<code>$1</code>");
-        // UUID links
+        // UUID links — SECURITY (B1): strict re-validation + Matcher.quoteReplacement
+        // to guarantee no regex backreference injection ($, \) and no HTML/JS escape
+        // (the regex is hex-only so this is belt-and-braces). The UUID is routed
+        // through escapeHtml as well so any future loosening of the regex stays safe.
         Matcher uuidMatcher = UUID_PATTERN.matcher(escaped);
         StringBuffer sb = new StringBuffer();
         while (uuidMatcher.find()) {
             String uuid = uuidMatcher.group(1);
-            uuidMatcher.appendReplacement(sb,
-                "<a class=\"element-link\" onclick=\"window.javaNavigate('" + uuid + "')\">" + uuid + "</a>");
+            if (!STRICT_UUID.matcher(uuid).matches()) {
+                // Regex-matched but fails strict canonical form — render as text.
+                uuidMatcher.appendReplacement(sb, Matcher.quoteReplacement(escapeHtml(uuid)));
+                continue;
+            }
+            String safeUuid = escapeHtml(uuid);
+            // B1: UUID is validated by STRICT_UUID regex, escapeHtml-escaped,
+            // and Matcher.quoteReplacement-wrapped so appendReplacement cannot
+            // interpret $/\ backreferences.
+            String replacement = "<a class=\"element-link\" data-uuid=\""
+                + safeUuid + "\" onclick=\"window.javaNavigate('" + safeUuid + "')\">"
+                + safeUuid + "</a>";
+            uuidMatcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
         }
         uuidMatcher.appendTail(sb);
         return sb.toString();
