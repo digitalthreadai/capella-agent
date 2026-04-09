@@ -68,6 +68,14 @@ public class Activator extends Plugin {
     @Override
     public void stop(BundleContext context) throws Exception {
         LOG.info("Capella Agent Core stopping...");
+        // I7: shut down the staging-area sweeper so the daemon thread
+        // does not outlive the bundle.
+        try {
+            com.capellaagent.core.staging.InMemoryStagingArea
+                .getInstance().shutdown();
+        } catch (Throwable t) {
+            LOG.fine("Staging shutdown error: " + t.getMessage());
+        }
         plugin = null;
         super.stop(context);
     }
