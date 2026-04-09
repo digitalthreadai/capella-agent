@@ -27,8 +27,17 @@ import com.capellaagent.simulation.tools.WhatIfTool;
  * <p>
  * Manages the simulation engine registry and creates tool instances with
  * their required service dependencies.
+ * <p>
+ * <b>Note:</b> This registrar is only invoked when the system property
+ * {@code capellaagent.simulation.enabled=true} is set (see {@link SimActivator}).
+ * The simulation bundle is placeholder scaffolding — engines return fabricated
+ * results and do not connect to a real MATLAB or simulation back-end in this build.
+ * All tool descriptions are prefixed with {@code [SIMULATION NOT FUNCTIONAL IN THIS BUILD]}
+ * so the LLM can inform the user accordingly.
  */
 public class SimToolRegistrar {
+
+    private static final String STUB_PREFIX = "[SIMULATION NOT FUNCTIONAL IN THIS BUILD] ";
 
     /**
      * Holder for a paired tool descriptor and executor.
@@ -102,6 +111,17 @@ public class SimToolRegistrar {
     }
 
     private <T extends IToolDescriptor & IToolExecutor> void registerTool(T tool) {
-        registeredTools.add(new ToolEntry(tool, tool));
+        // Wrap the descriptor to prefix the description with the stub warning
+        IToolDescriptor prefixedDescriptor = new IToolDescriptor() {
+            @Override public String getName() { return tool.getName(); }
+            @Override public String getDescription() {
+                return STUB_PREFIX + tool.getDescription();
+            }
+            @Override public String getCategory() { return tool.getCategory(); }
+            @Override public com.google.gson.JsonObject getParametersSchema() {
+                return tool.getParametersSchema();
+            }
+        };
+        registeredTools.add(new ToolEntry(prefixedDescriptor, tool));
     }
 }

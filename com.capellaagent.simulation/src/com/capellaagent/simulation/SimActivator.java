@@ -30,15 +30,29 @@ public class SimActivator extends Plugin {
         return instance;
     }
 
+    /**
+     * System property that must be set to {@code "true"} to enable simulation tool
+     * registration. Default is {@code false} — the simulation bundle is placeholder
+     * scaffolding that does not connect to a real engine in this build.
+     * <p>
+     * Set via {@code -Dcapellaagent.simulation.enabled=true} in {@code capella.ini}
+     * or the launch configuration VM arguments.
+     */
+    public static final String SIMULATION_ENABLED_PROP = "capellaagent.simulation.enabled";
+
     @Override
     public void start(BundleContext context) throws Exception {
         super.start(context);
         instance = this;
 
-        toolRegistrar = new SimToolRegistrar();
-        toolRegistrar.registerAll();
-
-        getLog().info("Simulation integration tools registered successfully");
+        if (Boolean.getBoolean(SIMULATION_ENABLED_PROP)) {
+            toolRegistrar = new SimToolRegistrar();
+            toolRegistrar.registerAll();
+            getLog().info("Simulation integration tools registered successfully");
+        } else {
+            getLog().info("Simulation tools NOT registered "
+                    + "(set -D" + SIMULATION_ENABLED_PROP + "=true to enable)");
+        }
     }
 
     @Override

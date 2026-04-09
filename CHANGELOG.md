@@ -3,6 +3,65 @@
 All notable changes to Capella Agent are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Semver: v2.
 
+## [Unreleased] — Security Hardening Sprint
+
+Closes all CRITICAL + HIGH + MEDIUM findings from the three-agent security
+audit (credentials, tool authorisation, injection surfaces) plus 9 follow-up
+adversarial findings (N1-N9). See `SECURITY.md` for the full posture summary
+and `docs/SMOKE_TEST_CHECKLIST.html` section 32 for the verification checklist.
+
+### Security
+- **Credentials:** Gemini API key moved from URL query string to
+  `x-goog-api-key` header. Introduced `AuthToken` wrapper with redacted
+  `toString()`. Preferences page no longer pre-populates the key field (shows
+  a saved-placeholder pattern instead). `setApiKey` now throws on failure
+  instead of silently losing the key.
+- **Error handling:** New `ErrorMessageFilter` maps provider exceptions to
+  safe user-facing messages. `ProviderErrorExtractor` parses error code/type
+  only — never `error.message`. Response bodies capped to 500 chars in logs.
+- **XSS hardening:** New `HtmlSanitizer` (tag whitelist, strips `on*`
+  handlers, blocks `javascript:`/`vbscript:`/`data:` URLs). Strict UUID
+  regex validation before element-link generation. Content-Security-Policy
+  meta tag locks down the chat Browser widget.
+- **Path traversal:** New `PathValidator` (canonicalise + workspace
+  containment + NOFOLLOW_LINKS + extension whitelist) applied to ReqIF
+  import, Excel import, and diagram export.
+- **Dependency upgrades:** Apache POI 5.2.5 → 5.3.0, commons-compress
+  1.25.0 → 1.27.1 (closes CVE-2024-25710, CVE-2024-26308), xmlbeans
+  5.2.0 → 5.3.0.
+- **XML parsing:** `FEATURE_SECURE_PROCESSING` on, explicit JAXP entity
+  limits, NOFOLLOW_LINKS on every file open. `.reqifz` disabled pending a
+  ZipSlip-safe extractor.
+- **POI limits:** Set once at bundle activation (`IOUtils.setByteArrayMaxOverride`,
+  `ZipSecureFile.setMinInflateRatio(0.01)`, max entry/text size).
+- **Cost & rate controls:** Per-session token budget (default 1M), per-day
+  hard cap (default 10M UTC) via new `DailyTokenLimiter`, per-provider
+  circuit breaker (5 errors / 120s → open 5 min, exponential backoff) via
+  new `ProviderCircuitBreaker`, iteration hard ceiling of 50, per-tool-result
+  byte cap 200K.
+- **Consent UI:** New native SWT `WriteConsentDialog` — Deny is the default
+  button, window-X = deny, LLM reasoning rendered as plain text with an
+  "untrusted" label, destructive tools disable the "remember my choice"
+  checkbox. Wired into `ChatSessionController` via the new `ConsentManager`
+  interface with `SwtConsentManager` implementation.
+- **Staging area:** Full 128-bit UUID diffIds (was 32-bit substring).
+  60-second background sweeper for expired entries. 100-entry LRU cap.
+  Project-name check on apply prevents cross-project replay.
+- **Prompt injection:** Added bracket-form, markdown-heading, and
+  line-leading role-prefix detection patterns to `ToolResultSanitizer`.
+- **Audit log:** Size-based rotation (10 MB × 10 files), rolling HMAC-SHA256
+  chain (key in secure preferences) for casual-tampering detection, secret
+  scrubbing (JSON keys, `Authorization: Bearer`, `x-goog-api-key` etc.)
+  before write, UTF-8-safe argument truncation.
+- **MATLAB bridge:** New `validateModelPath` — extension whitelist
+  (`.slx`/`.mdl`), workspace containment, symlink rejection, MATLAB script
+  metacharacter denial. Every invocation is audited.
+
+### Fixed
+- `TestConnectionPage` stale `sendMessages` API call updated to `provider.chat`.
+- `ChatJob` `toolDesc.getCategory().name()` incorrect call removed
+  (`getCategory()` returns String).
+
 ## [1.0.0.beta1] — 2026-04-07
 
 First tagged beta. Side-loaded release (no Marketplace listing yet, no
