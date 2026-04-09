@@ -49,7 +49,7 @@ public class ImportReqifTool extends AbstractCapellaTool {
             + "Requires the Requirements Viewpoint to be enabled for dry_run=false.";
 
     public ImportReqifTool() {
-        super(TOOL_NAME, DESCRIPTION, ToolCategory.MODEL_WRITE);
+        super(TOOL_NAME, DESCRIPTION, ToolCategory.REQUIREMENTS);
     }
 
     @Override
@@ -61,19 +61,47 @@ public class ImportReqifTool extends AbstractCapellaTool {
         return params;
     }
 
+    // SECURITY (C3): hard upper bound on ReqIF file size — prevents POI /
+    // DOM parser DoS via a maliciously huge XML file. 100 MB is far above
+    // any real-world ReqIF export.
+    private static final long MAX_REQIF_BYTES = 100L * 1024 * 1024;
+
+    // SECURITY (I4/N4): .reqifz support is removed until a ZipSlip-safe
+    // extractor is implemented. Any future extractor must verify every
+    // entry's normalised path stays inside the target directory.
+    private static final java.util.Set<String> ALLOWED_EXTENSIONS =
+            java.util.Set.of(".reqif", ".xml");
+
     @Override
     protected ToolResult executeInternal(Map<String, Object> parameters) {
-        String path = getRequiredString(parameters, "path");
+        String rawPath = getRequiredString(parameters, "path");
         boolean dryRun = getOptionalBoolean(parameters, "dry_run", true);
 
-        // Validate file
-        File file = new File(path);
-        if (!file.exists()) {
-            return ToolResult.error("File not found: " + path);
+        // SECURITY (C1/C2/C4/I6): centralized path validation — canonicalizes,
+        // enforces workspace containment, rejects symlinks (NOFOLLOW_LINKS),
+        // and checks the extension allow-list. Violations throw a
+        // SecurityException with a redacted message (never echoes the raw
+        // path back to the LLM or error log).
+        java.nio.file.Path validatedPath;
+        try {
+            validatedPath = com.capellaagent.core.security.PathValidator
+                    .validateInputPath(rawPath, ALLOWED_EXTENSIONS);
+        } catch (SecurityException se) {
+            return ToolResult.error("Rejected by path validator: " + se.getMessage());
         }
-        String nameLower = file.getName().toLowerCase();
-        if (!nameLower.endsWith(".reqif") && !nameLower.endsWith(".reqifz")) {
-            return ToolResult.error("File does not have a .reqif extension: " + path);
+        java.io.File file = validatedPath.toFile();
+
+        // SECURITY (C3): size cap before opening to guarantee the DOM
+        // parser cannot be fed an arbitrarily large document.
+        try {
+            long size = java.nio.file.Files.size(validatedPath);
+            if (size > MAX_REQIF_BYTES) {
+                return ToolResult.error(
+                    "ReqIF file exceeds maximum size of "
+                    + (MAX_REQIF_BYTES / (1024 * 1024)) + " MB");
+            }
+        } catch (java.io.IOException ioe) {
+            return ToolResult.error("Cannot read file attributes");
         }
 
         try {
@@ -146,6 +174,17 @@ public class ImportReqifTool extends AbstractCapellaTool {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(false); // work with local names only
 
+        // SECURITY (I3/N3): enable FEATURE_SECURE_PROCESSING which turns on
+        // JAXP limits (entity expansion, element depth, attribute count)
+        // as a single switch. Combined with the individual DOCTYPE /
+        // external-entity disables below, this closes XXE, billion laughs,
+        // and quadratic blowup in one pass.
+        try {
+            factory.setFeature(javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        } catch (javax.xml.parsers.ParserConfigurationException ignored) {
+            // Older parser without FSP — fall back to manual features below.
+        }
+
         // XXE prevention
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
         factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
@@ -160,7 +199,14 @@ public class ImportReqifTool extends AbstractCapellaTool {
         }
 
         DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(file);
+        // SECURITY (I6/C4): NOFOLLOW_LINKS at open time — defence in depth
+        // over the earlier PathValidator check, closing any TOCTOU window
+        // between validation and open.
+        Document doc;
+        try (java.io.InputStream in = java.nio.file.Files.newInputStream(
+                file.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            doc = builder.parse(in);
+        }
         doc.getDocumentElement().normalize();
 
         List<RequirementRecord> records = new ArrayList<>();

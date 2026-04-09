@@ -97,6 +97,18 @@ public class ExportDiagramImageTool extends AbstractCapellaTool {
                 String tempDir = System.getProperty("java.io.tmpdir");
                 String safeName = descriptor.getName().replaceAll("[^a-zA-Z0-9_-]", "_");
                 outputPath = tempDir + File.separator + safeName + "." + format;
+            } else {
+                // SECURITY (C2): validate the user-supplied output path.
+                // Canonicalization + workspace containment + extension check
+                // prevents a "write diagram to C:\Windows\System32" request.
+                try {
+                    java.nio.file.Path validated = com.capellaagent.core.security.PathValidator
+                        .validateOutputPath(outputPath,
+                            java.util.Set.of(".png", ".jpg", ".jpeg", ".svg", ".gif"));
+                    outputPath = validated.toString();
+                } catch (SecurityException se) {
+                    return ToolResult.error("Rejected by path validator: " + se.getMessage());
+                }
             }
 
             // Ensure parent directory exists

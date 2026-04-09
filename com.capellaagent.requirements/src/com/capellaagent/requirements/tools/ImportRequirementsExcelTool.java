@@ -55,7 +55,7 @@ public class ImportRequirementsExcelTool extends AbstractCapellaTool {
     };
 
     public ImportRequirementsExcelTool() {
-        super(TOOL_NAME, DESCRIPTION, ToolCategory.MODEL_WRITE);
+        super(TOOL_NAME, DESCRIPTION, ToolCategory.REQUIREMENTS);
     }
 
     @Override
@@ -70,15 +70,40 @@ public class ImportRequirementsExcelTool extends AbstractCapellaTool {
         return params;
     }
 
+    // SECURITY (C3): size cap for Excel files — POI has known DoS via
+    // crafted sheets; 50 MB is above any real requirements spreadsheet.
+    private static final long MAX_EXCEL_BYTES = 50L * 1024 * 1024;
+
+    private static final java.util.Set<String> ALLOWED_EXTENSIONS =
+            java.util.Set.of(".xlsx", ".xlsm", ".xls");
+
     @Override
     protected ToolResult executeInternal(Map<String, Object> parameters) {
-        String path = getRequiredString(parameters, "path");
+        String rawPath = getRequiredString(parameters, "path");
         int sheetIndex = getOptionalInt(parameters, "sheet", 0);
         boolean dryRun = getOptionalBoolean(parameters, "dry_run", true);
 
-        File file = new File(path);
-        if (!file.exists()) {
-            return ToolResult.error("File not found: " + path);
+        // SECURITY (C1/C2/C4/I6): PathValidator centralises canonicalization,
+        // workspace containment, symlink rejection, and extension whitelist.
+        java.nio.file.Path validatedPath;
+        try {
+            validatedPath = com.capellaagent.core.security.PathValidator
+                    .validateInputPath(rawPath, ALLOWED_EXTENSIONS);
+        } catch (SecurityException se) {
+            return ToolResult.error("Rejected by path validator: " + se.getMessage());
+        }
+        File file = validatedPath.toFile();
+
+        // SECURITY (C3): size cap before POI touches the file.
+        try {
+            long size = java.nio.file.Files.size(validatedPath);
+            if (size > MAX_EXCEL_BYTES) {
+                return ToolResult.error(
+                    "Excel file exceeds maximum size of "
+                    + (MAX_EXCEL_BYTES / (1024 * 1024)) + " MB");
+            }
+        } catch (java.io.IOException ioe) {
+            return ToolResult.error("Cannot read file attributes");
         }
 
         // TCCL fix for Apache POI OSGi classloader
@@ -92,7 +117,11 @@ public class ImportRequirementsExcelTool extends AbstractCapellaTool {
     }
 
     private ToolResult doImport(File file, int sheetIndex, boolean dryRun) {
-        try (FileInputStream fis = new FileInputStream(file);
+        // SECURITY (I6/C4): NOFOLLOW_LINKS at open time closes the TOCTOU
+        // window between PathValidator and POI. If the path turned into a
+        // symlink between validate and open, the OS refuses to open it.
+        try (java.io.InputStream fis = java.nio.file.Files.newInputStream(
+                 file.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS);
              Workbook workbook = WorkbookFactory.create(fis)) {
 
             if (sheetIndex >= workbook.getNumberOfSheets()) {
@@ -109,6 +138,7 @@ public class ImportRequirementsExcelTool extends AbstractCapellaTool {
             String detectedTextHeader = "column 1 (auto)";
 
             // Check up to 3 header rows
+            int headerRowIdx = 0; // tracks where the header was found
             for (int rowIdx = 0; rowIdx <= Math.min(2, sheet.getLastRowNum()); rowIdx++) {
                 Row row = sheet.getRow(rowIdx);
                 if (row == null) continue;
@@ -125,16 +155,19 @@ public class ImportRequirementsExcelTool extends AbstractCapellaTool {
                         detectedTextHeader = header;
                     }
                 }
-                if (idCol != -1 && textCol != -1) break;
+                if (idCol != -1 && textCol != -1) {
+                    headerRowIdx = rowIdx;
+                    break;
+                }
             }
 
             // Fallback
             if (idCol == -1) { idCol = 0; }
             if (textCol == -1) { textCol = 1; }
 
-            // Skip header row (row 0)
+            // Start data extraction after the detected header row
             List<RequirementRow> rows = new ArrayList<>();
-            for (int rowIdx = 1; rowIdx <= sheet.getLastRowNum(); rowIdx++) {
+            for (int rowIdx = headerRowIdx + 1; rowIdx <= sheet.getLastRowNum(); rowIdx++) {
                 Row row = sheet.getRow(rowIdx);
                 if (row == null) continue;
                 String id = getCellAsString(row.getCell(idCol)).trim();
