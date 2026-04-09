@@ -7,11 +7,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.HexFormat;
+import java.util.regex.Pattern;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import com.google.gson.JsonObject;
 
@@ -51,6 +57,22 @@ public final class AuditLogger {
     /** Maximum length for argument strings in audit entries to prevent log bloat. */
     private static final int MAX_ARGUMENTS_LENGTH = 2000;
 
+    /** Rotate when the live audit.log exceeds 10 MB (G4). */
+    private static final long ROTATE_BYTES = 10L * 1024 * 1024;
+
+    /** Number of rotated files to keep. */
+    private static final int MAX_ROTATED = 10;
+
+    // I2: secret scrubbing — scrub JSON key/value pairs, bearer tokens,
+    // and common credential-bearing headers BEFORE the argument string
+    // is truncated or written.
+    private static final Pattern JSON_SECRET = Pattern.compile(
+        "(?i)\"(api[_-]?key|token|password|secret|credential|authorization|bearer|x[_-]api[_-]key|client[_-]secret|access[_-]token|refresh[_-]token)\"\\s*:\\s*\"[^\"]*\"");
+    private static final Pattern BEARER = Pattern.compile(
+        "(?i)(authorization\\s*:\\s*bearer\\s+)[^\\s\"',]+");
+    private static final Pattern HEADER_KEY = Pattern.compile(
+        "(?i)(x-goog-api-key|x-api-key|api-key)\\s*:\\s*[^\\s\"',]+");
+
     private volatile boolean enabled = true;
 
     /** Lazily initialized path to the dedicated audit log file. */
@@ -59,8 +81,59 @@ public final class AuditLogger {
     /** Cached OS user name. */
     private final String userName;
 
+    /** HMAC key used for rolling line integrity (G4). */
+    private final byte[] hmacKey;
+
+    /** Previous line's HMAC, or "GENESIS" on first write. Guarded by {@code this}. */
+    private String previousHmac = "GENESIS";
+
     private AuditLogger() {
         this.userName = System.getProperty("user.name", "unknown");
+        this.hmacKey = loadOrGenerateHmacKey();
+    }
+
+    private byte[] loadOrGenerateHmacKey() {
+        try {
+            org.eclipse.equinox.security.storage.ISecurePreferences root =
+                org.eclipse.equinox.security.storage.SecurePreferencesFactory.getDefault();
+            if (root == null) {
+                return randomKey();
+            }
+            org.eclipse.equinox.security.storage.ISecurePreferences node =
+                root.node("com.capellaagent.audit");
+            String hex = node.get("hmacKey", null);
+            if (hex == null || hex.isEmpty()) {
+                byte[] key = randomKey();
+                node.put("hmacKey", HexFormat.of().formatHex(key), true);
+                node.flush();
+                return key;
+            }
+            return HexFormat.of().parseHex(hex);
+        } catch (Exception e) {
+            // Secure preferences unavailable — fall back to per-process
+            // ephemeral key. HMAC still detects tampering within the
+            // current process lifetime.
+            return randomKey();
+        }
+    }
+
+    private static byte[] randomKey() {
+        byte[] key = new byte[32];
+        new SecureRandom().nextBytes(key);
+        return key;
+    }
+
+    private String computeHmac(String line) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(hmacKey, "HmacSHA256"));
+            mac.update(previousHmac.getBytes(StandardCharsets.UTF_8));
+            mac.update((byte) '|');
+            byte[] out = mac.doFinal(line.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(out);
+        } catch (Exception e) {
+            return "HMAC_ERROR";
+        }
     }
 
     /**
@@ -231,10 +304,26 @@ public final class AuditLogger {
      */
     private String sanitizeArguments(String arguments) {
         if (arguments == null) return "{}";
-        if (arguments.length() > MAX_ARGUMENTS_LENGTH) {
-            return arguments.substring(0, MAX_ARGUMENTS_LENGTH) + "...(truncated)";
+        // I2: scrub secrets BEFORE truncation.
+        String scrubbed = JSON_SECRET.matcher(arguments).replaceAll(m -> {
+            String field = m.group(1);
+            return "\"" + field + "\":\"***\"";
+        });
+        scrubbed = BEARER.matcher(scrubbed).replaceAll("$1***");
+        scrubbed = HEADER_KEY.matcher(scrubbed).replaceAll("$1: ***");
+
+        // G4: UTF-8 byte-safe truncation instead of char-index slicing.
+        byte[] bytes = scrubbed.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length <= MAX_ARGUMENTS_LENGTH) {
+            return scrubbed;
         }
-        return arguments;
+        int limit = MAX_ARGUMENTS_LENGTH;
+        // Walk backwards off continuation bytes (10xxxxxx) to avoid
+        // splitting a UTF-8 codepoint.
+        while (limit > 0 && (bytes[limit] & 0xC0) == 0x80) {
+            limit--;
+        }
+        return new String(bytes, 0, limit, StandardCharsets.UTF_8) + "...(truncated)";
     }
 
     /**
@@ -269,23 +358,59 @@ public final class AuditLogger {
      *
      * @param jsonLine the single-line JSON entry to append
      */
-    private void writeToAuditFile(String jsonLine) {
+    private synchronized void writeToAuditFile(String jsonLine) {
         try {
             Path path = getAuditFilePath();
             if (path == null) return;
 
-            // Ensure parent directory exists
             Files.createDirectories(path.getParent());
+            rotateIfNeeded(path);
+
+            // G4: rolling HMAC chain — detect casual tampering. Not
+            // forensically strong (an attacker with filesystem access
+            // can read the key from secure preferences) but raises the
+            // bar above "edit audit.log in a text editor".
+            String hmac = computeHmac(jsonLine);
+            String framed = jsonLine.substring(0, jsonLine.length() - 1)
+                + ",\"_prev\":\"" + previousHmac + "\",\"_hmac\":\"" + hmac + "\"}";
+            previousHmac = hmac;
 
             try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-                writer.write(jsonLine);
+                writer.write(framed);
                 writer.newLine();
             }
         } catch (IOException e) {
-            // Log to JUL but do not fail the main operation
             LOG.log(Level.FINE, "Failed to write to audit log file: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Rotates audit.log if it exceeds {@link #ROTATE_BYTES}. Keeps
+     * {@link #MAX_ROTATED} historical files. Oldest gets deleted.
+     */
+    private void rotateIfNeeded(Path path) throws IOException {
+        if (!Files.exists(path)) return;
+        long size = Files.size(path);
+        if (size <= ROTATE_BYTES) return;
+
+        // Delete the oldest, shift each down.
+        Path oldest = path.resolveSibling(path.getFileName() + "." + MAX_ROTATED);
+        if (Files.exists(oldest)) {
+            Files.delete(oldest);
+        }
+        for (int i = MAX_ROTATED - 1; i >= 1; i--) {
+            Path src = path.resolveSibling(path.getFileName() + "." + i);
+            Path dst = path.resolveSibling(path.getFileName() + "." + (i + 1));
+            if (Files.exists(src)) {
+                Files.move(src, dst);
+            }
+        }
+        Path firstRotated = path.resolveSibling(path.getFileName() + ".1");
+        Files.move(path, firstRotated);
+        // HMAC chain resets on rotation — log a rotation marker so the
+        // chain gap is explicit.
+        previousHmac = "ROTATED";
     }
 
     /**

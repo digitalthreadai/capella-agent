@@ -51,6 +51,12 @@ public final class ToolResultSanitizer {
         Pattern.compile("(?i)delete\\s+(all|every)\\s+(element|component|function|requirement)"),
         Pattern.compile("(?i)the\\s+user\\s+(authorized|approved|consented|allowed)"),
         Pattern.compile("(?i)override\\s+(all\\s+|the\\s+)?(safety|security|access|admin)"),
+        // G3 additions: bracket variants used by some RAG templates.
+        Pattern.compile("(?i)\\[\\s*(system|user|assistant|tool)\\s*\\]"),
+        // G3 additions: markdown heading variants.
+        Pattern.compile("(?i)^#{1,6}\\s*(system|user|assistant)\\b", Pattern.MULTILINE),
+        // G3 additions: line-leading role prefixes.
+        Pattern.compile("(?i)^(system|user|assistant)\\s*:\\s", Pattern.MULTILINE),
     };
 
     /** Zero-width and bidi control characters used in steganographic injection. */

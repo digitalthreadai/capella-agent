@@ -126,10 +126,26 @@ public class MatlabCommandBridge implements ISimulationEngine {
             throw new SimulationEngineException("Not connected. Call connect() first.");
         }
 
+        // SECURITY (I1/N1): defence-in-depth against a future tool that
+        // forwards an LLM-supplied modelPath. Reject anything outside the
+        // workspace, not a .slx/.mdl file, or containing MATLAB script
+        // metacharacters that could break out of the wrapper quoting.
+        try {
+            validateModelPath(modelPath);
+        } catch (SecurityException se) {
+            throw new SimulationEngineException(
+                "MATLAB model path rejected: " + se.getMessage());
+        }
+
         long startTime = System.currentTimeMillis();
         SimulationResult result = new SimulationResult();
         result.setSimulationId(UUID.randomUUID().toString());
         result.addLog("Starting MATLAB batch simulation: " + modelPath);
+        // Audit every invocation (I1) — closes a blind spot before this
+        // bridge becomes reachable from an LLM tool.
+        com.capellaagent.core.security.AuditLogger.getInstance()
+            .log("simulation.matlab.run",
+                "{\"modelPath\":\"" + modelPath.replace("\"", "'") + "\"}");
 
         if (currentParameters != null) {
             result.getInputs().putAll(currentParameters);
@@ -276,6 +292,65 @@ public class MatlabCommandBridge implements ISimulationEngine {
         }
 
         return null;
+    }
+
+    /**
+     * SECURITY (I1/N1): validates an LLM- or user-supplied Simulink model
+     * path before it reaches {@link #buildWrapperScript} where a single-quote
+     * escape is the only thing separating user input from arbitrary MATLAB
+     * execution.
+     * <p>
+     * Enforces:
+     * <ul>
+     *   <li>non-null and non-blank</li>
+     *   <li>extension {@code .slx} or {@code .mdl}</li>
+     *   <li>no newline / tab / backtick / percent / semicolon / single-quote
+     *       / {@code system(} / {@code eval(} metacharacters (MATLAB script
+     *       injection primitives)</li>
+     *   <li>canonical path is inside the Eclipse workspace root</li>
+     *   <li>not a symbolic link (TOCTOU + path confusion)</li>
+     * </ul>
+     */
+    private static void validateModelPath(String modelPath) {
+        if (modelPath == null || modelPath.isBlank()) {
+            throw new SecurityException("model path is empty");
+        }
+        String lower = modelPath.toLowerCase();
+        if (!(lower.endsWith(".slx") || lower.endsWith(".mdl"))) {
+            throw new SecurityException("only .slx and .mdl are allowed");
+        }
+        // Reject MATLAB script metacharacters / known dangerous tokens.
+        String[] banned = {"\n", "\r", "\t", "`", "%", ";", "'", "\"",
+                           "system(", "eval(", "unix(", "!", "&&", "||", "|"};
+        for (String b : banned) {
+            if (modelPath.contains(b)) {
+                throw new SecurityException("path contains disallowed character");
+            }
+        }
+        try {
+            java.nio.file.Path p = java.nio.file.Paths.get(modelPath)
+                .toAbsolutePath().normalize();
+            if (java.nio.file.Files.isSymbolicLink(p)) {
+                throw new SecurityException("path is a symbolic link");
+            }
+            // Workspace containment (falls back to user.home if Eclipse
+            // workspace is not available).
+            java.nio.file.Path root;
+            try {
+                root = java.nio.file.Paths.get(
+                    org.eclipse.core.resources.ResourcesPlugin.getWorkspace()
+                        .getRoot().getLocation().toOSString())
+                    .toAbsolutePath().normalize();
+            } catch (Exception e) {
+                root = java.nio.file.Paths.get(System.getProperty("user.home"))
+                    .toAbsolutePath().normalize();
+            }
+            if (!p.startsWith(root)) {
+                throw new SecurityException("path is outside permitted root");
+            }
+        } catch (java.nio.file.InvalidPathException ipe) {
+            throw new SecurityException("invalid path syntax");
+        }
     }
 
     /**
