@@ -45,6 +45,24 @@ nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
   <code>TOOLS.md</code> in the repository root.
 </p>
 
+<h2>Tool Limits (Safety Baselines)</h2>
+
+<table>
+  <tr><th>Limit</th><th>Value</th><th>Applies to</th></tr>
+  <tr><td>Per-tool-result byte cap</td><td>200&nbsp;KB</td><td>Every tool result returned to the LLM</td></tr>
+  <tr><td>Tool-call iteration ceiling</td><td>50 calls per turn</td><td>All tools, all modes</td></tr>
+  <tr><td>ReqIF file size limit</td><td>100&nbsp;MB</td><td><code>import_reqif</code></td></tr>
+  <tr><td>Excel file size limit</td><td>50&nbsp;MB</td><td><code>import_requirements_excel</code></td></tr>
+  <tr><td><code>.reqifz</code> archive support</td><td>Disabled</td><td><code>import_reqif</code> — ZipSlip-safe extractor pending</td></tr>
+  <tr><td>Import/export paths</td><td>Workspace only</td><td>All file-path tools — paths outside the workspace are rejected</td></tr>
+</table>
+
+<div class="tip">
+  These limits are enforced by the tool framework and cannot be raised by the LLM.
+  They protect against runaway tool calls, ZIP-bomb imports, and path-traversal attacks.
+  See <a href="security.html">Security &amp; Governance</a> for details.
+</div>
+
 <h2>Category Summary</h2>
 
 <table>

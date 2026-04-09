@@ -190,5 +190,74 @@ nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
   Java version, OS, and the provider you are using.
 </div>
 
+<h3>Write operation was denied / "Action cancelled by user"</h3>
+
+<p>
+  <strong>Symptom:</strong> You asked the agent to create, rename, or delete something
+  and it replied that the action was cancelled or denied.
+</p>
+<p>
+  <strong>Cause:</strong> You clicked <strong>Deny</strong>, pressed <strong>Enter</strong>
+  (Deny is the default button), or closed the consent dialog with <strong>X</strong>.
+</p>
+<p>
+  <strong>Fix:</strong> Re-send the same query. When the consent dialog appears again,
+  review the tool name and arguments, then click <strong>Approve</strong> explicitly.
+  If you want the agent to skip consent for routine writes in this session, tick
+  "Remember my choice for this tool in this session" before clicking Approve.
+</p>
+<p>
+  Note: destructive operations (delete, merge, apply architecture diff) always prompt —
+  the "Remember" checkbox is disabled for those tools by design.
+  See <a href="chat_view.html">Chat View &rarr; Write-Operation Consent</a>.
+</p>
+
+<h3>Provider shows "unavailable" / circuit breaker cooldown message</h3>
+
+<p>
+  <strong>Symptom:</strong> The chat shows a message like
+  <em>"Provider temporarily unavailable — retrying automatically in 5 minutes"</em>
+  even though the provider's status page looks fine.
+</p>
+<p>
+  <strong>Cause:</strong> Capella Agent's circuit breaker opened after 5 consecutive
+  errors from the provider within a 120-second window. This protects against runaway
+  retries during outages.
+</p>
+<p>
+  <strong>Fix options:</strong>
+</p>
+<ul>
+  <li>Wait 5 minutes for the circuit breaker to reset automatically and try again.</li>
+  <li>Switch to a different provider in the toolbar dropdown — each provider has its own
+      independent circuit breaker state.</li>
+  <li>Check your network connection and API key validity in
+      <strong>Preferences &rarr; Capella Agent &rarr; LLM Providers</strong>
+      and click <strong>Test Connection</strong>.</li>
+</ul>
+
+<h3>API key field appears blank after reopening Preferences</h3>
+
+<p>
+  <strong>Symptom:</strong> You open <strong>Window &rarr; Preferences &rarr; Capella Agent
+  &rarr; LLM Providers</strong> and the API key field is empty, even though the agent was
+  working before.
+</p>
+<p>
+  <strong>Cause:</strong> This is expected behaviour. For security, Capella Agent never
+  displays a saved API key. The field shows an empty placeholder to signal that a key is
+  stored — it does not mean the key is missing.
+</p>
+<p>
+  <strong>To verify the key is still working:</strong> Click <strong>Test Connection</strong>.
+  A green checkmark confirms the stored key is valid. Only type a new key if you want to
+  <em>replace</em> the existing one. Leaving the field blank and clicking Apply keeps the
+  current key unchanged.
+</p>
+<p>
+  See <a href="provider_setup.html">Provider Setup &rarr; Saved keys are never displayed</a>
+  for the full explanation.
+</p>
+
 </body>
 </html>

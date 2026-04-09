@@ -80,9 +80,18 @@ nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
   <li>Copy the key (it is shown only once).</li>
   <li>In Capella Preferences, select <strong>Claude (Anthropic)</strong>.</li>
   <li>Paste the key into the <strong>API Key</strong> field.</li>
-  <li>Select a model — <code>claude-opus-4-5</code> is the most capable, <code>claude-haiku-3-5</code> is fastest.</li>
+  <li>Select a model — <code>claude-opus-4-6</code> is the most capable, <code>claude-haiku-4-5-20251001</code> is fastest, <code>claude-sonnet-4-6</code> is the balanced default.</li>
   <li>Click <strong>Test Connection</strong>.</li>
 </ol>
+
+<div class="warning">
+  <strong>Saved keys are never displayed.</strong> After you click Apply, Capella Agent
+  stores the key in Eclipse secure preferences and replaces the field with a
+  <code>&bull;&bull;&bull;&bull;&bull;&bull; (saved &mdash; leave blank to keep)</code>
+  placeholder. To <strong>keep</strong> your current key, leave the field blank and make
+  your other changes. To <strong>replace</strong> it, type a new key and click Apply.
+  The key never leaves your machine except in outbound requests to the provider.
+</div>
 
 <div class="tip">
   <strong>Best model for MBSE:</strong> Claude excels at structured reasoning and long-context
@@ -143,6 +152,32 @@ nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
 <div class="warning">
   <strong>ITAR / air-gapped:</strong> When using Ollama or LM Studio, no data leaves your machine.
   This is the approved path for ITAR-controlled program models.
+</div>
+
+<h2>Cost Controls (Safety Baselines)</h2>
+
+<p>
+  Every provider configuration in Capella Agent runs under a fixed set of cost and
+  rate guardrails. These are <strong>deliberate v1.0 safety baselines</strong>, not
+  placeholders — they protect you from a runaway tool-calling loop, a compromised
+  session, or a provider outage that would otherwise burn credit silently.
+</p>
+
+<table>
+  <tr><th>Guardrail</th><th>Default</th><th>What it protects against</th></tr>
+  <tr><td>Per-session token budget</td><td>1,000,000 tokens</td><td>Runaway loops inside a single chat session</td></tr>
+  <tr><td>Per-day hard cap (UTC)</td><td>10,000,000 tokens</td><td>Compromised workstation, forgotten background session</td></tr>
+  <tr><td>Provider circuit breaker</td><td>5 errors in 120&nbsp;s &rarr; open 5&nbsp;min</td><td>Silent retries during a provider outage</td></tr>
+  <tr><td>Iteration hard ceiling</td><td>50 tool calls per turn</td><td>Tool-call ping-pong between the model and the workspace</td></tr>
+  <tr><td>Tool-result byte cap</td><td>200&nbsp;KB per tool</td><td>A single huge result (e.g. <code>list_all_requirements</code> on a 5000-row project) blowing the budget</td></tr>
+</table>
+
+<div class="tip">
+  <strong>Why fixed, not a preference?</strong> These numbers are calibrated against
+  real-world provider pricing and outage patterns. A budget that a user can raise
+  with one click is a budget that protects nothing. Administrators who need a
+  different cap can call <code>DailyTokenLimiter.getInstance().setCap(long)</code>
+  from a startup hook — see the Security &amp; Governance page for details.
 </div>
 
 </body>

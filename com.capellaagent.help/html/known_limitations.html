@@ -107,6 +107,24 @@ nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
     <td>File GitHub issues manually for bugs</td>
     <td>v1.1 — opt-in telemetry with privacy notice</td>
   </tr>
+  <tr>
+    <td>12</td>
+    <td>Consent dialog adds latency to write operations — the dialog blocks the worker thread until you respond; there is no timeout</td>
+    <td>Intentional by design. Use "Remember my choice" for routine writes to reduce prompts per session. Destructive tools always prompt.</td>
+    <td>None — deliberate safety design</td>
+  </tr>
+  <tr>
+    <td>13</td>
+    <td>Audit log rotation policy — log rotates at 10&nbsp;MB, keeping up to 10 files (<code>audit.log</code>, <code>audit.log.1</code>, …, <code>audit.log.9</code>). Older entries are deleted. The rolling HMAC chain detects casual tampering but not a determined attacker with JVM filesystem access.</td>
+    <td>Archive old log files before the 10th rotation if long-term retention is required. Location: <code>{workspace}/.capella-agent/audit.log</code></td>
+    <td>v1.2 — configurable retention policy</td>
+  </tr>
+  <tr>
+    <td>14</td>
+    <td>Token budgets are fixed in v1.0 — session budget (1M tokens) and daily cap (10M tokens) are hardcoded safety baselines with no preference UI</td>
+    <td>Administrators can call <code>DailyTokenLimiter.getInstance().setCap(long)</code> from a startup hook to override the daily cap programmatically. See <a href="security.html">Security &amp; Governance</a>.</td>
+    <td>None — deliberate guardrail design. Admin API available.</td>
+  </tr>
 </table>
 
 <h2>Detailed Notes</h2>

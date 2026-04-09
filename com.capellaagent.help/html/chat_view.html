@@ -157,5 +157,43 @@ nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
   changes — use <strong>Edit &rarr; Undo</strong> (<strong>Ctrl+Z</strong>) to reverse them.
 </div>
 
+<h2>Write-Operation Consent</h2>
+
+<p>
+  When the agent is about to modify your Capella model — create, rename, delete, or apply
+  an architecture proposal — it pauses and shows a native consent dialog before any write
+  occurs. You cannot accidentally change your model by typing a query.
+</p>
+
+<div class="tip">
+  <strong>Consent dialog layout:</strong> The dialog shows the tool name and category
+  badge (<em>MODEL_WRITE</em>, <em>DESTRUCTIVE</em>, or <em>REQUIREMENTS</em>), the full
+  argument set in read-only monospace text, and an <strong>"LLM reasoning (untrusted)"</strong>
+  section in amber that contains a short excerpt of why the agent wants to make the change.
+  <br/><br/>
+  The <strong>Deny</strong> button is focused by default — pressing <strong>Enter</strong>
+  without moving the cursor <em>denies</em> the action. Closing the dialog with
+  <strong>X</strong> also denies.
+  <br/><br/>
+  A <strong>"Remember my choice for this tool in this session"</strong> checkbox appears for
+  ordinary model writes, letting you approve a tool type once per session. The checkbox is
+  <strong>disabled</strong> for destructive operations (delete, merge, apply architecture diff)
+  — those always prompt, every time.
+</div>
+
+<div class="warning">
+  <strong>The "LLM reasoning" text is untrusted.</strong> It is capped at 300 characters
+  and rendered as plain text. An adversarial prompt inside a requirement or diagram label
+  cannot embed HTML or control characters to make the reasoning look official. Treat it as
+  a hint, not as a guarantee.
+</div>
+
+<p>
+  If a write is denied, the agent receives a denial message and may rephrase its request or
+  stop. The denial is recorded in the audit log at
+  <code>{workspace}/.capella-agent/audit.log</code>.
+  See <a href="security.html">Security &amp; Governance</a> for more on the audit trail.
+</p>
+
 </body>
 </html>

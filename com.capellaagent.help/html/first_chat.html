@@ -127,5 +127,27 @@ nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
   or set up additional providers in <a href="provider_setup.html">Provider Setup</a>.
 </div>
 
+<h2>What to Expect When You Ask the Agent to Change the Model</h2>
+
+<p>
+  Read-only queries (listing elements, searching, exporting diagrams) run without interruption.
+  The moment you ask the agent to <em>create, rename, delete, or modify</em> anything in your
+  Capella model, a native <strong>write-operation consent dialog</strong> appears before any
+  change is made.
+</p>
+
+<p>
+  The dialog shows exactly which tool is about to run and what arguments it will use. The
+  <strong>Deny</strong> button is focused by default — if you are unsure, just press
+  <strong>Enter</strong> and the action is cancelled safely. Closing the dialog with
+  <strong>X</strong> also denies.
+</p>
+
+<p>
+  For a full description of the consent dialog and the audit trail it produces, see
+  <a href="chat_view.html#write-operation-consent">Write-Operation Consent</a> in the Chat
+  View reference and the <a href="security.html">Security &amp; Governance</a> page.
+</p>
+
 </body>
 </html>

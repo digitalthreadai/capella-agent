@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Security &amp; Governance — Capella Agent</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 860px; margin: 0 auto; padding: 24px; color: #1a1a2e; line-height: 1.6; }
+h1 { color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 8px; }
+h2 { color: #2C5F8A; margin-top: 32px; }
+h3 { color: #333; }
+code { background: #f4f6f8; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: inherit; }
+.tip { background: #e8f4fd; border-left: 4px solid #4A90E2; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th { background: #4A90E2; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+tr:nth-child(even) { background: #f8f9ff; }
+nav { background: #f4f6f8; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+nav a { color: #4A90E2; text-decoration: none; margin-right: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="overview.html">Overview</a> &rsaquo;
+  <strong>Security &amp; Governance</strong>
+</nav>
+
+<h1>Security &amp; Governance</h1>
+
+<p>
+  This page describes the security protections built into Capella Agent v1.0.
+  For the full threat model, dependency inventory, and vulnerability reporting
+  instructions, see <code>SECURITY.md</code> in the repository root.
+</p>
+
+<h2>Credentials</h2>
+
+<p>
+  All API keys are stored in <strong>Eclipse Secure Preferences</strong>
+  (<code>ISecurePreferences</code>) using OS-level encrypted storage — never in plain-text
+  <code>.prefs</code> files or in memory longer than necessary.
+</p>
+<ul>
+  <li>Keys are transmitted only in outbound HTTPS requests to the provider — never logged,
+      never included in error messages shown to users.</li>
+  <li>The Preferences page <strong>never pre-populates</strong> the key field after the first
+      save. An empty field means a key is stored; leaving it blank and clicking Apply keeps
+      the existing key unchanged.</li>
+  <li>The Gemini provider sends the API key in the <code>x-goog-api-key</code> request
+      header — not as a URL query parameter — so the key does not appear in proxy logs or
+      browser history.</li>
+</ul>
+
+<div class="tip">
+  <strong>Tip:</strong> If the key field is blank after reopening Preferences, click
+  <strong>Test Connection</strong> to confirm the stored key still works before entering a
+  new one. See <a href="troubleshooting.html">Troubleshooting &rarr; API key field appears
+  blank</a>.
+</div>
+
+<h2>Write-Operation Consent</h2>
+
+<p>
+  No tool that modifies your Capella model runs without your explicit approval. Every
+  write-tool call triggers a native SWT <strong>WriteConsentDialog</strong> that blocks
+  execution until you respond.
+</p>
+
+<table>
+  <tr><th>Dialog element</th><th>Detail</th></tr>
+  <tr><td>Default button</td><td><strong>Deny</strong> — pressing Enter without moving the cursor denies the action</td></tr>
+  <tr><td>Close with X</td><td>Treated as Deny</td></tr>
+  <tr><td>LLM reasoning section</td><td>Rendered as plain text, labelled "untrusted", capped at 300 characters. Cannot contain HTML or control characters.</td></tr>
+  <tr><td>"Remember my choice" checkbox</td><td>Available for ordinary MODEL_WRITE tools only; session-scoped (reset on restart)</td></tr>
+  <tr><td>Destructive tools</td><td>Delete, merge, apply architecture diff — always prompt; "Remember" checkbox disabled</td></tr>
+</table>
+
+<div class="warning">
+  <strong>The LLM reasoning text is untrusted.</strong> A requirement or diagram label
+  containing a prompt-injection payload cannot manufacture consent by making the reasoning
+  look official. Capella Agent strips HTML, newlines, and caps the text before display.
+  Evaluate the <em>tool name and arguments</em>, not the reasoning, when deciding to approve.
+</div>
+
+<h2>Cost &amp; Rate Controls</h2>
+
+<p>
+  These limits are <strong>fixed safety baselines</strong> in v1.0. They protect against
+  runaway tool-calling loops, compromised sessions, and provider outages — a budget that a
+  user can disable with one click protects nothing.
+</p>
+
+<table>
+  <tr><th>Guardrail</th><th>Default</th><th>Why this number</th></tr>
+  <tr>
+    <td>Per-session token budget</td>
+    <td>1,000,000 tokens</td>
+    <td>Caps a runaway loop at roughly single-digit dollars per session on Claude Opus</td>
+  </tr>
+  <tr>
+    <td>Per-day hard cap (UTC reset)</td>
+    <td>10,000,000 tokens</td>
+    <td>Caps a compromised or forgotten session at low-hundreds of dollars per day</td>
+  </tr>
+  <tr>
+    <td>Provider circuit breaker</td>
+    <td>5 errors in 120&nbsp;s &rarr; open 5&nbsp;min, exponential backoff</td>
+    <td>Calibrated against real-world provider outage patterns; prevents silent retry storms</td>
+  </tr>
+  <tr>
+    <td>Iteration hard ceiling</td>
+    <td>50 tool calls per turn</td>
+    <td>Absolute backstop regardless of agent mode; prevents infinite tool-call ping-pong</td>
+  </tr>
+  <tr>
+    <td>Per-tool-result byte cap</td>
+    <td>200&nbsp;KB</td>
+    <td>Prevents a single huge result (e.g. <code>list_all_requirements</code> on a 5000-row project) from consuming the entire budget in one call</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Administrator override:</strong> An administrator who needs a different daily cap
+  can call <code>DailyTokenLimiter.getInstance().setCap(long tokens)</code> from a Capella
+  startup hook or OSGi console. This is an admin path — it is deliberately not wired into
+  the Preferences UI so that end users cannot silently disable the guardrail.
+</p>
+
+<h2>Prompt-Injection Defence</h2>
+
+<p>
+  Every string returned by a tool — element names, requirement text, diagram labels — is
+  processed by <code>ToolResultSanitizer</code> before being fed back to the LLM:
+</p>
+<ul>
+  <li>Wrapped in <code>&lt;untrusted&gt;...&lt;/untrusted&gt;</code> markers so the LLM
+      knows the text originated from the model, not from a trusted instruction.</li>
+  <li>Scanned for 14 injection patterns: fake system tags (<code>[SYSTEM]</code>,
+      <code>### SYSTEM</code>), role-prefix lines, "ignore previous instructions" variants,
+      homoglyph substitutions.</li>
+  <li>Zero-width and bidirectional control characters are stripped.</li>
+  <li>Text is NFKC-normalised before pattern matching to defeat Unicode substitutions.</li>
+</ul>
+<p>
+  If a suspicious pattern is detected, a <code>suspiciousContextFound</code> flag is set
+  for the remainder of the turn. Any write-tool call in that turn is forced through the
+  consent dialog regardless of session memoization.
+</p>
+
+<h2>Path Safety</h2>
+
+<p>
+  All tool parameters that accept file paths are validated by <code>PathValidator</code>
+  before any file operation:
+</p>
+<ul>
+  <li>Path is canonicalised and checked against the Eclipse workspace root.</li>
+  <li>Symlinks and reparse points are rejected (<code>NOFOLLOW_LINKS</code>).</li>
+  <li>Extension whitelist is enforced: <code>.reqif</code> / <code>.xml</code> for ReqIF
+      import, <code>.xlsx</code> / <code>.xlsm</code> for Excel import, <code>.png</code>
+      / <code>.svg</code> / <code>.jpg</code> for diagram export.</li>
+  <li><code>.reqifz</code> archives are disabled pending a ZipSlip-safe extractor.</li>
+  <li>Violation messages do not include the rejected path (prevents information disclosure).</li>
+</ul>
+
+<h2>XSS Hardening in the Chat View</h2>
+
+<p>
+  The chat browser widget runs under a strict <strong>Content Security Policy</strong>:
+  <code>default-src 'none'</code> with only the minimum directives needed for the bridge
+  script and inline styles. Additionally:
+</p>
+<ul>
+  <li>All agent-produced HTML passes through <code>HtmlSanitizer</code> before rendering —
+      only a tag whitelist is allowed; all <code>on*</code> event handlers,
+      <code>javascript:</code> URLs, and <code>data:</code> URLs are stripped.</li>
+  <li>UUIDs are validated against a strict regex before being embedded in element links —
+      any UUID-shaped string that fails validation renders as plain text.</li>
+  <li>Architecture proposal names and requirement text are HTML-escaped before being
+      inserted into diff widgets and coverage dashboards.</li>
+</ul>
+
+<h2>Audit Log</h2>
+
+<p>
+  Every tool call — approved, denied, or blocked — is written to
+  <code>{workspace}/.capella-agent/audit.log</code>.
+</p>
+
+<table>
+  <tr><th>Property</th><th>Detail</th></tr>
+  <tr><td>Location</td><td><code>{Eclipse workspace}/.capella-agent/audit.log</code></td></tr>
+  <tr><td>Rotation</td><td>10&nbsp;MB per file, up to 10 files (<code>audit.log</code> through <code>audit.log.9</code>)</td></tr>
+  <tr><td>Integrity</td><td>Rolling HMAC-SHA256 chain — each line carries a <code>_hmac</code> field chained to the previous line. Detects casual tampering. (A determined attacker with JVM filesystem access can read the key from Eclipse secure preferences and re-sign. This is documented in <code>SECURITY.md</code> as an accepted limitation.)</td></tr>
+  <tr><td>Secret scrubbing</td><td>JSON fields named <code>api_key</code>, <code>token</code>, <code>password</code>, <code>secret</code>, <code>credential</code>, <code>authorization</code>, and <code>Authorization: Bearer</code> patterns are replaced with <code>***</code> before writing</td></tr>
+  <tr><td>No viewer</td><td>Open the file in any text editor. A read-only in-product viewer is a future feature.</td></tr>
+</table>
+
+<div class="tip">
+  <strong>ITAR / air-gapped environments:</strong> When using Ollama or LM Studio,
+  no data leaves your machine. The audit log remains entirely local. This is the
+  approved path for ITAR-controlled programme models.
+  See <a href="provider_setup.html">Provider Setup &rarr; Ollama</a>.
+</div>
+
+<h2>Further Reading</h2>
+
+<ul>
+  <li><code>SECURITY.md</code> at the repository root — full threat model, dependency
+      inventory with CVE closure notes, accepted risks, and vulnerability reporting
+      instructions.</li>
+  <li><a href="known_limitations.html">Known Limitations #12–14</a> — consent dialog
+      latency, audit log retention policy, and token budget admin API.</li>
+  <li><a href="troubleshooting.html">Troubleshooting</a> — write denied, circuit breaker,
+      blank key field.</li>
+</ul>
+
+</body>
+</html>

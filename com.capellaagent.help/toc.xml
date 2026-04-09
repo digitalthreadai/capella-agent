@@ -19,6 +19,7 @@
       <topic label="Generative Architecture" href="html/cookbook_genarch.html"/>
    </topic>
    <topic label="Tool Reference" href="html/tool_reference.html"/>
+   <topic label="Security &amp; Governance" href="html/security.html"/>
    <topic label="Known Limitations" href="html/known_limitations.html"/>
    <topic label="Troubleshooting" href="html/troubleshooting.html"/>
 </toc>
