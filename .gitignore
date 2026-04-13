@@ -21,6 +21,3 @@ Thumbs.db
 # Logs
 *.log
 .claude/
-
-# MkDocs generated site (build artefact — deploy via GitHub Actions)
-/site/
