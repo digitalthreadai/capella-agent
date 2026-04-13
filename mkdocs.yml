@@ -1,0 +1,62 @@
+# mkdocs.yml — Capella Agent public documentation site
+#
+# Phase A scope (minimal viable site):
+#   - Landing page (index.md)
+#   - Security & Governance page (reference/security.md)
+#   - All other pages linked back to in-product Help until Phase B
+#
+# Phase B note: when the full markdown corpus is authored under docs/content/,
+# update the nav section below and run scripts/build-eclipse-help.py to regenerate
+# the Eclipse Help HTML bundle from the same source.
+#
+# Filename mapping from Eclipse Help flat names to MkDocs nested paths:
+#   chat_view.html              -> user-guide/chat-view.md
+#   provider_setup.html         -> getting-started/provider-setup.md
+#   tool_reference.html         -> reference/tools.md
+#   known_limitations.html      -> reference/limitations.md
+#   troubleshooting.html        -> reference/troubleshooting.md
+#   cookbook_explore.html       -> cookbook/explore.md
+#   cookbook_create.html        -> cookbook/create.md
+#   cookbook_requirements.html  -> cookbook/requirements.md
+#   cookbook_sustainment.html   -> cookbook/sustainment.md
+#   cookbook_genarch.html       -> cookbook/genarch.md
+
+site_name: Capella Agent
+site_description: AI-powered multi-agent ecosystem for Eclipse Capella — 95+ LLM-callable tools for MBSE
+site_author: digitalthreadai
+docs_dir: docs/content
+
+nav:
+  - Home: index.md
+  - Security & Governance: reference/security.md
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+  palette:
+    - scheme: default
+      primary: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
